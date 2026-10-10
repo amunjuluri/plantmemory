@@ -1,0 +1,20 @@
+# Keep the build context small and free of secrets.
+.git
+.venv
+.env
+.env.*
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.claude
+data/store
+web/node_modules
+web/.next
+web/out
+web/.env*
+web/openapi.json
+tests
+docs
+*.pem
+*service-account*.json
+application_default_credentials.json

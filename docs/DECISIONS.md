@@ -117,3 +117,15 @@ Short log of choices and why. Newest last.
 33. **Local ports 8473 (API) and 3473 (UI dev)**, not 8080/3000, to avoid clashing
     with other local apps. Cloud Run still injects its own `PORT`. CORS is off unless
     `CORS_ORIGINS` is set, and is only needed for `make dev`.
+34. **Firestore scores are converted back to cosine similarity** (`1 - COSINE
+    distance`), so `MATCH_THRESHOLD` and `MATCH_MARGIN` mean the same on both stores.
+    Flat vector indexes (exact search) suit a demo-sized dataset.
+35. **Deploy from source with a dedicated build service account** (`run.builder`)
+    instead of granting roles to the Compute Engine default account, and a runtime
+    service account with only `datastore.user` and `aiplatform.user`.
+36. **Three-stage Docker image**: Node builds the UI, a uv stage installs the
+    locked dependencies, and the slim runtime holds only the venv, code and synthetic
+    data, owned by root and run as an unprivileged user (497 MB uncompressed).
+37. **Public demo safety**: per-client limit of 40 AI requests per hour, plus
+    `max-instances=3`. The limiter is in memory per instance; good enough for a demo,
+    not a substitute for API Gateway or Cloud Armor in production.

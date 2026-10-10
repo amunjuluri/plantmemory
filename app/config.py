@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     recurrence_window_months: int = 12
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 
+    # Per-client cap on requests that call Gemini (analyze, logbook). 0 disables.
+    ai_requests_per_hour: int = 40
+
     # Origins allowed to call the API from another port (local UI dev only), e.g.
     # CORS_ORIGINS='["http://localhost:3473"]'. Empty in production: same origin.
     cors_origins: list[str] = []
