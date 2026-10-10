@@ -18,7 +18,7 @@ anything runs late, cut scope, not the video.
 | 3. Agent | Done | 10 Oct | ADK agent, 4 tools; citation, no-match and shallow-cause rules enforced in code |
 | 4. Logbook photo | Done | 10 Oct | Handwritten page to reviewed records; unreadable words flagged, never guessed |
 | 5. UI | Done | 10 Oct | Analyze, Digitize logbook, Memory; desktop and phone; light and dark |
-| 6. Cloud | Code done, awaiting approval to deploy | | Firestore vector store, Docker image tested locally, `make deploy` ready |
+| 6. Cloud | Done | 10 Oct | Live at https://plantmemory-4l5hbd2imq-el.a.run.app (Cloud Run + Firestore vector search, `asia-south1`) |
 | 7. Docs | Not started | | README, architecture, data notice, eval results |
 
 ## After Phase 6, in priority order
@@ -27,7 +27,7 @@ Agreed on 10 Oct after an outside review of the plan. The goal is to stop this r
 as "another document chatbot": the story is repeat failures, lost knowledge, and fixes
 that didn't hold.
 
-1. **Cost of the repeat, in the app.** The amber banner says e.g. "3rd time in 12
+1. **Done 10 Oct. Cost of the repeat, in the app.** The amber banner says e.g. "3rd time in 12
    months: 2 h 10 min of downtime in this sample plant". The downtime field already
    exists, so this is small. Figures are always labelled as sample data, never as
    industry facts.
@@ -57,3 +57,12 @@ another shift, and warns you when last time's fix didn't work."
   (production image tested locally end to end), idempotent `scripts/deploy.sh` with
   least-privilege service accounts, per-visitor AI rate limit. Waiting for approval
   to create cloud resources.
+- **10 Oct.** Phase 6 deployed: https://plantmemory-4l5hbd2imq-el.a.run.app. Firestore
+  database, 3 indexes, 2 service accounts and the 12 synthetic incidents created by
+  `make deploy SEED=1`. Live check: a PM2 sheet-break report finds PAP-0002 (0.89) and
+  PAP-0001 (0.85), the same as locally. Note: the default gcloud account on this Mac
+  is a different project's service account; deploys use the `plantmemory` gcloud
+  configuration, so always go through `make deploy`.
+- **10 Oct.** Roadmap item 1 done: the repeat banner leads with "3rd time in 12
+  months" and "2 h 45 min of downtime so far", computed in code from the matched
+  records (never by the model). 80 tests pass.
