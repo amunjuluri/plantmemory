@@ -15,7 +15,11 @@ def get_store() -> IncidentStore:
     if s.store_backend == "firestore":
         from app.store.firestore_store import FirestoreStore
 
-        return FirestoreStore(database=s.firestore_database, collection=s.firestore_collection)
+        return FirestoreStore(
+            database=s.firestore_database,
+            collection=s.firestore_collection,
+            project=s.google_cloud_project,
+        )
     from app.store.local_store import LocalStore
 
     return LocalStore(s.local_store_path)

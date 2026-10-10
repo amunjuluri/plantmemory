@@ -1,4 +1,4 @@
-.PHONY: install run dev test lint fmt check seed eval web web-check api-types
+.PHONY: install run dev test lint fmt check seed eval web web-check api-types deploy docker-run
 
 PORT ?= 8473
 # HOST=0.0.0.0 to open it from a phone on the same Wi-Fi.
@@ -45,3 +45,17 @@ web-check:  ## Typecheck and lint the UI
 
 api-types:  ## Regenerate the UI's TypeScript types from the API schema
 	cd web && pnpm gen:api
+
+# gcloud configuration and project used for deploys (override on the command line).
+GCLOUD_CONFIG ?= plantmemory
+PROJECT_ID ?=
+
+deploy:  ## Deploy to Cloud Run (asks before creating anything). Add SEED=1 to load seed data
+	CLOUDSDK_ACTIVE_CONFIG_NAME=$(GCLOUD_CONFIG) scripts/deploy.sh $(if $(PROJECT_ID),--project $(PROJECT_ID)) $(if $(SEED),--seed)
+
+docker-run:  ## Build and run the production image locally on :8474 (uses your ADC)
+	docker build -t plantmemory:local .
+	docker run --rm -p 127.0.0.1:8474:8080 \
+	  -v "$$HOME/.config/gcloud/application_default_credentials.json:/secrets/adc.json:ro" \
+	  -v "$$PWD/data/store:/app/data/store:ro" \
+	  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/adc.json --env-file .env plantmemory:local

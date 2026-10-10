@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
@@ -24,6 +24,7 @@ from app.models import (
     Industry,
     IngestResult,
 )
+from app.ratelimit import limit_ai_calls
 
 VERSION = "0.1.0"
 
@@ -56,7 +57,7 @@ def health() -> dict[str, str]:
     }
 
 
-@app.post("/api/incidents/analyze")
+@app.post("/api/incidents/analyze", dependencies=[Depends(limit_ai_calls)])
 async def analyze_incident(body: AnalyzeRequest) -> Draft:
     """Find similar past incidents and draft a cited note. A human must review it."""
     try:
@@ -65,7 +66,11 @@ async def analyze_incident(body: AnalyzeRequest) -> Draft:
         raise HTTPException(status_code=502, detail=str(err)) from err
 
 
-@app.post("/api/incidents/analyze/stream", response_class=EventSourceResponse)
+@app.post(
+    "/api/incidents/analyze/stream",
+    response_class=EventSourceResponse,
+    dependencies=[Depends(limit_ai_calls)],
+)
 async def analyze_incident_stream(body: AnalyzeRequest) -> AsyncIterator[agent.Progress]:
     """Same as /analyze, streamed as server-sent events: each step, then the draft."""
     async for update in agent.analyze_events(body.text, body.industry):
@@ -82,7 +87,7 @@ def approve_incident(body: ApproveRequest) -> IncidentPublic:
     return _public(record)
 
 
-@app.post("/api/ingest/logbook")
+@app.post("/api/ingest/logbook", dependencies=[Depends(limit_ai_calls)])
 async def ingest_logbook(
     file: Annotated[UploadFile, File(description="Photo of a logbook page")],
     industry: Annotated[Industry | None, Form()] = None,
