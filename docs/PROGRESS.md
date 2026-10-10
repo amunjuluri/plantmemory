@@ -18,7 +18,7 @@ anything runs late, cut scope, not the video.
 | 3. Agent | Done | 10 Oct | ADK agent, 4 tools; citation, no-match and shallow-cause rules enforced in code |
 | 4. Logbook photo | Done | 10 Oct | Handwritten page to reviewed records; unreadable words flagged, never guessed |
 | 5. UI | Done | 10 Oct | Analyze, Digitize logbook, Memory; desktop and phone; light and dark |
-| 6. Cloud | In progress | | Firestore vector store, Dockerfile, Cloud Run deploy |
+| 6. Cloud | Code done, awaiting approval to deploy | | Firestore vector store, Docker image tested locally, `make deploy` ready |
 | 7. Docs | Not started | | README, architecture, data notice, eval results |
 
 ## After Phase 6, in priority order
@@ -53,3 +53,7 @@ another shift, and warns you when last time's fix didn't work."
   Kowalski's design skills (vendored in `.claude/skills/`). Local ports moved to 8473
   (API) and 3473 (UI dev). Co-author lines removed from all commit messages; rule: no
   co-authors on any commit.
+- **10 Oct.** Phase 6 code: FirestoreStore (vector search), 3-stage Dockerfile
+  (production image tested locally end to end), idempotent `scripts/deploy.sh` with
+  least-privilege service accounts, per-visitor AI rate limit. Waiting for approval
+  to create cloud resources.
