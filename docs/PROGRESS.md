@@ -66,3 +66,13 @@ another shift, and warns you when last time's fix didn't work."
 - **10 Oct.** Roadmap item 1 done: the repeat banner leads with "3rd time in 12
   months" and "2 h 45 min of downtime so far", computed in code from the matched
   records (never by the model). 80 tests pass.
+- **10 Oct.** Checked the concern that memory would vanish on Cloud Run: it doesn't.
+  All records live in Firestore, not on the container's disk. Proved it live:
+  approved a test record, read it straight from Firestore, forced two restarts, still
+  there; then deleted it (memory back to the 12 samples).
+- **10 Oct.** Live testing found Gemini sometimes busy (429) or slow (one call took
+  100 s), which showed up as "Internal Server Error". Fixed: retries with backoff,
+  per-call timeouts, and a plain "Gemini is busy, try again in a minute" message.
+  Deployed; live runs take 15 to 20 s. 84 tests pass. **Before recording the demo
+  video, run one analysis first** so the instance is warm.
+

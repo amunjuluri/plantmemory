@@ -129,3 +129,14 @@ Short log of choices and why. Newest last.
 37. **Public demo safety**: per-client limit of 40 AI requests per hour, plus
     `max-instances=3`. The limiter is in memory per instance; good enough for a demo,
     not a substitute for API Gateway or Cloud Armor in production.
+38. **All plant memory lives in Firestore on Cloud Run**, never on the container's
+    disk: seed records, approved drafts and confirmed logbook records all go through
+    `FirestoreStore`. Record ids are random (`APR-`/`LOG-` + 8 hex), so several
+    instances can write at once without clashing. Verified live on 10 Oct: an
+    approved record was readable directly from Firestore and survived two forced
+    restarts (new revisions), then was deleted.
+39. **Gemini calls retry when busy or slow.** 429/503/5xx and timeouts are retried
+    3 times with backoff (about 2, 4, 8 s). Each agent call times out at 30 s,
+    other calls (logbook photos) at 90 s. If it still fails, the user sees "Gemini is
+    busy right now. Please try again in a minute." (503 outside the agent), never a
+    bare 500. Found during live testing: one 429 and one 100 s first call.
