@@ -1,6 +1,8 @@
 .PHONY: install run dev test lint fmt check seed eval web web-check api-types
 
 PORT ?= 8473
+# HOST=0.0.0.0 to open it from a phone on the same Wi-Fi.
+HOST ?= 127.0.0.1
 WEB_PORT ?= 3473
 
 install:  ## Install Python and UI dependencies
@@ -8,7 +10,7 @@ install:  ## Install Python and UI dependencies
 	cd web && pnpm install --frozen-lockfile
 
 run: web/out/index.html  ## Run the API + built UI on :8473 (builds the UI first if needed)
-	uv run uvicorn app.main:app --reload --port $(PORT)
+	uv run uvicorn app.main:app --reload --host $(HOST) --port $(PORT)
 
 test:  ## Run tests
 	uv run pytest
