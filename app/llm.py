@@ -1,6 +1,6 @@
 """Gemini client and a small structured-output helper shared by the agent and ingest."""
 
-from functools import lru_cache
+import threading
 from typing import Literal, Protocol, TypeVar
 
 import httpx
@@ -51,22 +51,35 @@ def is_overloaded(err: BaseException | None) -> bool:
     return False
 
 
-@lru_cache
+_client: genai.Client | None = None
+_client_lock = threading.Lock()
+
+
 def get_genai_client() -> genai.Client:
-    """Return a google-genai client for Vertex AI or the Gemini API, per settings."""
+    """Return the shared google-genai client for Vertex AI or the Gemini API.
+
+    Created once under a lock: if two threads each built a client, the spare one's
+    cleanup would close the connection the other is using.
+    """
+    global _client
+    with _client_lock:
+        if _client is None:
+            _client = _new_client()
+        return _client
+
+
+def _new_client() -> genai.Client:
     s = get_settings()
+    http_options = types.HttpOptions(retry_options=RETRY, timeout=CALL_TIMEOUT_MS)
     if s.use_vertexai:
         return genai.Client(
             vertexai=True,
             project=s.google_cloud_project,
             location=s.google_cloud_location,
-            http_options=types.HttpOptions(retry_options=RETRY, timeout=CALL_TIMEOUT_MS),
+            http_options=http_options,
         )
     api_key = s.google_api_key.get_secret_value() if s.google_api_key else None
-    return genai.Client(
-        api_key=api_key,
-        http_options=types.HttpOptions(retry_options=RETRY, timeout=CALL_TIMEOUT_MS),
-    )
+    return genai.Client(api_key=api_key, http_options=http_options)
 
 
 class StructuredLLM(Protocol):

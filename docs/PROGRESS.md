@@ -31,7 +31,7 @@ that didn't hold.
    months: 2 h 10 min of downtime in this sample plant". The downtime field already
    exists, so this is small. Figures are always labelled as sample data, never as
    industry facts.
-2. **A more convincing eval.** Grow the synthetic set to about 40 to 60 incidents,
+2. **Done 10 Oct. A more convincing eval.** Grow the synthetic set to about 40 to 60 incidents,
    including look-alikes that should *not* match. Report the false-alarm rate ("said it
    happened before when it hadn't") alongside the hit rate.
 3. **Matching across languages.** A new incident written in a regional language mixed
@@ -75,4 +75,13 @@ another shift, and warns you when last time's fix didn't work."
   per-call timeouts, and a plain "Gemini is busy, try again in a minute" message.
   Deployed; live runs take 15 to 20 s. 84 tests pass. **Before recording the demo
   video, run one analysis first** so the instance is warm.
+- **10 Oct.** Roadmap item 2 done. Memory grew from 12 to 44 synthetic incidents
+  (new problem types written twice in different styles, plus deliberate look-alikes);
+  tests grew from 10 to 46 reports (30 that should match, 16 that should not, 13 of
+  them look-alikes). The bigger eval exposed a real flaw: scores alone gave **15/16
+  false alarms**. Added a Gemini check of each candidate: now **0/16 false alarms,
+  30/30 right, 0 wrong records shown**, the same across three runs. Demo examples
+  unchanged. Details in [EVAL_RESULTS.md](EVAL_RESULTS.md). Also fixed a race where
+  parallel first requests could close the shared Gemini connection. 87 tests pass.
+  Suggestion for the team: write ~10 test reports of your own as a held-out check.
 

@@ -43,10 +43,9 @@ class Settings(BaseSettings):
     firestore_collection: str = "incidents"
 
     # Retrieval and agent behaviour.
-    match_threshold: float = 0.70  # calibrated with scripts/eval_retrieval.py
-    # A match must also score within this margin of the best match to count as the
-    # same problem (rather than merely the same machine). Calibrated on the eval set.
-    match_margin: float = 0.06
+    # Search results scoring at least this are candidates; Gemini then checks each one
+    # is the same problem (see tools.verify_matches and scripts/eval_retrieval.py).
+    match_threshold: float = 0.70
     draft_thinking_level: Literal["low", "medium", "high"] = "low"
     # Detail Gemini reads logbook photos at: MEDIA_RESOLUTION_{LOW,MEDIUM,HIGH,ULTRA_HIGH}.
     ocr_media_resolution: str = "MEDIA_RESOLUTION_HIGH"

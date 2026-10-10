@@ -1,63 +1,360 @@
 {
-  "description": "Synthetic retrieval test queries. 'expected' lists every record that describes the same underlying problem; a hit is any expected id in the top results. 'low_keyword' marks queries written to share almost no words with the matching records. 'negatives' have no true match and are used to calibrate MATCH_THRESHOLD.",
+  "description": "Synthetic test reports. 'cases' should find a past incident: 'expected' lists every record that describes the same underlying problem. 'low_keyword' marks reports written to share almost no words with the matching records. 'negatives' have no true match; 'look-alike' ones share equipment or wording with a record ('looks_like') but are a different problem. Showing any match for a negative is a false alarm.",
   "cases": [
     {
       "id": "Q1",
       "query": "Paper web keeps breaking right after the second press and the felt looks glazed.",
-      "expected": ["PAP-0001", "PAP-0002"],
+      "expected": [
+        "PAP-0001",
+        "PAP-0002"
+      ],
       "low_keyword": false
     },
     {
       "id": "Q2",
       "query": "Slimy deposits in the white water system and holes showing up in the finished paper.",
-      "expected": ["PAP-0003", "PAP-0004"],
+      "expected": [
+        "PAP-0003",
+        "PAP-0004"
+      ],
       "low_keyword": false
     },
     {
       "id": "Q3",
       "query": "Basis weight swinging and the headbox pressure will not settle.",
-      "expected": ["PAP-0005", "PAP-0006"],
+      "expected": [
+        "PAP-0005",
+        "PAP-0006"
+      ],
       "low_keyword": false
     },
     {
       "id": "Q4",
       "query": "Tablets failing friability because the top layer peels off.",
-      "expected": ["PHA-0001", "PHA-0002"],
+      "expected": [
+        "PHA-0001",
+        "PHA-0002"
+      ],
       "low_keyword": false
     },
     {
       "id": "Q5",
       "query": "Paper tears near the squeezing rolls and the blanket underneath seems clogged up.",
-      "expected": ["PAP-0001", "PAP-0002"],
+      "expected": [
+        "PAP-0001",
+        "PAP-0002"
+      ],
       "low_keyword": true
     },
     {
       "id": "Q6",
       "query": "Pills come out soft and their tops pop off.",
-      "expected": ["PHA-0001", "PHA-0002"],
+      "expected": [
+        "PHA-0001",
+        "PHA-0002"
+      ],
       "low_keyword": true
     },
     {
       "id": "Q7",
       "query": "Microbes grew on a dish placed beside the hole where workers put their hands into the sterile enclosure.",
-      "expected": ["PHA-0003", "PHA-0004"],
+      "expected": [
+        "PHA-0003",
+        "PHA-0004"
+      ],
       "low_keyword": true
     },
     {
       "id": "Q8",
       "query": "The storage room for long-term product tests got too damp over the weekend.",
-      "expected": ["PHA-0005", "PHA-0006"],
+      "expected": [
+        "PHA-0005",
+        "PHA-0006"
+      ],
       "low_keyword": true
+    },
+    {
+      "id": "Q9",
+      "query": "Wet streaks across the sheet at the reel and a couple of dryer cans in the third group are cold.",
+      "expected": [
+        "PAP-0007",
+        "PAP-0008"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q10",
+      "query": "Knocking inside the drying cylinders and damp bands across the web; water seems to be collecting in them.",
+      "expected": [
+        "PAP-0007",
+        "PAP-0008"
+      ],
+      "low_keyword": true
+    },
+    {
+      "id": "Q11",
+      "query": "Calender doctor blade vibrating and leaving bar marks across the paper.",
+      "expected": [
+        "PAP-0009",
+        "PAP-0010"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q12",
+      "query": "Paper strength going down, burst and tensile low, freeness above target even though refining energy is the same.",
+      "expected": [
+        "PAP-0011",
+        "PAP-0012"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q13",
+      "query": "Finished reels slide out like a telescope during shipping and feel squashy at the edges.",
+      "expected": [
+        "PAP-0013",
+        "PAP-0014"
+      ],
+      "low_keyword": true
+    },
+    {
+      "id": "Q14",
+      "query": "Paper keeps snapping at the reel when we change over to an empty spool.",
+      "expected": [
+        "PAP-0015"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q15",
+      "query": "PM2 first press roll bearing running hot with a vibration alarm.",
+      "expected": [
+        "PAP-0016"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q16",
+      "query": "Holes repeating at the same interval as the wire length, no sign of slime.",
+      "expected": [
+        "PAP-0017"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q17",
+      "query": "Heavy streak at one cross-machine position on the basis weight profile; slice actuator not moving.",
+      "expected": [
+        "PAP-0018"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q18",
+      "query": "Water dripping from the hood above the dryers onto the web, causing wet spots and breaks.",
+      "expected": [
+        "PAP-0022"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q19",
+      "query": "Vacuum pump tripped, couch vacuum lost and the sheet comes out of the press wetter.",
+      "expected": [
+        "PAP-0020"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q20",
+      "query": "TOC high on the purified water return loop, conductivity fine.",
+      "expected": [
+        "PHA-0007",
+        "PHA-0008"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q21",
+      "query": "Organic carbon readings in our process water creeping past the alert level; the ultraviolet unit has a warning light.",
+      "expected": [
+        "PHA-0007",
+        "PHA-0008"
+      ],
+      "low_keyword": true
+    },
+    {
+      "id": "Q22",
+      "query": "Blister leak test failing, dye getting into the pockets.",
+      "expected": [
+        "PHA-0009",
+        "PHA-0010"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q23",
+      "query": "Bowie-Dick test failed on the steriliser this morning.",
+      "expected": [
+        "PHA-0011",
+        "PHA-0012"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q24",
+      "query": "Air-removal check on the steam sterilizer shows a pale patch in the middle of the indicator sheet.",
+      "expected": [
+        "PHA-0011",
+        "PHA-0012"
+      ],
+      "low_keyword": true
+    },
+    {
+      "id": "Q25",
+      "query": "Pressure between the corridor and the airlock dropped, BMS alarm, air handler airflow low.",
+      "expected": [
+        "PHA-0013",
+        "PHA-0014"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q26",
+      "query": "Tablet weights all over the place on TP-02 but hardness is fine.",
+      "expected": [
+        "PHA-0015"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q27",
+      "query": "Tablets sticking to the punches and the logo is filling in.",
+      "expected": [
+        "PHA-0016"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q28",
+      "query": "Stability chamber too warm, humidity normal, compressor keeps cycling on and off.",
+      "expected": [
+        "PHA-0018"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q29",
+      "query": "Torn filter bag in the fluid bed dryer, powder in the exhaust.",
+      "expected": [
+        "PHA-0021"
+      ],
+      "low_keyword": false
+    },
+    {
+      "id": "Q30",
+      "query": "The 2 to 8 degree cold room hit 10 degrees after someone left the door open.",
+      "expected": [
+        "PHA-0019"
+      ],
+      "low_keyword": false
     }
   ],
   "negatives": [
     {
       "id": "N1",
-      "query": "Forklift battery charger tripped the breaker in the finished goods warehouse."
+      "query": "Forklift battery charger tripped the breaker in the finished goods warehouse.",
+      "kind": "unrelated"
     },
     {
       "id": "N2",
-      "query": "Canteen coffee machine leaking water onto the floor."
+      "query": "Canteen coffee machine leaking water onto the floor.",
+      "kind": "unrelated"
+    },
+    {
+      "id": "N3",
+      "query": "Hydraulic oil leaking from the loading cylinder on the third press of PM2.",
+      "kind": "look-alike",
+      "looks_like": "PAP-0016"
+    },
+    {
+      "id": "N4",
+      "query": "Breaks at the size press because the starch cooker failed and the starch came out too thick.",
+      "kind": "look-alike",
+      "looks_like": "PAP-0003"
+    },
+    {
+      "id": "N5",
+      "query": "Wire pit overflowing onto the floor after its level transmitter failed high.",
+      "kind": "look-alike",
+      "looks_like": "PAP-0006"
+    },
+    {
+      "id": "N6",
+      "query": "Fan pump mechanical seal leaking water onto the basement floor.",
+      "kind": "look-alike",
+      "looks_like": "PAP-0005"
+    },
+    {
+      "id": "N7",
+      "query": "Winder slitter knives dull, ragged edges on the slit rolls.",
+      "kind": "look-alike",
+      "looks_like": "PAP-0013"
+    },
+    {
+      "id": "N8",
+      "query": "Punch tip broke on tablet press TP-02 and a metal fragment was found in tablets.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0015"
+    },
+    {
+      "id": "N9",
+      "query": "Product A tablets too hard and dissolution is slow.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0001"
+    },
+    {
+      "id": "N10",
+      "query": "Stoppers popping up on vials after capping on aseptic filling line 1.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0003"
+    },
+    {
+      "id": "N11",
+      "query": "Light intensity in the photostability cabinet out of range.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0005"
+    },
+    {
+      "id": "N12",
+      "query": "Purified water loop pump tripped and loop flow was lost for 15 minutes.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0007"
+    },
+    {
+      "id": "N13",
+      "query": "Autoclave AC-2 cycle aborted on low steam supply pressure from the boiler house.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0011"
+    },
+    {
+      "id": "N14",
+      "query": "Foil splice broke on blister line BL-3 and the line stopped.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0009"
+    },
+    {
+      "id": "N15",
+      "query": "Label printer on packaging line 2 printing faded batch numbers.",
+      "kind": "look-alike",
+      "looks_like": "PHA-0022"
+    },
+    {
+      "id": "N16",
+      "query": "Car park barrier stuck open.",
+      "kind": "unrelated",
+      "looks_like": null
     }
   ]
 }

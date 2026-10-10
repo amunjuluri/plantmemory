@@ -1,23 +1,35 @@
-"""Measure retrieval quality: semantic search vs a keyword (BM25) baseline.
+"""Measure how well PlantMemory recognises a problem that has happened before.
 
-Prints top-1 and top-3 hit rates for both, a per-query table, and the similarity
-scores of queries that should match nothing (to help set MATCH_THRESHOLD).
+Two parts:
+1. Search quality: semantic search vs a keyword (BM25) baseline, top-1 and top-3 hit
+   rates on the raw test reports.
+2. What the app tells the user: each report goes through the same steps as the live
+   agent (Gemini structures it, search, MATCH_THRESHOLD, then Gemini checks each
+   candidate). We count right answers, wrong records shown, misses, and false alarms
+   (saying "this happened before" for a problem that is not in memory), with and
+   without the Gemini check.
 
-Usage: uv run python -m scripts.eval_retrieval   (run scripts.seed first)
+Usage: uv run python -m scripts.eval_retrieval [--out docs/EVAL_RESULTS.md]
+(run `make seed` first)
 """
 
+import argparse
 import json
 import math
 import re
 import sys
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date
+from pathlib import Path
 
+from app.agent import tools
 from app.config import ROOT_DIR, get_settings
-from app.embeddings import GeminiEmbedder, incident_text
+from app.embeddings import incident_text
 from app.models import IncidentRecord
-from app.store import get_store
 
 CASES_PATH = ROOT_DIR / "data" / "eval" / "retrieval_cases.json"
+_PARALLEL = 6
 
 _STOPWORDS = set(
     "a an and are as at be been before by for from has have in into is it its of off on or "
@@ -64,27 +76,28 @@ def keyword_overlap(query: str, docs: list[str]) -> float:
     return len(q & d) / len(q) if q else 0.0
 
 
-def main() -> None:
-    settings = get_settings()
-    store = get_store()
-    total = store.count()
-    if total == 0:
-        sys.exit("Store is empty. Run `make seed` first.")
+def shown_matches(query: str, deps: tools.AgentDeps) -> tuple[list[str], list[str], float]:
+    """Ids shown by score alone, ids shown after the Gemini check, and the best score."""
+    incident = tools.structure_incident(query, deps)
+    matches = tools.search_similar(incident, deps, k=5)
+    by_score = [m.id for m in tools.candidates(matches, deps.settings)]
+    verified = [m.id for m in tools.verify_matches(incident, matches, deps)]
+    return by_score, verified, (matches[0].score if matches else 0.0)
 
-    records: list[IncidentRecord] = store.list_records(limit=total)
+
+def pct(hits: int, total: int) -> str:
+    return f"{hits}/{total} ({hits / total:.0%})" if total else "n/a"
+
+
+def search_section(spec: dict, records: list[IncidentRecord], deps: tools.AgentDeps) -> list[str]:
     texts = {r.id: incident_text(r) for r in records}
     bm25 = BM25(texts)
-    embedder = GeminiEmbedder(settings)
-    spec = json.loads(CASES_PATH.read_text())
-
     rows = []
-    positive_scores = []
     for case in spec["cases"]:
         expected = set(case["expected"])
-        hits = store.search(embedder.embed_query(case["query"]), k=3)
+        hits = deps.store.search(deps.embedder.embed_query(case["query"]), k=3)
         sem_ids = [h.record.id for h in hits]
         kw_ids = [doc_id for doc_id, _ in bm25.search(case["query"], k=3)]
-        positive_scores.append(hits[0].score)
         rows.append(
             {
                 "id": case["id"],
@@ -100,44 +113,177 @@ def main() -> None:
             }
         )
 
-    n = len(rows)
-    print(f"\nRetrieval eval: {n} queries over {total} records")
-    print(f"Embedding model: {settings.embedding_model} ({settings.embedding_dim} dims)\n")
-    print("| Query | Word overlap | Low-keyword | Semantic top 3 | Top score | Keyword top 3 |")
-    print("|---|---|---|---|---|---|")
+    def rate(key: str, subset: list[dict]) -> str:
+        return pct(sum(r[key] for r in subset), len(subset))
+
+    low = [r for r in rows if r["low_keyword"]]
+    out = [
+        "## 2. Search quality: meaning vs keywords",
+        "",
+        "The raw test report is searched against memory. A hit means a record describing "
+        "the same problem is ranked first (top 1) or in the first three (top 3).",
+        "",
+        "| Method | Top-1 hit rate | Top-3 hit rate | Top-1 on low-keyword reports |",
+        "|---|---|---|---|",
+        f"| Semantic ({deps.settings.embedding_model}) | {rate('sem1', rows)} "
+        f"| {rate('sem3', rows)} | {rate('sem1', low)} |",
+        f"| Keyword (BM25) | {rate('kw1', rows)} | {rate('kw3', rows)} | {rate('kw1', low)} |",
+        "",
+        "<details><summary>Per-report results</summary>",
+        "",
+        "| Report | Word overlap | Low-keyword | Semantic top 3 | Top score | Keyword top 3 |",
+        "|---|---|---|---|---|---|",
+    ]
     for r in rows:
-        print(
+        out.append(
             f"| {r['id']} | {r['overlap']:.0%} | {'yes' if r['low_keyword'] else ''} "
             f"| {', '.join(r['sem_ids'])} | {r['score']:.3f} "
             f"| {', '.join(r['kw_ids']) or '(none)'} |"
         )
+    out += ["", "</details>", ""]
+    return out
 
-    def rate(key: str, subset: list[dict]) -> str:
-        hits = sum(r[key] for r in subset)
-        return f"{hits}/{len(subset)} ({hits / len(subset):.0%})"
 
-    low = [r for r in rows if r["low_keyword"]]
-    print("\n| Method | Top-1 hit rate | Top-3 hit rate | Top-1 on low-keyword queries |")
-    print("|---|---|---|---|")
-    print(
-        f"| Semantic ({settings.embedding_model}) | {rate('sem1', rows)} | {rate('sem3', rows)} "
-        f"| {rate('sem1', low)} |"
-    )
-    print(f"| Keyword (BM25) | {rate('kw1', rows)} | {rate('kw3', rows)} | {rate('kw1', low)} |")
+def score_outcomes(cases: list[dict], negatives: list[dict], shown: list[list[str]]) -> dict:
+    """Right answers, misses, wrong records and false alarms for one way of deciding."""
+    pos, neg = shown[: len(cases)], shown[len(cases) :]
+    rows = []
+    for case, ids in zip(cases, pos, strict=True):
+        expected = set(case["expected"])
+        extra = [i for i in ids if i not in expected]
+        verdict = "missed" if not ids else ("right" if ids[0] in expected else "wrong")
+        rows.append((case, ids, verdict, extra))
+    alarms = [(n, ids) for n, ids in zip(negatives, neg, strict=True) if ids]
+    return {
+        "rows": rows,
+        "right": sum(r[2] == "right" for r in rows),
+        "all_found": sum(set(r[0]["expected"]) <= set(r[1]) for r in rows),
+        "missed": sum(r[2] == "missed" for r in rows),
+        "wrong_shown": sum(bool(r[3]) for r in rows),
+        "alarms": alarms,
+        "look_alike_alarms": sum(n.get("kind") == "look-alike" for n, _ in alarms),
+    }
 
-    negatives = spec.get("negatives", [])
-    if negatives:
-        print("\nQueries with no true match (best similarity score):")
-        neg_scores = []
-        for case in negatives:
-            best = store.search(embedder.embed_query(case["query"]), k=1)[0]
-            neg_scores.append(best.score)
-            print(f"  {case['id']}: {best.score:.3f} ({best.record.id})  {case['query']}")
-        print(
-            f"\nLowest true-match top score: {min(positive_scores):.3f}. "
-            f"Highest no-match score: {max(neg_scores):.3f}. "
-            f"Current MATCH_THRESHOLD: {settings.match_threshold}"
+
+def decision_section(spec: dict, deps: tools.AgentDeps) -> list[str]:
+    cases, negatives = spec["cases"], spec["negatives"]
+    queries = [c["query"] for c in cases] + [n["query"] for n in negatives]
+    with ThreadPoolExecutor(max_workers=_PARALLEL) as pool:
+        results = list(pool.map(lambda q: shown_matches(q, deps), queries))
+    before = score_outcomes(cases, negatives, [r[0] for r in results])
+    after = score_outcomes(cases, negatives, [r[1] for r in results])
+    best = [r[2] for r in results]
+    n_pos, n_neg = len(cases), len(negatives)
+    n_look = sum(n.get("kind") == "look-alike" for n in negatives)
+
+    def line(label: str, key: str, total: int) -> str:
+        b = before[key] if isinstance(before[key], int) else len(before[key])
+        a = after[key] if isinstance(after[key], int) else len(after[key])
+        return f"| {label} | {pct(b, total)} | {pct(a, total)} |"
+
+    out = [
+        "## 1. What the app tells the user",
+        "",
+        "Each report goes through the live agent's steps: Gemini structures it and memory is "
+        f"searched. Records scoring at least {deps.settings.match_threshold} are candidates. "
+        "The app then asks Gemini to check each candidate and shows only those it confirms "
+        "as the same problem; code ignores any id that was not a candidate.",
+        "",
+        "| Measure | Score only | Score + Gemini check (live) |",
+        "|---|---|---|",
+        line("Found the right past incident (shown first)", "right", n_pos),
+        line("Found every earlier record of it (so the repeat count is right)", "all_found", n_pos),
+        line("Missed it (said nothing similar)", "missed", n_pos),
+        line("Showed at least one wrong record alongside", "wrong_shown", n_pos),
+        line("**False alarm**: said it happened before when it had not", "alarms", n_neg),
+        line("False alarm on look-alikes", "look_alike_alarms", n_look),
+        "",
+    ]
+    if after["alarms"]:
+        out += ["False alarms with the Gemini check:", ""]
+        for n, ids in after["alarms"]:
+            out.append(f"- {n['id']} showed {', '.join(ids)}: {n['query']}")
+        out.append("")
+    imperfect = [
+        r for r in after["rows"] if r[2] != "right" or r[3] or set(r[0]["expected"]) - set(r[1])
+    ]
+    if imperfect:
+        out += ["Reports not answered perfectly with the Gemini check:", ""]
+        for case, ids, verdict, extra in imperfect:
+            missing = [i for i in case["expected"] if i not in ids]
+            out.append(
+                f"- {case['id']} {verdict}; expected {', '.join(case['expected'])}, "
+                f"showed {', '.join(ids) or 'nothing'}"
+                + (f" (wrong: {', '.join(extra)})" if extra else "")
+                + (f" (left out: {', '.join(missing)})" if missing else "")
+                + f": {case['query']}"
+            )
+        out.append("")
+    out += [
+        "<details><summary>Reports with no true match</summary>",
+        "",
+        "| Report | Kind | Looks like | Best score | Shown by score only | Shown after check |",
+        "|---|---|---|---|---|---|",
+    ]
+    for i, n in enumerate(negatives):
+        b, a = results[n_pos + i][0], results[n_pos + i][1]
+        out.append(
+            f"| {n['id']} | {n.get('kind', '')} | {n.get('looks_like') or ''} "
+            f"| {best[n_pos + i]:.3f} | {', '.join(b) or 'nothing'} | {', '.join(a) or 'nothing'} |"
         )
+    out += ["", "</details>", ""]
+    return out
+
+
+LIMITS = [
+    "## Limits",
+    "",
+    "- Everything is synthetic. Records and test reports were written for this project, "
+    "in English, for two industries (paper and pharma).",
+    "- The same team wrote the records, the test reports and the prompt that checks "
+    "candidates. The prompt states general rules and names none of the test cases, but "
+    "results on reports written by someone else may be lower. A useful next step is a "
+    "held-out set written by a plant engineer who has not seen the prompt.",
+    "- 46 test reports is small: one wrong answer moves a rate by 2 to 6 points.",
+    "- Gemini's answers vary slightly between runs; we ran the full eval three times on "
+    "10 Oct 2026 and got the same rates each time.",
+    "",
+]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--out", type=Path, help="also write the report to this file")
+    args = parser.parse_args()
+
+    settings = get_settings()
+    deps = tools.get_deps()
+    total = deps.store.count()
+    if total == 0:
+        sys.exit("Store is empty. Run `make seed` first.")
+    records = deps.store.list_records(limit=total)
+    spec = json.loads(CASES_PATH.read_text())
+    n_neg = len(spec["negatives"])
+    n_look = sum(n.get("kind") == "look-alike" for n in spec["negatives"])
+
+    out = [
+        "# Evaluation results",
+        "",
+        f"Generated by `make eval` on {date.today().isoformat()}. "
+        f"**All data is synthetic** ({total} incidents in memory, "
+        f"{len(spec['cases'])} reports that should find one, {n_neg} that should not, "
+        f"{n_look} of them look-alikes). Gemini model `{settings.gemini_model}`, "
+        f"embeddings `{settings.embedding_model}` ({settings.embedding_dim} dims).",
+        "",
+        *decision_section(spec, deps),
+        *search_section(spec, records, deps),
+        *LIMITS,
+    ]
+    text = "\n".join(out)
+    print(text)
+    if args.out:
+        args.out.write_text(text)
+        print(f"\nWritten to {args.out}")
 
 
 if __name__ == "__main__":

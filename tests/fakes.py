@@ -1,5 +1,6 @@
 """Offline stand-ins for Gemini, the embedder and the ADK model."""
 
+import re
 from collections.abc import AsyncGenerator
 from datetime import date
 from pathlib import Path
@@ -14,6 +15,8 @@ from app.models import (
     DraftContent,
     IncidentRecord,
     LogbookExtraction,
+    MatchCheck,
+    MatchVerdict,
     StructuredIncident,
 )
 from app.store.local_store import LocalStore
@@ -36,6 +39,7 @@ class FakeLLM:
         self.drafts = list(drafts or [])
         self.prompts: list[tuple[str, str]] = []
         self.extraction = LogbookExtraction()
+        self.not_same: set[str] = set()  # candidate ids the fake match check rejects
 
     def generate(self, contents, schema, thinking="low"):
         self.prompts.append((schema.__name__, contents))
@@ -45,6 +49,14 @@ class FakeLLM:
             return self.drafts.pop(0)
         if schema is LogbookExtraction:
             return self.extraction
+        if schema is MatchCheck:
+            ids = re.findall(r'"id": "([^"]+)"', contents)
+            return MatchCheck(
+                verdicts=[
+                    MatchVerdict(id=i, same_problem=i not in self.not_same, why=f"Same as {i}.")
+                    for i in ids
+                ]
+            )
         raise AssertionError(f"unexpected schema {schema}")
 
 

@@ -44,6 +44,31 @@ INDUSTRY_INFER = (
     'and "generic" if it is not clear.'
 )
 
+VERIFY_PROMPT = """\
+A plant team has reported a new incident. A search of past plant records found the
+candidates below. For each candidate, decide whether it is the SAME PROBLEM as the new
+incident: the same kind of failure or defect, showing the same symptoms in the same part
+of the process, so that the past cause and fix are worth checking now.
+
+It is NOT the same problem when:
+- only the machine, line or room is the same and the symptom or failure is different;
+- only general words are shared, such as "break", "leak", "alarm", "trip" or "out of
+  limits";
+- the new report already names a cause that clearly differs from the past cause.
+
+Wording, abbreviations, shorthand and language do not matter; judge the meaning.
+Answer true only if an experienced maintenance or quality engineer would agree.
+
+Give a verdict for every candidate id, with `why`: one short sentence naming the shared
+problem (if true) or the key difference (if false).
+
+NEW INCIDENT:
+{incident}
+
+CANDIDATES:
+{candidates}
+"""
+
 DRAFT_PROMPT = """\
 You are drafting a troubleshooting note for a plant team. A qualified person will
 review it and decide what to do. Write plainly and briefly for people on the shop floor.
@@ -81,8 +106,7 @@ RECURRENCE (computed from the records):
 """
 
 EVIDENCE_NONE = """\
-SIMILAR PAST INCIDENTS: none. No record in memory is similar enough to this incident
-(best similarity {best_score} is below the threshold of {threshold}).
+SIMILAR PAST INCIDENTS: none. No record in memory describes the same problem.
 """
 
 EXTRA_RULES_MATCHES = (

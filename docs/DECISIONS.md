@@ -52,7 +52,7 @@ Short log of choices and why. Newest last.
     text, against the store.
 15. **An uncited suggestion is always labelled general**, whatever the model says, so
     the UI can show which advice comes from plant history and which does not.
-16. **`MATCH_MARGIN=0.06`.** Live runs showed that different problems on the same
+16. **`MATCH_MARGIN=0.06`** (replaced by 40). Live runs showed that different problems on the same
     machine score ~0.79, above `MATCH_THRESHOLD`, which inflated repeat counts. On the
     eval set, every true second match scored within 0.06 of the best match; only 2 of
     8 wrong neighbours did. A match now counts as the same problem only if it passes
@@ -140,3 +140,17 @@ Short log of choices and why. Newest last.
     other calls (logbook photos) at 90 s. If it still fails, the user sees "Gemini is
     busy right now. Please try again in a minute." (503 outside the agent), never a
     bare 500. Found during live testing: one 429 and one 100 s first call.
+40. **Gemini checks every search candidate before it is shown** (replaces 16, the
+    `MATCH_MARGIN` rule). With 44 records, scores alone could not tell a true repeat
+    from "same machine, different problem": the app said "this happened before" for
+    15 of 16 new problems. Now records scoring at least `MATCH_THRESHOLD` (0.70) are
+    candidates, one Gemini call judges each against the new report, and code keeps
+    only confirmed candidate ids (the model can remove, never add). Result: 0 of 16
+    false alarms, 30 of 30 right, at the cost of about 3 s per analysis. The prompt
+    states general rules only and names no test case.
+41. **The eval measures what the user sees**, not just search ranking: each test
+    report runs through the same steps as the live agent, and we report right
+    answers, wrong records shown, misses and false alarms. Labels in
+    `retrieval_cases.json` were not changed after seeing results, even where the
+    check's answer is arguable (Q4, Q7).
+

@@ -20,6 +20,7 @@ from app.models import (
     DraftContent,
     IncidentPublic,
     Industry,
+    MatchCheck,
     Recurrence,
     SimilarIncident,
     StructuredIncident,
@@ -100,23 +101,50 @@ def search_similar(
     ]
 
 
-def relevant(matches: list[SimilarIncident], settings: Settings) -> list[SimilarIncident]:
-    """Matches that count as the same problem. Only these are shown and citable.
+def candidates(matches: list[SimilarIncident], settings: Settings) -> list[SimilarIncident]:
+    """Search results close enough to be worth checking: score at least MATCH_THRESHOLD."""
+    return [m for m in matches if m.score >= settings.match_threshold]
 
-    A match must reach MATCH_THRESHOLD and score within MATCH_MARGIN of the best match.
+
+def verify_matches(
+    incident: StructuredIncident, matches: list[SimilarIncident], deps: AgentDeps
+) -> list[SimilarIncident]:
+    """Keep only the candidates the model judges to be the same problem.
+
+    Search scores alone cannot tell "same machine, different problem" apart from a true
+    repeat, so the model checks each candidate. It can only remove candidates: ids it
+    invents are ignored, and a candidate it gives no verdict for is dropped.
     """
-    if not matches:
+    pool = candidates(matches, deps.settings)
+    if not pool:
         return []
-    floor = max(settings.match_threshold, max(m.score for m in matches) - settings.match_margin)
-    return [m for m in matches if m.score >= floor]
+    prompt = prompts.VERIFY_PROMPT.format(
+        incident=incident.model_dump_json(
+            indent=1, include={"area_or_equipment", "description", "suspected_cause"}
+        ),
+        candidates=json.dumps([_candidate_for_prompt(m) for m in pool], indent=1),
+    )
+    check = deps.llm.generate(prompt, MatchCheck, thinking="low")
+    same = {v.id: v.why for v in check.verdicts if v.same_problem}
+    return [m.model_copy(update={"why": same[m.id]}) for m in pool if m.id in same]
+
+
+def _candidate_for_prompt(m: SimilarIncident) -> dict:
+    fields = m.record.model_dump(
+        mode="json",
+        include={"area_or_equipment", "description", "suspected_cause", "root_cause"},
+    )
+    return {"id": m.id, **fields}
 
 
 def check_recurrence(
     incident: StructuredIncident, matches: list[SimilarIncident], deps: AgentDeps
 ) -> Recurrence:
-    """Count similar events in the recurrence window and note past fixes that failed."""
-    s = deps.settings
-    return compute_recurrence(incident, relevant(matches, s), s.recurrence_window_months)
+    """Count confirmed matches in the recurrence window and note past fixes that failed.
+
+    `matches` must already be checked by `verify_matches`.
+    """
+    return compute_recurrence(incident, matches, deps.settings.recurrence_window_months)
 
 
 def _match_for_prompt(m: SimilarIncident) -> dict:
@@ -145,11 +173,12 @@ def draft_report(
 ) -> Draft:
     """Ask the model for a draft, enforce the citation and no-match rules, and return it.
 
+    `matches` must already be checked by `verify_matches`; they are the only citable ids.
+
     The model gets one retry if it cites an id the search did not return; a second
     violation raises CitationError.
     """
-    threshold = deps.settings.match_threshold
-    good = relevant(matches, deps.settings)
+    good = matches
     allowed = [m.id for m in good]
 
     if good:
@@ -159,8 +188,7 @@ def draft_report(
         )
         extra = prompts.EXTRA_RULES_MATCHES
     else:
-        best = max((m.score for m in matches), default=0.0)
-        evidence = prompts.EVIDENCE_NONE.format(best_score=f"{best:.2f}", threshold=threshold)
+        evidence = prompts.EVIDENCE_NONE
         extra = prompts.EXTRA_RULES_NONE
 
     prompt = prompts.DRAFT_PROMPT.format(
