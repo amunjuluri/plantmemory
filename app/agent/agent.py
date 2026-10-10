@@ -6,13 +6,14 @@ steps. Each tool refuses to run before the step it depends on.
 """
 
 import asyncio
+import logging
 import uuid
 from collections.abc import AsyncIterator
 from functools import lru_cache
 from typing import Literal
 
 from google.adk import Agent, Runner
-from google.adk.models import BaseLlm
+from google.adk.models import BaseLlm, Gemini
 from google.adk.runners import InMemoryRunner
 from google.adk.tools import ToolContext
 from google.genai import types
@@ -22,6 +23,7 @@ from app.agent import tools
 from app.agent.guardrails import CitationError, format_minutes, ordinal
 from app.agent.prompts import ROOT_INSTRUCTION
 from app.config import get_settings
+from app.llm import AGENT_CALL_TIMEOUT_MS, BUSY_MESSAGE, RETRY, is_overloaded
 from app.models import (
     Draft,
     Industry,
@@ -40,6 +42,9 @@ INCIDENT = "incident"
 MATCHES = "matches"
 RECURRENCE = "recurrence"
 DRAFT = "draft"
+
+
+logger = logging.getLogger(__name__)
 
 
 class AgentError(RuntimeError):
@@ -129,12 +134,13 @@ def build_agent(model: str | BaseLlm | None = None) -> Agent:
     """Create the root agent. `model` defaults to GEMINI_MODEL; tests pass a fake."""
     return Agent(
         name=APP_NAME,
-        model=model or get_settings().gemini_model,
+        model=model or Gemini(model=get_settings().gemini_model, retry_options=RETRY),
         description="Finds similar past plant incidents and drafts a cited note for review.",
         instruction=ROOT_INSTRUCTION,
         tools=[structure_incident, search_similar, check_recurrence, draft_report],
         generate_content_config=types.GenerateContentConfig(
             thinking_config=types.ThinkingConfig(thinking_level="LOW"),
+            http_options=types.HttpOptions(timeout=AGENT_CALL_TIMEOUT_MS),
         ),
     )
 
@@ -222,6 +228,14 @@ async def analyze_events(
         final = await sessions.get_session(
             app_name=runner.app_name, user_id=user_id, session_id=session.id
         )
+    except Exception as err:
+        if is_overloaded(err):
+            logger.warning("Gemini overloaded after retries: %s", err)
+            yield Progress(type="error", detail=BUSY_MESSAGE)
+        else:
+            logger.exception("Agent run failed")
+            yield Progress(type="error", detail="Something went wrong. Please try again.")
+        return
     finally:
         await sessions.delete_session(
             app_name=runner.app_name, user_id=user_id, session_id=session.id

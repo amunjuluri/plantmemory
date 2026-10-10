@@ -4,16 +4,19 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
+from google.genai import errors as genai_errors
 
 from app.agent import agent
 from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
 from app.ingest import logbook_ocr
+from app.llm import BUSY_MESSAGE, is_overloaded
 from app.models import (
     AnalyzeRequest,
     ApproveRequest,
@@ -38,6 +41,16 @@ if settings.cors_origins:
         allow_methods=["GET", "POST"],
         allow_headers=["content-type"],
     )
+
+
+@app.exception_handler(genai_errors.APIError)
+async def gemini_error(request: Request, err: genai_errors.APIError) -> JSONResponse:
+    """Gemini still failing after retries: say so plainly instead of a bare 500."""
+    if is_overloaded(err):
+        return JSONResponse(
+            {"detail": BUSY_MESSAGE}, status_code=503, headers={"Retry-After": "30"}
+        )
+    return JSONResponse({"detail": "The AI service returned an error."}, status_code=502)
 
 
 def _public(record) -> IncidentPublic:

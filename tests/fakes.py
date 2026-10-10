@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from google.adk.models import BaseLlm, LlmRequest, LlmResponse
+from google.genai import errors as genai_errors
 from google.genai import types
 
 from app.agent.tools import AgentDeps
@@ -141,3 +142,23 @@ class ScriptedAdkModel(BaseLlm):
         else:
             part = types.Part(text="The draft is ready for human review.")
         yield LlmResponse(content=types.Content(role="model", parts=[part]))
+
+
+class OverloadedAdkModel(BaseLlm):
+    """An ADK model whose every call fails the way Vertex AI does when out of capacity."""
+
+    model: str = "overloaded"
+
+    async def generate_content_async(
+        self, llm_request: LlmRequest, stream: bool = False
+    ) -> AsyncGenerator[LlmResponse]:
+        raise overloaded_error()
+        yield  # pragma: no cover - makes this an async generator
+
+
+def overloaded_error(code: int = 429) -> genai_errors.ClientError | genai_errors.ServerError:
+    body = {
+        "error": {"code": code, "message": "Resource exhausted.", "status": "RESOURCE_EXHAUSTED"}
+    }
+    cls = genai_errors.ClientError if code < 500 else genai_errors.ServerError
+    return cls(code, body)

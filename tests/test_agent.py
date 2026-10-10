@@ -9,11 +9,22 @@ import pytest
 from fastapi.testclient import TestClient
 from google.adk.runners import InMemoryRunner
 
+from app import main
 from app.agent import agent, tools
 from app.agent.guardrails import CitationError
+from app.llm import BUSY_MESSAGE
 from app.main import app
 from app.models import DraftContent, DraftItem, SimilarIncident
-from tests.fakes import AGENT_STEPS, MATCHING, UNRELATED, FakeLLM, ScriptedAdkModel, make_deps
+from tests.fakes import (
+    AGENT_STEPS,
+    MATCHING,
+    UNRELATED,
+    FakeLLM,
+    OverloadedAdkModel,
+    ScriptedAdkModel,
+    make_deps,
+    overloaded_error,
+)
 
 GOOD_DRAFT = DraftContent(
     summary="Same symptoms as [PAP-0001]; the earlier fix in [PAP-0005] did not hold.",
@@ -144,6 +155,30 @@ def test_analyze_returns_502_when_agent_skips_drafting(use_deps, scripted_runner
     scripted_runner(steps=AGENT_STEPS[:2])
     response = TestClient(app).post("/api/incidents/analyze", json={"text": "Line 3 stopped."})
     assert response.status_code == 502
+
+
+def test_analyze_says_gemini_is_busy_instead_of_crashing(use_deps, monkeypatch) -> None:
+    use_deps()
+    runner = InMemoryRunner(
+        agent=agent.build_agent(model=OverloadedAdkModel()), app_name=agent.APP_NAME
+    )
+    monkeypatch.setattr(agent, "get_runner", lambda: runner)
+    response = TestClient(app).post("/api/incidents/analyze", json={"text": "Line 3 stopped."})
+    assert response.status_code == 502
+    assert response.json()["detail"] == BUSY_MESSAGE
+
+
+def test_gemini_overload_outside_the_agent_returns_503(monkeypatch) -> None:
+    def busy(*args, **kwargs):
+        raise overloaded_error(503)
+
+    monkeypatch.setattr(main.logbook_ocr, "extract_records", busy)
+    response = TestClient(app).post(
+        "/api/ingest/logbook", files={"file": ("page.jpg", b"x", "image/jpeg")}
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == BUSY_MESSAGE
+    assert response.headers["retry-after"] == "30"
 
 
 # --- approve and list ---
