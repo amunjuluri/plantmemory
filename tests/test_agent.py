@@ -218,7 +218,12 @@ def test_step_summaries_are_plain_language() -> None:
         "check_recurrence",
         {"window_months": 12, "is_repeat": True, "in_window": ["A-1", "A-2"], "recurred": ["A-2"]},
     )
-    assert summary == "Repeat: 2 times in 12 months. 1 past fix did not hold"
+    assert summary == "3rd time in 12 months. 1 past fix did not hold"
+    summary = agent.step_summary(
+        "check_recurrence",
+        {"window_months": 12, "is_repeat": True, "in_window": ["A-1"], "downtime_minutes": 130},
+    )
+    assert summary == "2nd time in 12 months, 2 h 10 min lost before"
 
 
 def test_stream_steps_carry_summaries(use_deps, scripted_runner) -> None:

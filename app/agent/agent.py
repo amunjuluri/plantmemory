@@ -19,7 +19,7 @@ from google.genai import types
 from pydantic import Field
 
 from app.agent import tools
-from app.agent.guardrails import CitationError
+from app.agent.guardrails import CitationError, format_minutes, ordinal
 from app.agent.prompts import ROOT_INSTRUCTION
 from app.config import get_settings
 from app.models import (
@@ -173,11 +173,13 @@ def step_summary(step: str, result: dict) -> str | None:
         return f"{_plural(same, 'similar incident')} found" if same else "No close match in memory"
     if step == "check_recurrence":
         months = result.get("window_months")
-        parts = [
-            f"Repeat: {_plural(len(result['in_window']), 'time')} in {months} months"
-            if result.get("is_repeat")
-            else f"Not a repeat in the last {months} months"
-        ]
+        if not result.get("is_repeat"):
+            parts = [f"Not a repeat in the last {months} months"]
+        else:
+            occurrence = len(result.get("in_window", [])) + 1
+            parts = [f"{ordinal(occurrence)} time in {months} months"]
+            if result.get("downtime_minutes"):
+                parts[0] += f", {format_minutes(result['downtime_minutes'])} lost before"
         if result.get("recurred"):
             parts.append(f"{_plural(len(result['recurred']), 'past fix')} did not hold")
         return ". ".join(parts)

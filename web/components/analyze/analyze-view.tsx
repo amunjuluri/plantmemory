@@ -35,7 +35,7 @@ function Results() {
   return (
     <div className="flex flex-col gap-5">
       {original.no_match && <NoMatchBanner />}
-      {original.recurrence_note && <RecurrenceBanner note={original.recurrence_note} />}
+      {original.recurrence_note && <RecurrenceBanner note={original.recurrence_note} recurrence={original.recurrence} />}
       {original.cause_flags.length > 0 && <CauseFlags flags={original.cause_flags} />}
 
       {matches.length > 0 && (

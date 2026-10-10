@@ -4,6 +4,7 @@ type Schemas = components["schemas"];
 export type Draft = Schemas["Draft-Output"];
 export type DraftItem = Schemas["DraftItem-Output"];
 export type SimilarIncident = Schemas["SimilarIncident-Output"];
+export type Recurrence = Schemas["Recurrence-Output"];
 export type Incident = Schemas["IncidentPublic-Output"];
 export type IncidentPage = Schemas["IncidentPage"];
 export type IngestResult = Schemas["IngestResult"];

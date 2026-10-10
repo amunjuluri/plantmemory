@@ -77,6 +77,15 @@ class Recurrence(Model):
         default_factory=list, description="Similar records whose fix did not hold."
     )
     is_repeat: bool = False
+    occurrence: int = Field(
+        default=1, description="Which time this is within the window: 3 means third time."
+    )
+    downtime_minutes: int = Field(
+        default=0, description="Downtime recorded for the similar incidents in the window."
+    )
+    downtime_records: int = Field(
+        default=0, description="How many of those incidents recorded a downtime."
+    )
     note: str | None = None
 
 
@@ -118,6 +127,9 @@ class Draft(Model):
     no_match: bool = Field(default=False, description="True when no past incident was similar.")
     similar_incidents: list[SimilarIncident] = Field(default_factory=list)
     recurrence_note: str | None = None
+    recurrence: Recurrence | None = Field(
+        default=None, description="Counts behind recurrence_note, for the UI."
+    )
     suggested_checks: list[DraftItem] = Field(default_factory=list)
     suggested_actions: list[DraftItem] = Field(default_factory=list)
     open_questions: list[str] = Field(default_factory=list)
