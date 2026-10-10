@@ -74,7 +74,7 @@ async def structure_incident(text: str, tool_context: ToolContext) -> dict:
 
 
 async def search_similar(tool_context: ToolContext, k: int = 5) -> dict:
-    """Step 2. Find the k most similar past incidents to the structured incident.
+    """Step 2. Find past incidents that are the same problem as the structured incident.
 
     Args:
         k: How many past incidents to return (1 to 10).
@@ -83,12 +83,15 @@ async def search_similar(tool_context: ToolContext, k: int = 5) -> dict:
     if not state.get(INCIDENT):
         return {"status": "error", "error": "Call structure_incident first."}
     incident = StructuredIncident.model_validate(state[INCIDENT])
+    deps = tools.get_deps()
     matches = await asyncio.to_thread(
-        tools.search_similar, incident, tools.get_deps(), max(1, min(k, 10)), state.get(INDUSTRY)
+        tools.search_similar, incident, deps, max(1, min(k, 10)), state.get(INDUSTRY)
     )
-    state[MATCHES] = [m.model_dump(mode="json") for m in matches]
+    same = await asyncio.to_thread(tools.verify_matches, incident, matches, deps)
+    # Only confirmed matches go forward: they are all later steps can count or cite.
+    state[MATCHES] = [m.model_dump(mode="json") for m in same]
     _later_steps_cleared(state, RECURRENCE, DRAFT)
-    same_problem = {m.id for m in tools.relevant(matches, tools.get_deps().settings)}
+    same_problem = {m.id for m in same}
     return {
         "status": "ok",
         "matches": [

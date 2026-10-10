@@ -65,12 +65,14 @@ def test_incident_text_includes_causes_and_actions() -> None:
 def test_seed_data_is_valid_and_has_unique_ids() -> None:
     raw = json.loads((ROOT_DIR / "data" / "seed" / "incidents_seed.json").read_text())
     records = [IncidentRecord.model_validate(r) for r in raw]
-    assert len({r.id for r in records}) == len(records) == 12
-    assert sum(r.industry == "paper" for r in records) == 6
-    assert sum(r.industry == "pharma" for r in records) == 6
+    assert len({r.id for r in records}) == len(records) == 44
+    assert sum(r.industry == "paper" for r in records) == 22
+    assert sum(r.industry == "pharma" for r in records) == 22
 
     cases = json.loads((ROOT_DIR / "data" / "eval" / "retrieval_cases.json").read_text())
     ids = {r.id for r in records}
     for case in cases["cases"]:
         assert set(case["expected"]) <= ids
+    for case in cases["negatives"]:
+        assert case.get("looks_like") in ids | {None}
     assert sum(c["low_keyword"] for c in cases["cases"]) >= 3

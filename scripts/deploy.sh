@@ -60,7 +60,7 @@ This enables APIs and creates (if missing):
   - Artifact Registry repo "cloud-run-source-deploy" in $REGION (holds the image)
   - Cloud Run service "$SERVICE", built from source by Cloud Build
 EOF
-$SEED && echo "  - then loads the 12 synthetic seed incidents into Firestore (replacing any there)"
+$SEED && echo "  - then loads the synthetic seed incidents into Firestore (replacing any there)"
 
 if ! $ASSUME_YES; then
   read -r -p $'\nContinue? [y/N] ' answer
@@ -130,7 +130,7 @@ gc run deploy "$SERVICE" \
   --allow-unauthenticated \
   --min-instances 0 --max-instances "$MAX_INSTANCES" \
   --cpu 1 --memory 1Gi --concurrency 20 --timeout 300 --cpu-boost \
-  --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@MATCH_MARGIN=0.06@AI_REQUESTS_PER_HOUR=40"
+  --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@AI_REQUESTS_PER_HOUR=40"
 
 URL="$(gc run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
 step "Checking $URL"

@@ -14,7 +14,7 @@ from app.agent import agent, tools
 from app.agent.guardrails import CitationError
 from app.llm import BUSY_MESSAGE
 from app.main import app
-from app.models import DraftContent, DraftItem, SimilarIncident
+from app.models import DraftContent, DraftItem, MatchCheck, MatchVerdict, SimilarIncident
 from tests.fakes import (
     AGENT_STEPS,
     MATCHING,
@@ -50,7 +50,7 @@ def use_deps(tmp_path: Path):
 
 def run_tools(deps):
     incident = tools.structure_incident("Web keeps breaking after the press.", deps)
-    matches = tools.search_similar(incident, deps)
+    matches = tools.verify_matches(incident, tools.search_similar(incident, deps), deps)
     recurrence = tools.check_recurrence(incident, matches, deps)
     return tools.draft_report(incident, matches, recurrence, deps)
 
@@ -219,11 +219,44 @@ def test_approve_rejects_unknown_citations(use_deps) -> None:
     assert "PAP-0999" in response.json()["detail"]
 
 
-def test_relevant_needs_threshold_and_margin(use_deps) -> None:
-    settings = use_deps().settings  # threshold 0.70, margin 0.06
-    scored = [SimilarIncident(id=f"R-{i}", score=s) for i, s in enumerate([0.87, 0.85, 0.79, 0.6])]
-    assert [m.id for m in tools.relevant(scored, settings)] == ["R-0", "R-1"]
-    assert tools.relevant([SimilarIncident(id="R-9", score=0.69)], settings) == []
+def test_candidates_need_the_threshold(use_deps) -> None:
+    settings = use_deps().settings  # threshold 0.70
+    scored = [SimilarIncident(id=f"R-{i}", score=s) for i, s in enumerate([0.87, 0.71, 0.69])]
+    assert [m.id for m in tools.candidates(scored, settings)] == ["R-0", "R-1"]
+
+
+def test_match_check_can_only_remove_candidates(use_deps) -> None:
+    deps = use_deps()
+    incident = tools.structure_incident("Web keeps breaking after the press.", deps)
+    matches = tools.search_similar(incident, deps)
+    candidate_ids = [m.id for m in tools.candidates(matches, deps.settings)]
+    assert len(candidate_ids) >= 2
+
+    deps.llm.not_same = {candidate_ids[0]}
+    kept = tools.verify_matches(incident, matches, deps)
+    assert [m.id for m in kept] == candidate_ids[1:]
+    assert kept[0].why == f"Same as {candidate_ids[1]}."
+
+    def invent(contents, schema, thinking="low"):
+        return MatchCheck(verdicts=[MatchVerdict(id="PAP-0999", same_problem=True, why="x")])
+
+    deps.llm.generate = invent
+    assert tools.verify_matches(incident, matches, deps) == []
+
+
+def test_match_check_is_skipped_when_nothing_reaches_the_threshold(use_deps) -> None:
+    deps = use_deps(query_vector=UNRELATED)
+    incident = tools.structure_incident("Line 3 stopped.", deps)
+    assert tools.verify_matches(incident, tools.search_similar(incident, deps), deps) == []
+    assert "MatchCheck" not in [schema for schema, _ in deps.llm.prompts]
+
+
+def test_rejected_candidates_are_not_cited_or_counted(use_deps) -> None:
+    deps = use_deps(drafts=(DraftContent(summary="No similar past incident found."),))
+    deps.llm.not_same = {"PAP-0001", "PAP-0005"}
+    draft = run_tools(deps)
+    assert draft.no_match and draft.similar_incidents == []
+    assert draft.recurrence_note is None
 
 
 def test_stream_endpoint_reports_each_step_then_draft(use_deps, scripted_runner) -> None:

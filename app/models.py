@@ -106,6 +106,20 @@ class MatchExplanation(Model):
     why: str
 
 
+class MatchVerdict(Model):
+    """The model's judgement of one search candidate."""
+
+    id: str
+    same_problem: bool
+    why: str = Field(description="One sentence: the shared problem, or the key difference.")
+
+
+class MatchCheck(Model):
+    """The model's judgement of every search candidate. Code decides what to keep."""
+
+    verdicts: list[MatchVerdict]
+
+
 class DraftContent(Model):
     """The part of a draft the model writes. Code checks it and builds the `Draft`."""
 
