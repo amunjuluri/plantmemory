@@ -1,4 +1,4 @@
-.PHONY: install run test lint fmt check
+.PHONY: install run test lint fmt check seed eval
 
 PORT ?= 8080
 
@@ -20,3 +20,9 @@ fmt:  ## Auto-fix lint and format
 	uv run ruff format .
 
 check: lint test  ## Everything CI would run
+
+seed:  ## Embed and load the synthetic seed data (resets the store)
+	uv run python -m scripts.seed --reset
+
+eval:  ## Retrieval hit rates: semantic vs keyword baseline
+	uv run python -m scripts.eval_retrieval

@@ -1,0 +1,63 @@
+{
+  "description": "Synthetic retrieval test queries. 'expected' lists every record that describes the same underlying problem; a hit is any expected id in the top results. 'low_keyword' marks queries written to share almost no words with the matching records. 'negatives' have no true match and are used to calibrate MATCH_THRESHOLD.",
+  "cases": [
+    {
+      "id": "Q1",
+      "query": "Paper web keeps breaking right after the second press and the felt looks glazed.",
+      "expected": ["PAP-0001", "PAP-0002"],
+      "low_keyword": false
+    },
+    {
+      "id": "Q2",
+      "query": "Slimy deposits in the white water system and holes showing up in the finished paper.",
+      "expected": ["PAP-0003", "PAP-0004"],
+      "low_keyword": false
+    },
+    {
+      "id": "Q3",
+      "query": "Basis weight swinging and the headbox pressure will not settle.",
+      "expected": ["PAP-0005", "PAP-0006"],
+      "low_keyword": false
+    },
+    {
+      "id": "Q4",
+      "query": "Tablets failing friability because the top layer peels off.",
+      "expected": ["PHA-0001", "PHA-0002"],
+      "low_keyword": false
+    },
+    {
+      "id": "Q5",
+      "query": "Paper tears near the squeezing rolls and the blanket underneath seems clogged up.",
+      "expected": ["PAP-0001", "PAP-0002"],
+      "low_keyword": true
+    },
+    {
+      "id": "Q6",
+      "query": "Pills come out soft and their tops pop off.",
+      "expected": ["PHA-0001", "PHA-0002"],
+      "low_keyword": true
+    },
+    {
+      "id": "Q7",
+      "query": "Microbes grew on a dish placed beside the hole where workers put their hands into the sterile enclosure.",
+      "expected": ["PHA-0003", "PHA-0004"],
+      "low_keyword": true
+    },
+    {
+      "id": "Q8",
+      "query": "The storage room for long-term product tests got too damp over the weekend.",
+      "expected": ["PHA-0005", "PHA-0006"],
+      "low_keyword": true
+    }
+  ],
+  "negatives": [
+    {
+      "id": "N1",
+      "query": "Forklift battery charger tripped the breaker in the finished goods warehouse."
+    },
+    {
+      "id": "N2",
+      "query": "Canteen coffee machine leaking water onto the floor."
+    }
+  ]
+}
