@@ -73,3 +73,21 @@ Short log of choices and why. Newest last.
     `skip_summarization`, ending the turn without an extra model call.
 21. **The model's paraphrase never replaces the incident description**: the stored
     `description` is always the user's original text.
+22. **Logbook ingest is two stateless calls.** `/ingest/logbook` returns records with
+    `LOG-` ids and saves nothing; `/ingest/confirm` saves whatever the reviewer sends
+    back, but only `LOG-` ids, so it cannot overwrite seed or approved records.
+    Re-confirming the same ids updates them instead of duplicating.
+23. **Abbreviations are expanded in place, in parentheses**, e.g. "PR2 (second press)",
+    and only for glossary terms. The writer's words stay, and the expansions help
+    meaning-based search. Glossaries are JSON files per industry in `data/glossary/`.
+24. **Unsure fields are flagged by the model and by code.** Code drops flag names that
+    aren't real fields, flags any field containing an unreadable `[?]`, and flags
+    `date` when none was readable (it is filled with today for the reviewer to fix).
+25. **Uploads are checked by their bytes, not their name or browser type**: JPEG, PNG,
+    WebP, HEIC/HEIF, up to 15 MB (Gemini's inline limit is 20 MB per request). Photos
+    are read at `MEDIA_RESOLUTION_HIGH` (`OCR_MEDIA_RESOLUTION`). On both sample pages,
+    medium and high read every entry equally well and time per page varied from 7 to
+    42 s with no pattern by setting; high is kept as the safer choice for real,
+    smaller handwriting.
+26. **Sample photos are generated with Gemini's image model** from invented text, so
+    tests and the demo never need a real logbook.

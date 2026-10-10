@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     # same problem (rather than merely the same machine). Calibrated on the eval set.
     match_margin: float = 0.06
     draft_thinking_level: Literal["low", "medium", "high"] = "low"
+    # Detail Gemini reads logbook photos at: MEDIA_RESOLUTION_{LOW,MEDIUM,HIGH,ULTRA_HIGH}.
+    ocr_media_resolution: str = "MEDIA_RESOLUTION_HIGH"
     recurrence_window_months: int = 12
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 

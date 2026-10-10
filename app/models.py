@@ -1,5 +1,6 @@
 """Pydantic models shared by the API, agent and stores."""
 
+import datetime as dt
 from datetime import UTC, date, datetime
 from typing import Literal
 
@@ -151,3 +152,47 @@ class IncidentPage(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+# --- Logbook ingest ---
+
+
+class ExtractedIncident(BaseModel):
+    """One logbook entry as read by the model from a photo."""
+
+    industry: Industry = "generic"
+    date: dt.date | None = Field(default=None, description="Null if no date is readable.")
+    area_or_equipment: str
+    description: str
+    suspected_cause: str | None = None
+    root_cause: str | None = None
+    action_taken: str | None = None
+    outcome: Outcome = "unknown"
+    downtime_minutes: int | None = Field(default=None, ge=0)
+    confidence_flags: list[str] = Field(
+        default_factory=list, description="Names of fields that were hard to read or unsure."
+    )
+
+
+class LogbookExtraction(BaseModel):
+    """Everything the model read from one logbook page."""
+
+    records: list[ExtractedIncident] = Field(default_factory=list)
+    page_notes: str | None = Field(
+        default=None, description="Anything a reviewer should know, e.g. a torn corner."
+    )
+
+
+class IngestResult(BaseModel):
+    """Records read from a photo, not yet saved. A person reviews, then confirms."""
+
+    source_ref: str
+    records: list[IncidentPublic]
+    page_notes: str | None = None
+    glossary_terms: int = Field(default=0, description="Glossary entries given to the model.")
+
+
+class ConfirmRequest(BaseModel):
+    """Reviewed (possibly edited) records from /api/ingest/logbook, to be saved."""
+
+    records: list[IncidentPublic] = Field(min_length=1, max_length=50)

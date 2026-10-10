@@ -1,8 +1,10 @@
 """FastAPI entry point: API routes plus the static UI."""
 
+import asyncio
 from collections.abc import AsyncIterator
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -10,13 +12,16 @@ from app.agent import agent
 from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
 from app.config import get_settings
+from app.ingest import logbook_ocr
 from app.models import (
     AnalyzeRequest,
     ApproveRequest,
+    ConfirmRequest,
     Draft,
     IncidentPage,
     IncidentPublic,
     Industry,
+    IngestResult,
 )
 
 VERSION = "0.1.0"
@@ -66,6 +71,31 @@ def approve_incident(body: ApproveRequest) -> IncidentPublic:
     except UnknownCitationError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
     return _public(record)
+
+
+@app.post("/api/ingest/logbook")
+async def ingest_logbook(
+    file: Annotated[UploadFile, File(description="Photo of a logbook page")],
+    industry: Annotated[Industry | None, Form()] = None,
+) -> IngestResult:
+    """Read incidents from a logbook photo for review. Nothing is saved yet."""
+    image = await file.read(logbook_ocr.MAX_IMAGE_BYTES + 1)
+    try:
+        return await asyncio.to_thread(
+            logbook_ocr.extract_records, image, file.filename, get_deps(), industry
+        )
+    except logbook_ocr.InvalidImageError as err:
+        raise HTTPException(status_code=415, detail=str(err)) from err
+
+
+@app.post("/api/ingest/confirm", status_code=201)
+def confirm_logbook(body: ConfirmRequest) -> list[IncidentPublic]:
+    """Save reviewed logbook records so future searches can find them."""
+    try:
+        saved = logbook_ocr.confirm_records(body.records, get_deps())
+    except logbook_ocr.ConfirmError as err:
+        raise HTTPException(status_code=422, detail=str(err)) from err
+    return [_public(r) for r in saved]
 
 
 @app.get("/api/incidents")
