@@ -36,6 +36,8 @@ curl -s localhost:8080/api/incidents/analyze -H 'content-type: application/json'
 | `POST /api/incidents/analyze` | Runs the agent, returns a cited `Draft` for review |
 | `POST /api/incidents/analyze/stream` | Same, as server-sent events: each agent step, then the draft |
 | `POST /api/incidents/approve` | Saves a reviewed draft as a new incident record |
+| `POST /api/ingest/logbook` | Upload a logbook photo; returns the incidents read from it, with unsure fields flagged. Nothing is saved yet |
+| `POST /api/ingest/confirm` | Saves the reviewed logbook records |
 | `GET /api/incidents` | Lists records, newest first (`offset`, `limit`, `industry`) |
 
 Full documentation is coming in later phases: see `docs/`.

@@ -1,0 +1,14 @@
+{
+  "OOS": "out of specification",
+  "OOT": "out of trend",
+  "EM": "environmental monitoring",
+  "CAPA": "corrective and preventive action",
+  "FBD": "fluid bed dryer",
+  "LOD": "loss on drying",
+  "IPC": "in-process control",
+  "QA": "quality assurance",
+  "Gr. A": "grade A cleanroom",
+  "Gr. B": "grade B cleanroom",
+  "CFU": "colony-forming units",
+  "BMR": "batch manufacturing record"
+}

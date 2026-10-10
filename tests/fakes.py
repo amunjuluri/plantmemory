@@ -9,7 +9,12 @@ from google.genai import types
 
 from app.agent.tools import AgentDeps
 from app.config import Settings
-from app.models import DraftContent, IncidentRecord, StructuredIncident
+from app.models import (
+    DraftContent,
+    IncidentRecord,
+    LogbookExtraction,
+    StructuredIncident,
+)
 from app.store.local_store import LocalStore
 
 INCIDENT_DATE = date(2026, 10, 1)
@@ -29,6 +34,7 @@ class FakeLLM:
         self.incident = StructuredIncident(**(fields | incident_fields))
         self.drafts = list(drafts or [])
         self.prompts: list[tuple[str, str]] = []
+        self.extraction = LogbookExtraction()
 
     def generate(self, contents, schema, thinking="low"):
         self.prompts.append((schema.__name__, contents))
@@ -36,6 +42,8 @@ class FakeLLM:
             return self.incident
         if schema is DraftContent:
             return self.drafts.pop(0)
+        if schema is LogbookExtraction:
+            return self.extraction
         raise AssertionError(f"unexpected schema {schema}")
 
 

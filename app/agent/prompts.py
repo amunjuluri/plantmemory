@@ -104,3 +104,37 @@ CITATION_RETRY = """\
 Your previous answer broke the citation rule: it cited {bad_ids}, which are not in the
 list of allowed ids ({allowed_ids}). Write the answer again following every rule.
 """
+
+LOGBOOK_PROMPT = """\
+This is a photo of a page from a manufacturing plant's logbook or shift report. It may be
+handwritten, untidy, abbreviated, rotated or partly unreadable. Turn every incident
+entry on the page (breakdowns, stoppages, quality problems, deviations) into one record.
+Ignore routine entries such as shift handovers with nothing wrong.
+
+Rules:
+- `description`: transcribe the entry as written, keeping the writer's words and
+  abbreviations. After an abbreviation that appears in the glossary below, add its
+  meaning in parentheses, e.g. "PR2 (second press)". Do not expand abbreviations that
+  are not in the glossary.
+- Write an unreadable word as [?]. Never guess a word, number or date you cannot read.
+- `area_or_equipment`: the machine, line or area named. If the page header names a
+  machine or line, put it first, e.g. "PM2 / PR2 (second press)". "unspecified" if none.
+- `suspected_cause`: what the writer thinks or found might be causing it, including
+  findings still to be checked.
+- `root_cause`: only if the entry says the cause was confirmed. Otherwise null.
+- `action_taken`: what was done, as written. Null if nothing.
+- `outcome`: "resolved" if the entry says it was fixed or running again, "recurred" if it
+  says the problem came back, otherwise "unknown".
+- `downtime_minutes`: only if a duration is written; convert hours to minutes.
+- `date`: the entry's date in ISO format, or the page date if the entry has none. Null if
+  no date is readable. Assume the year is {year} if only day and month are written.
+- `industry`: {industry_rule}
+- `confidence_flags`: the names of the fields you were unsure about (for example
+  "date", "downtime_minutes", "description"). Be honest; a reviewer will check them.
+- `page_notes`: one short sentence about anything the reviewer should know, or null.
+
+Glossary of plant abbreviations:
+{glossary}
+"""
+
+NO_GLOSSARY = "(none provided)"
