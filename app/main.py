@@ -5,13 +5,14 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.agent import agent
 from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
-from app.config import get_settings
+from app.config import ROOT_DIR, get_settings
 from app.ingest import logbook_ocr
 from app.models import (
     AnalyzeRequest,
@@ -28,6 +29,14 @@ VERSION = "0.1.0"
 
 settings = get_settings()
 app = FastAPI(title="PlantMemory", version=VERSION)
+if settings.cors_origins:
+    # Only for local UI development (Next.js dev server on another port).
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["content-type"],
+    )
 
 
 def _public(record) -> IncidentPublic:
@@ -114,5 +123,16 @@ def list_incidents(
     )
 
 
+@app.get("/api/incidents/{record_id}")
+def get_incident(record_id: str) -> IncidentPublic:
+    """One stored incident by id."""
+    record = get_deps().store.get(record_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"No incident {record_id}")
+    return _public(record)
+
+
+# Synthetic sample photos, so the UI can offer "try a sample page".
+app.mount("/samples", StaticFiles(directory=ROOT_DIR / "data" / "samples"), name="samples")
 # Mounted last so API routes take precedence.
 app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="ui")

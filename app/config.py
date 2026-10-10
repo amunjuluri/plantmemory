@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     recurrence_window_months: int = 12
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 
+    # Origins allowed to call the API from another port (local UI dev only), e.g.
+    # CORS_ORIGINS='["http://localhost:3473"]'. Empty in production: same origin.
+    cors_origins: list[str] = []
+
     # Built frontend (Next.js static export). Falls back to app/static.
     web_dist_dir: Path = ROOT_DIR / "web" / "out"
 

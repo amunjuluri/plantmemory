@@ -9,7 +9,7 @@
 
 import re
 from collections.abc import Iterable
-from datetime import timedelta
+from datetime import date, timedelta
 
 from app.agent.prompts import NO_MATCH_SUMMARY
 from app.models import (
@@ -144,6 +144,11 @@ def shallow_cause_flags(incident: StructuredIncident, matches: list[SimilarIncid
     return flags
 
 
+def _display_date(d: date) -> str:
+    """Format as e.g. 18 Jun 2026: unambiguous across locales, unlike 06/18 or 18/06."""
+    return f"{d.day} {d.strftime('%b %Y')}"
+
+
 def compute_recurrence(
     incident: IncidentCore, matches: list[SimilarIncident], window_months: int
 ) -> Recurrence:
@@ -155,7 +160,7 @@ def compute_recurrence(
 
     parts: list[str] = []
     if in_window:
-        listed = ", ".join(f"[{m.id}] ({m.record.date.isoformat()})" for m in in_window)
+        listed = ", ".join(f"[{m.id}] ({_display_date(m.record.date)})" for m in in_window)
         n = len(in_window)
         plural = "incident" if n == 1 else "incidents"
         parts.append(f"Repeat: {n} similar {plural} in the last {window_months} months: {listed}.")

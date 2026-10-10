@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!web/.env.development
 *.pem
 *service-account*.json
 application_default_credentials.json
@@ -22,6 +23,8 @@ data/store/
 web/node_modules/
 web/.next/
 web/out/
+web/openapi.json
+web/next-env.d.ts
 
 # OS / editors
 .DS_Store

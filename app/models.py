@@ -4,18 +4,24 @@ import datetime as dt
 from datetime import UTC, date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 Industry = Literal["paper", "pharma", "generic"]
 Outcome = Literal["resolved", "recurred", "unknown"]
 Source = Literal["seed", "logbook_photo", "voice_note", "approved_draft"]
 
 
+class Model(BaseModel):
+    """Base for every API model. Response schemas mark defaulted fields as always present."""
+
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+
 def _now() -> datetime:
     return datetime.now(UTC)
 
 
-class IncidentCore(BaseModel):
+class IncidentCore(Model):
     """Fields that describe an incident, whether new or historical."""
 
     industry: Industry = "generic"
@@ -51,7 +57,7 @@ class IncidentRecord(IncidentPublic):
     embedding: list[float] | None = Field(default=None, repr=False)
 
 
-class SimilarIncident(BaseModel):
+class SimilarIncident(Model):
     """A past incident returned by search, with why it matches."""
 
     id: str
@@ -60,7 +66,7 @@ class SimilarIncident(BaseModel):
     record: IncidentPublic | None = None
 
 
-class Recurrence(BaseModel):
+class Recurrence(Model):
     """How often this kind of incident has happened before, worked out in code."""
 
     window_months: int
@@ -74,7 +80,7 @@ class Recurrence(BaseModel):
     note: str | None = None
 
 
-class DraftItem(BaseModel):
+class DraftItem(Model):
     """One suggested check or action, with the records that support it."""
 
     text: str
@@ -84,14 +90,14 @@ class DraftItem(BaseModel):
     )
 
 
-class MatchExplanation(BaseModel):
+class MatchExplanation(Model):
     """The model's one-line reason a past record matches the new incident."""
 
     id: str
     why: str
 
 
-class DraftContent(BaseModel):
+class DraftContent(Model):
     """The part of a draft the model writes. Code checks it and builds the `Draft`."""
 
     summary: str
@@ -104,7 +110,7 @@ class DraftContent(BaseModel):
 REVIEW_NOTICE = "AI-generated draft. A qualified person must review it before anyone acts on it."
 
 
-class Draft(BaseModel):
+class Draft(Model):
     """A troubleshooting note or investigation draft for a human to review."""
 
     incident: StructuredIncident
@@ -126,7 +132,7 @@ class Draft(BaseModel):
 # --- API request/response bodies ---
 
 
-class AnalyzeRequest(BaseModel):
+class AnalyzeRequest(Model):
     """A new incident described in free text."""
 
     text: str = Field(min_length=5, max_length=8000)
@@ -135,7 +141,7 @@ class AnalyzeRequest(BaseModel):
     )
 
 
-class ApproveRequest(BaseModel):
+class ApproveRequest(Model):
     """A reviewed (possibly edited) draft, plus what was actually found and done."""
 
     draft: Draft
@@ -145,7 +151,7 @@ class ApproveRequest(BaseModel):
     downtime_minutes: int | None = Field(default=None, ge=0)
 
 
-class IncidentPage(BaseModel):
+class IncidentPage(Model):
     """One page of incident records."""
 
     items: list[IncidentPublic]
@@ -157,7 +163,7 @@ class IncidentPage(BaseModel):
 # --- Logbook ingest ---
 
 
-class ExtractedIncident(BaseModel):
+class ExtractedIncident(Model):
     """One logbook entry as read by the model from a photo."""
 
     industry: Industry = "generic"
@@ -174,7 +180,7 @@ class ExtractedIncident(BaseModel):
     )
 
 
-class LogbookExtraction(BaseModel):
+class LogbookExtraction(Model):
     """Everything the model read from one logbook page."""
 
     records: list[ExtractedIncident] = Field(default_factory=list)
@@ -183,7 +189,7 @@ class LogbookExtraction(BaseModel):
     )
 
 
-class IngestResult(BaseModel):
+class IngestResult(Model):
     """Records read from a photo, not yet saved. A person reviews, then confirms."""
 
     source_ref: str
@@ -192,7 +198,7 @@ class IngestResult(BaseModel):
     glossary_terms: int = Field(default=0, description="Glossary entries given to the model.")
 
 
-class ConfirmRequest(BaseModel):
+class ConfirmRequest(Model):
     """Reviewed (possibly edited) records from /api/ingest/logbook, to be saved."""
 
     records: list[IncidentPublic] = Field(min_length=1, max_length=50)

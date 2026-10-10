@@ -207,3 +207,35 @@ def test_stream_endpoint_reports_each_step_then_draft(use_deps, scripted_runner)
     assert steps == [(name, s) for name, _ in AGENT_STEPS for s in ("started", "done")]
     assert events[-1]["type"] == "draft"
     assert events[-1]["draft"]["similar_incidents"][0]["id"] == "PAP-0001"
+
+
+def test_step_summaries_are_plain_language() -> None:
+    assert agent.step_summary("search_similar", {"matches": [{"same_problem": True}]}) == (
+        "1 similar incident found"
+    )
+    assert agent.step_summary("search_similar", {"matches": []}) == "No close match in memory"
+    summary = agent.step_summary(
+        "check_recurrence",
+        {"window_months": 12, "is_repeat": True, "in_window": ["A-1", "A-2"], "recurred": ["A-2"]},
+    )
+    assert summary == "Repeat: 2 times in 12 months. 1 past fix did not hold"
+
+
+def test_stream_steps_carry_summaries(use_deps, scripted_runner) -> None:
+    use_deps()
+    scripted_runner()
+    with TestClient(app).stream(
+        "POST", "/api/incidents/analyze/stream", json={"text": "Web breaks after the press."}
+    ) as response:
+        events = [json.loads(x[6:]) for x in response.iter_lines() if x.startswith("data: ")]
+    done = {e["step"]: e["summary"] for e in events if e.get("status") == "done"}
+    assert done["search_similar"] == "2 similar incidents found"
+    assert done["draft_report"].startswith("Draft ready, citing")
+
+
+def test_get_incident_by_id(use_deps) -> None:
+    use_deps()
+    client = TestClient(app)
+    body = client.get("/api/incidents/PAP-0001").json()
+    assert body["id"] == "PAP-0001" and "embedding" not in body
+    assert client.get("/api/incidents/NOPE-1").status_code == 404
