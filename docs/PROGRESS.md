@@ -84,4 +84,8 @@ another shift, and warns you when last time's fix didn't work."
   unchanged. Details in [EVAL_RESULTS.md](EVAL_RESULTS.md). Also fixed a race where
   parallel first requests could close the shared Gemini connection. 87 tests pass.
   Suggestion for the team: write ~10 test reports of your own as a held-out check.
+- **10 Oct.** Deployed with the 44 incidents in Firestore. Live check: sheet breaks
+  (3rd time, 2 h 45 min), settle plate (2nd time, fix did not hold), forklift (no
+  match) and a PM2 hydraulic-leak look-alike (no match) all correct; 12 to 26 s each
+  once warm, 46 s for the first request after a deploy.
 
