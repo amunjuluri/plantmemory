@@ -16,13 +16,20 @@ from google.adk.models import BaseLlm
 from google.adk.runners import InMemoryRunner
 from google.adk.tools import ToolContext
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import Field
 
 from app.agent import tools
 from app.agent.guardrails import CitationError
 from app.agent.prompts import ROOT_INSTRUCTION
 from app.config import get_settings
-from app.models import Draft, Industry, Recurrence, SimilarIncident, StructuredIncident
+from app.models import (
+    Draft,
+    Industry,
+    Model,
+    Recurrence,
+    SimilarIncident,
+    StructuredIncident,
+)
 
 APP_NAME = "plantmemory"
 
@@ -141,14 +148,43 @@ def get_runner() -> Runner:
     return InMemoryRunner(agent=root_agent, app_name=APP_NAME)
 
 
-class Progress(BaseModel):
+class Progress(Model):
     """One update while the agent works: a step starting or finishing, then the result."""
 
     type: Literal["step", "draft", "error"]
     step: str | None = None
     status: Literal["started", "done", "error"] | None = None
     detail: str | None = None
+    summary: str | None = Field(default=None, description="One plain line on what a step found.")
     draft: Draft | None = None
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
+def step_summary(step: str, result: dict) -> str | None:
+    """A short, plain-language line describing a finished tool step, for the UI."""
+    if step == "structure_incident":
+        area = (result.get("incident") or {}).get("area_or_equipment")
+        return f"Understood: {area}" if area and area != "unspecified" else "Understood the report"
+    if step == "search_similar":
+        same = sum(1 for m in result.get("matches", []) if m.get("same_problem"))
+        return f"{_plural(same, 'similar incident')} found" if same else "No close match in memory"
+    if step == "check_recurrence":
+        months = result.get("window_months")
+        parts = [
+            f"Repeat: {_plural(len(result['in_window']), 'time')} in {months} months"
+            if result.get("is_repeat")
+            else f"Not a repeat in the last {months} months"
+        ]
+        if result.get("recurred"):
+            parts.append(f"{_plural(len(result['recurred']), 'past fix')} did not hold")
+        return ". ".join(parts)
+    if step == "draft_report":
+        cited = len(result.get("citations", []))
+        return f"Draft ready, citing {_plural(cited, 'record')}" if cited else "Draft ready"
+    return None
 
 
 async def analyze_events(
@@ -179,6 +215,7 @@ async def analyze_events(
                     step=response.name,
                     status="error" if failed else "done",
                     detail=result.get("error"),
+                    summary=None if failed else step_summary(response.name, result),
                 )
         final = await sessions.get_session(
             app_name=runner.app_name, user_id=user_id, session_id=session.id

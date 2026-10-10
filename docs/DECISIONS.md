@@ -91,3 +91,29 @@ Short log of choices and why. Newest last.
     smaller handwriting.
 26. **Sample photos are generated with Gemini's image model** from invented text, so
     tests and the demo never need a real logbook.
+27. **UI stack: Next.js 16 static export + Tailwind 4 + Base UI + Sonner + zustand.**
+    The static export (`web/out`) is served by FastAPI, so there is still one Cloud
+    Run service and no Node server in production. Base UI supplies accessible dialogs,
+    the swipeable drawer/bottom sheet, tooltips and toggle groups; Sonner does toasts;
+    zustand keeps the analysis alive across tab switches. Picks follow Emil Kowalski's
+    `pick-ui-library` list; his design skills are vendored in `.claude/skills/`.
+28. **Motion rules from `emil-design-eng`**: strong custom `ease-out`
+    (`cubic-bezier(0.23, 1, 0.32, 1)`) instead of the CSS default, UI transitions
+    under 300 ms (drawer 400 ms on the iOS drawer curve), transform/opacity only,
+    `scale(0.97)` press feedback, hover gated to mouse devices, short staggers on
+    result cards, nothing animated on keyboard actions, and a reduced-motion mode that
+    keeps fades but drops movement.
+29. **Mobile baseline from `mobile-native`**: 16 px inputs (no iOS zoom), `dvh` units,
+    safe-area padding with `viewport-fit=cover`, no tap highlight, a bottom tab bar on
+    phones, the record viewer as a swipe-down sheet, and camera capture for logbook
+    photos. Photos over 1.5 MB are shrunk in the browser to 2400 px JPEG before upload.
+30. **UI types are generated from the API** (`make api-types`, openapi-typescript).
+    Response models set `json_schema_serialization_defaults_required`, so defaulted
+    fields are typed as always present in responses but optional in requests.
+31. **The agent's progress streams to the UI** from `/api/incidents/analyze/stream`;
+    each finished step carries a one-line `summary` ("2 similar incidents found").
+32. **The reviewer's draft survives a refresh** via `sessionStorage` (this tab only),
+    restored after mount so it never conflicts with the prerendered HTML.
+33. **Local ports 8473 (API) and 3473 (UI dev)**, not 8080/3000, to avoid clashing
+    with other local apps. Cloud Run still injects its own `PORT`. CORS is off unless
+    `CORS_ORIGINS` is set, and is only needed for `make dev`.

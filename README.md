@@ -20,14 +20,15 @@ Requires [uv](https://docs.astral.sh/uv/) (it installs the right Python for you)
 ```bash
 cp .env.example .env   # add a Gemini API key or Vertex AI settings
 make install
-make run               # http://localhost:8080, API docs at /docs
+make run               # http://localhost:8473, API docs at /docs
+make dev               # UI hot reload on http://localhost:3473 (API on 8473)
 make test
 ```
 
 Try the agent without the UI (needs seeded data: `make seed`):
 
 ```bash
-curl -s localhost:8080/api/incidents/analyze -H 'content-type: application/json' \
+curl -s localhost:8473/api/incidents/analyze -H 'content-type: application/json' \
   -d '{"text": "Web keeps breaking after the 2nd press, felt looks glazed"}'
 ```
 
