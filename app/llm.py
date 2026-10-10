@@ -3,14 +3,52 @@
 from functools import lru_cache
 from typing import Literal, Protocol, TypeVar
 
+import httpx
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 from pydantic import BaseModel
 
 from app.config import Settings, get_settings
 
 T = TypeVar("T", bound=BaseModel)
 ThinkingLevel = Literal["low", "medium", "high"]  # "minimal" is rejected by gemini-3.8-flash
+
+# Vertex AI answers 429 when shared Gemini capacity is briefly exhausted, and 503 when
+# overloaded. Both usually clear within seconds, so every Gemini call retries them with
+# backoff (about 2 + 4 + 8 s) before giving up.
+OVERLOADED_CODES = (429, 503)
+RETRY = types.HttpRetryOptions(
+    attempts=4,
+    initial_delay=2.0,
+    max_delay=10.0,
+    exp_base=2.0,
+    jitter=1.0,
+    http_status_codes=[*OVERLOADED_CODES, 500, 502, 504],
+)
+# A call that hangs is cut off and retried like a 429. Agent turns are short text calls
+# (normally 2 to 8 s); reading a logbook photo can take much longer.
+AGENT_CALL_TIMEOUT_MS = 30_000
+CALL_TIMEOUT_MS = 90_000
+BUSY_MESSAGE = "Gemini is busy right now. Please try again in a minute."
+
+
+def is_overloaded(err: BaseException | None) -> bool:
+    """True if `err`, or anything it wraps, is Gemini out of capacity or too slow."""
+    seen: set[int] = set()
+    stack = [err]
+    while stack:
+        e = stack.pop()
+        if e is None or id(e) in seen:
+            continue
+        seen.add(id(e))
+        if isinstance(e, errors.APIError) and e.code in OVERLOADED_CODES:
+            return True
+        if isinstance(e, httpx.TimeoutException):
+            return True
+        if isinstance(e, BaseExceptionGroup):
+            stack.extend(e.exceptions)
+        stack.extend([e.__cause__, e.__context__])
+    return False
 
 
 @lru_cache
@@ -19,10 +57,16 @@ def get_genai_client() -> genai.Client:
     s = get_settings()
     if s.use_vertexai:
         return genai.Client(
-            vertexai=True, project=s.google_cloud_project, location=s.google_cloud_location
+            vertexai=True,
+            project=s.google_cloud_project,
+            location=s.google_cloud_location,
+            http_options=types.HttpOptions(retry_options=RETRY, timeout=CALL_TIMEOUT_MS),
         )
     api_key = s.google_api_key.get_secret_value() if s.google_api_key else None
-    return genai.Client(api_key=api_key)
+    return genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(retry_options=RETRY, timeout=CALL_TIMEOUT_MS),
+    )
 
 
 class StructuredLLM(Protocol):
