@@ -24,4 +24,18 @@ make run               # http://localhost:8080, API docs at /docs
 make test
 ```
 
+Try the agent without the UI (needs seeded data: `make seed`):
+
+```bash
+curl -s localhost:8080/api/incidents/analyze -H 'content-type: application/json' \
+  -d '{"text": "Web keeps breaking after the 2nd press, felt looks glazed"}'
+```
+
+| Endpoint | What it does |
+|---|---|
+| `POST /api/incidents/analyze` | Runs the agent, returns a cited `Draft` for review |
+| `POST /api/incidents/analyze/stream` | Same, as server-sent events: each agent step, then the draft |
+| `POST /api/incidents/approve` | Saves a reviewed draft as a new incident record |
+| `GET /api/incidents` | Lists records, newest first (`offset`, `limit`, `industry`) |
+
 Full documentation is coming in later phases: see `docs/`.
