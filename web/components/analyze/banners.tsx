@@ -1,6 +1,7 @@
 import { RotateCcw, SearchCheck, SearchX } from "lucide-react";
 
 import { CitedText } from "@/components/cited-text";
+import type { Recurrence } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 function Banner({
@@ -33,14 +34,46 @@ function Banner({
   );
 }
 
-export function RecurrenceBanner({ note }: { note: string }) {
+const ORDINAL_SUFFIX: Record<string, string> = { one: "st", two: "nd", few: "rd", other: "th" };
+const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" });
+
+function ordinal(n: number) {
+  return `${n}${ORDINAL_SUFFIX[ordinalRules.select(n)]}`;
+}
+
+function formatMinutes(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (!hours) return `${mins} min`;
+  return mins ? `${hours} h ${mins} min` : `${hours} h`;
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="tabular text-xl font-semibold tracking-tight">{value}</span>
+      <span className="text-xs opacity-80">{label}</span>
+    </div>
+  );
+}
+
+export function RecurrenceBanner({ note, recurrence }: { note: string; recurrence?: Recurrence | null }) {
   const failedFix = note.includes("did not hold");
+  const repeat = recurrence?.is_repeat ? recurrence : null;
   return (
     <Banner
       tone="warn"
       icon={<RotateCcw />}
       title={failedFix ? "This keeps coming back" : "This has happened before"}
     >
+      {repeat && (
+        <div className="mb-3 flex flex-wrap gap-x-8 gap-y-2">
+          <Stat value={`${ordinal(repeat.occurrence)} time`} label={`in ${repeat.window_months} months`} />
+          {repeat.downtime_minutes > 0 && (
+            <Stat value={formatMinutes(repeat.downtime_minutes)} label="of downtime so far" />
+          )}
+        </div>
+      )}
       <CitedText text={note} />
     </Banner>
   );

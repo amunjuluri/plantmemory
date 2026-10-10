@@ -149,21 +149,41 @@ def _display_date(d: date) -> str:
     return f"{d.day} {d.strftime('%b %Y')}"
 
 
+def ordinal(n: int) -> str:
+    """1st, 2nd, 3rd, 4th, 11th, 21st..."""
+    suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def format_minutes(minutes: int) -> str:
+    """95 -> '1 h 35 min'; 40 -> '40 min'."""
+    hours, mins = divmod(minutes, 60)
+    if not hours:
+        return f"{mins} min"
+    return f"{hours} h {mins} min" if mins else f"{hours} h"
+
+
 def compute_recurrence(
     incident: IncidentCore, matches: list[SimilarIncident], window_months: int
 ) -> Recurrence:
-    """Count similar records in the window before this incident and failed past fixes."""
+    """Count similar records in the window before this incident, what they cost in
+    downtime, and past fixes that failed."""
     start = incident.date - timedelta(days=round(window_months * 30.44))
     dated = [m for m in matches if m.record is not None]
     in_window = [m for m in dated if start <= m.record.date <= incident.date]
     recurred = [m for m in dated if m.record.outcome == "recurred"]
+    downtimes = [m.record.downtime_minutes for m in in_window if m.record.downtime_minutes]
+    occurrence = len(in_window) + 1
 
     parts: list[str] = []
     if in_window:
         listed = ", ".join(f"[{m.id}] ({_display_date(m.record.date)})" for m in in_window)
-        n = len(in_window)
-        plural = "incident" if n == 1 else "incidents"
-        parts.append(f"Repeat: {n} similar {plural} in the last {window_months} months: {listed}.")
+        parts.append(
+            f"This is the {ordinal(occurrence)} time in {window_months} months. Earlier: {listed}."
+        )
+        if downtimes:
+            which = "they" if len(downtimes) == len(in_window) else f"{len(downtimes)} of them"
+            parts.append(f"Together {which} cost {format_minutes(sum(downtimes))} of downtime.")
     for m in recurred:
         parts.append(f"The fix recorded in [{m.id}] did not hold (outcome: recurred).")
 
@@ -172,6 +192,9 @@ def compute_recurrence(
         in_window=[m.id for m in in_window],
         recurred=[m.id for m in recurred],
         is_repeat=bool(in_window),
+        occurrence=occurrence,
+        downtime_minutes=sum(downtimes),
+        downtime_records=len(downtimes),
         note=" ".join(parts) or None,
     )
 
@@ -219,6 +242,7 @@ def build_draft(
         no_match=no_match,
         similar_incidents=similar,
         recurrence_note=recurrence_note,
+        recurrence=None if no_match else recurrence,
         suggested_checks=checks,
         suggested_actions=actions,
         open_questions=[normalize_inline_citations(q) for q in content.open_questions],

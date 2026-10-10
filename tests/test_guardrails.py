@@ -8,9 +8,11 @@ from app.agent.guardrails import (
     check_citations,
     compute_recurrence,
     draft_citations,
+    format_minutes,
     inline_citations,
     is_shallow_cause,
     normalize_inline_citations,
+    ordinal,
 )
 from app.models import DraftContent, DraftItem, IncidentPublic, SimilarIncident, StructuredIncident
 
@@ -107,6 +109,36 @@ def test_recurrence_counts_window_and_failed_fixes() -> None:
     assert rec.recurred == ["A-2"]
     assert rec.is_repeat
     assert "[A-1]" in rec.note and "[A-2] did not hold" in rec.note
+
+
+def test_recurrence_reports_occurrence_and_downtime() -> None:
+    matches = [
+        match("A-1", date(2026, 6, 1), downtime_minutes=50),
+        match("A-2", date(2026, 3, 1), downtime_minutes=80),
+        match("A-3", date(2026, 1, 1)),
+    ]
+    rec = compute_recurrence(INCIDENT, matches, window_months=12)
+    assert (rec.occurrence, rec.downtime_minutes, rec.downtime_records) == (4, 130, 2)
+    assert rec.note.startswith("This is the 4th time in 12 months.")
+    assert "Together 2 of them cost 2 h 10 min of downtime." in rec.note
+
+
+def test_recurrence_without_downtime_says_nothing_about_cost() -> None:
+    rec = compute_recurrence(INCIDENT, [match("A-1", date(2026, 6, 1))], window_months=12)
+    assert rec.occurrence == 2 and rec.downtime_minutes == 0
+    assert "downtime" not in rec.note
+
+
+@pytest.mark.parametrize(
+    ("n", "text"), [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"), (11, "11th"), (22, "22nd")]
+)
+def test_ordinal(n: int, text: str) -> None:
+    assert ordinal(n) == text
+
+
+@pytest.mark.parametrize(("minutes", "text"), [(40, "40 min"), (60, "1 h"), (130, "2 h 10 min")])
+def test_format_minutes(minutes: int, text: str) -> None:
+    assert format_minutes(minutes) == text
 
 
 @pytest.mark.parametrize(

@@ -236,6 +236,8 @@ export interface components {
             similar_incidents?: components["schemas"]["SimilarIncident-Input"][];
             /** Recurrence Note */
             recurrence_note?: string | null;
+            /** @description Counts behind recurrence_note, for the UI. */
+            recurrence?: components["schemas"]["Recurrence-Input"] | null;
             /** Suggested Checks */
             suggested_checks?: components["schemas"]["DraftItem-Input"][];
             /** Suggested Actions */
@@ -282,6 +284,8 @@ export interface components {
             similar_incidents: components["schemas"]["SimilarIncident-Output"][];
             /** Recurrence Note */
             recurrence_note: string | null;
+            /** @description Counts behind recurrence_note, for the UI. */
+            recurrence: components["schemas"]["Recurrence-Output"] | null;
             /** Suggested Checks */
             suggested_checks: components["schemas"]["DraftItem-Output"][];
             /** Suggested Actions */
@@ -517,6 +521,92 @@ export interface components {
              */
             summary: string | null;
             draft: components["schemas"]["Draft-Output"] | null;
+        };
+        /**
+         * Recurrence
+         * @description How often this kind of incident has happened before, worked out in code.
+         */
+        "Recurrence-Input": {
+            /** Window Months */
+            window_months: number;
+            /**
+             * In Window
+             * @description Similar records dated within the window.
+             */
+            in_window?: string[];
+            /**
+             * Recurred
+             * @description Similar records whose fix did not hold.
+             */
+            recurred?: string[];
+            /**
+             * Is Repeat
+             * @default false
+             */
+            is_repeat: boolean;
+            /**
+             * Occurrence
+             * @description Which time this is within the window: 3 means third time.
+             * @default 1
+             */
+            occurrence: number;
+            /**
+             * Downtime Minutes
+             * @description Downtime recorded for the similar incidents in the window.
+             * @default 0
+             */
+            downtime_minutes: number;
+            /**
+             * Downtime Records
+             * @description How many of those incidents recorded a downtime.
+             * @default 0
+             */
+            downtime_records: number;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * Recurrence
+         * @description How often this kind of incident has happened before, worked out in code.
+         */
+        "Recurrence-Output": {
+            /** Window Months */
+            window_months: number;
+            /**
+             * In Window
+             * @description Similar records dated within the window.
+             */
+            in_window: string[];
+            /**
+             * Recurred
+             * @description Similar records whose fix did not hold.
+             */
+            recurred: string[];
+            /**
+             * Is Repeat
+             * @default false
+             */
+            is_repeat: boolean;
+            /**
+             * Occurrence
+             * @description Which time this is within the window: 3 means third time.
+             * @default 1
+             */
+            occurrence: number;
+            /**
+             * Downtime Minutes
+             * @description Downtime recorded for the similar incidents in the window.
+             * @default 0
+             */
+            downtime_minutes: number;
+            /**
+             * Downtime Records
+             * @description How many of those incidents recorded a downtime.
+             * @default 0
+             */
+            downtime_records: number;
+            /** Note */
+            note: string | null;
         };
         /**
          * SimilarIncident
