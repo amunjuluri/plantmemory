@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     firestore_collection: str = "incidents"
 
     # Retrieval and agent behaviour.
-    match_threshold: float = 0.6
+    match_threshold: float = 0.70  # calibrated with scripts/eval_retrieval.py
     recurrence_window_months: int = 12
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 

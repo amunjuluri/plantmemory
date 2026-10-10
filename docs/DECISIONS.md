@@ -25,3 +25,15 @@ Short log of choices and why. Newest last.
 8. **Draft items carry their own citations.** Each suggested check/action is a
    `DraftItem` with `citations` and a `general` flag, so code can verify every claim
    cites only ids returned by search, and general advice is labelled as such.
+9. **`gemini-embedding-2` embeds one content per request on Vertex AI.** Passing a
+   list of strings returns a single vector (it is treated as one multi-part input), and
+   a list of `Content` objects is rejected. `GeminiEmbedder` therefore sends one request
+   per text, 8 in parallel, and checks the vector count. `gemini-embedding-001` still
+   uses batched requests with `task_type`.
+10. **Keyword baseline is BM25**, not raw word overlap, so the semantic-vs-keyword
+    comparison is against the standard text-search method rather than a weak one.
+11. **`MATCH_THRESHOLD=0.70`.** On the seed data the weakest true top match scored
+    0.731 and unrelated queries (forklift charger, coffee machine) scored up to 0.662.
+    The margin is narrow; re-run `make eval` after changing data or models.
+12. **Store method is `list_records`, not `list`.** A method named `list` shadows the
+    builtin inside the class body and breaks `list[...]` annotations.
