@@ -2,13 +2,13 @@
 
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
-from functools import lru_cache
 
 import numpy as np
 from google import genai
 from google.genai import types
 
 from app.config import Settings, get_settings
+from app.llm import get_genai_client
 from app.models import IncidentCore
 
 # gemini-embedding-001 accepts a batch of texts per request.
@@ -16,18 +16,6 @@ _BATCH_SIZE = 50
 # gemini-embedding-2 on Vertex AI embeds one content per request (a list of strings
 # is treated as one multi-part content), so those calls are made in parallel.
 _PARALLEL_REQUESTS = 8
-
-
-@lru_cache
-def get_genai_client() -> genai.Client:
-    """Return a google-genai client for Vertex AI or the Gemini API, per settings."""
-    s = get_settings()
-    if s.google_genai_use_vertexai:
-        return genai.Client(
-            vertexai=True, project=s.google_cloud_project, location=s.google_cloud_location
-        )
-    api_key = s.google_api_key.get_secret_value() if s.google_api_key else None
-    return genai.Client(api_key=api_key)
 
 
 def incident_text(incident: IncidentCore) -> str:

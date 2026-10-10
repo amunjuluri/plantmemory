@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
-from pydantic import SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +21,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")
 
     # Google AI auth: Vertex AI (ADC) when true, otherwise a Gemini API key.
-    google_genai_use_vertexai: bool = False
+    # GOOGLE_GENAI_USE_ENTERPRISE replaces the deprecated GOOGLE_GENAI_USE_VERTEXAI;
+    # both are accepted here and by the google-genai SDK and ADK.
+    use_vertexai: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("GOOGLE_GENAI_USE_ENTERPRISE", "GOOGLE_GENAI_USE_VERTEXAI"),
+    )
     google_cloud_project: str | None = None
     google_cloud_location: str = "global"
     google_api_key: SecretStr | None = None
@@ -39,6 +44,10 @@ class Settings(BaseSettings):
 
     # Retrieval and agent behaviour.
     match_threshold: float = 0.70  # calibrated with scripts/eval_retrieval.py
+    # A match must also score within this margin of the best match to count as the
+    # same problem (rather than merely the same machine). Calibrated on the eval set.
+    match_margin: float = 0.06
+    draft_thinking_level: Literal["low", "medium", "high"] = "low"
     recurrence_window_months: int = 12
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 
