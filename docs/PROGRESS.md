@@ -130,3 +130,9 @@ another shift, and warns you when last time's fix didn't work."
   Gemini answering the same translation in 8 s or 101 s (now hedged: 13 to 30 s), a
   spoken "machine stopped" counting as a symptom, alarm codes linking to the alarm list
   page instead of the procedure. Eval unchanged with 52 incidents.
+- **12 Oct.** Phase 8 deployed to https://plantmemory-4l5hbd2imq-el.a.run.app with the 52
+  incidents and the knowledge base in Firestore. The first live guide failed while the new
+  manual-section vector index was still building; search now ranks in memory until the
+  index is ready (fixed and redeployed). Live check: TP-02 E-104 guide in 19 s, Telugu and
+  Hindi in 11 s with no flags, self-approval refused, QA approval, copy 1 printed
+  (example guide GDE-B5EADE83 left in Firestore); alarm log sample correct.
