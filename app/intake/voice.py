@@ -37,6 +37,7 @@ FIELD_LABEL = {
     "action_taken": "what was done",
     "downtime_minutes": "how long the machine was down",
     "outcome": "whether it is fixed",
+    "parts_used": "which parts were replaced (or none)",
 }
 FALLBACK_QUESTION = {
     "equipment": "Which machine is it? Please say its tag, for example TP-02.",
@@ -96,15 +97,20 @@ def merge(old: IntakeFields, new: IntakeFields) -> IntakeFields:
     return old.model_copy(update=update)
 
 
+def _sentence(text: str) -> str:
+    text = text.strip()
+    return text if text.endswith((".", "!", "?")) else f"{text}."
+
+
 def summary(state: IntakeState) -> str:
     """The report in English, ready to start a guide or close one."""
     f = state.fields
     if state.mode == "closure":
-        parts = [f"Done: {f.action_taken}." if f.action_taken else ""]
+        parts = [f"Done: {_sentence(f.action_taken)}" if f.action_taken else ""]
         if f.root_cause:
-            parts.append(f"Cause: {f.root_cause}.")
+            parts.append(f"Cause: {_sentence(f.root_cause)}")
         if f.parts_used:
-            parts.append(f"Parts used: {f.parts_used}.")
+            parts.append(f"Parts used: {_sentence(f.parts_used)}")
         if f.downtime_minutes is not None:
             parts.append(f"Downtime {format_minutes(f.downtime_minutes)}.")
         if f.outcome:

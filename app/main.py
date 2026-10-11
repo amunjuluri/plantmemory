@@ -2,10 +2,21 @@
 
 import asyncio
 import base64
+import contextlib
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    WebSocket,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.sse import EventSourceResponse
@@ -21,11 +32,12 @@ from app.guide import workflow
 from app.guide.builder import build_guide_events
 from app.guide.translate import language_name
 from app.ingest import logbook_ocr
-from app.intake import cmms, machine_logs, voice
+from app.intake import cmms, live, machine_logs, voice
 from app.kb import get_kb, manual_ingest
 from app.kb.loader import list_assets, summarize_manuals
-from app.llm import BUSY_MESSAGE, is_overloaded
+from app.llm import BUSY_MESSAGE, get_live_client, is_overloaded
 from app.models import (
+    RELEASE_CHECKS,
     AnalyzeRequest,
     ApproveRequest,
     Asset,
@@ -37,6 +49,7 @@ from app.models import (
     GuideClose,
     GuideEdit,
     GuideProgress,
+    GuideRelease,
     GuideRequest,
     GuideReview,
     GuideStatus,
@@ -45,6 +58,7 @@ from app.models import (
     IncidentPublic,
     Industry,
     IngestResult,
+    IntakeMode,
     IntakeState,
     IntakeTurnResult,
     LogAnalysis,
@@ -54,7 +68,7 @@ from app.models import (
     Model,
     Part,
 )
-from app.ratelimit import limit_ai_calls
+from app.ratelimit import client_id, limit_ai_calls, limiter
 
 VERSION = "0.2.0"
 
@@ -195,6 +209,8 @@ class AppConfig(Model):
 
     guide_languages: list[LanguageOption]
     store_backend: str
+    qa_approval: str
+    release_checks: list[str]
 
 
 @app.get("/api/config")
@@ -204,6 +220,8 @@ def app_config() -> AppConfig:
             LanguageOption(code=c, name=language_name(c)) for c in settings.guide_languages
         ],
         store_backend=settings.store_backend,
+        qa_approval=settings.qa_approval,
+        release_checks=list(RELEASE_CHECKS),
     )
 
 
@@ -323,6 +341,13 @@ async def submit_guide(guide_id: str, body: GuideAction) -> Guide:
     return await asyncio.to_thread(workflow.submit, guide_id, body, get_deps(), get_kb())
 
 
+@app.post("/api/guides/{guide_id}/approve", dependencies=[Depends(limit_ai_calls)])
+async def approve_guide(guide_id: str, body: GuideAction) -> Guide:
+    """The manager approves the guide they checked; it goes to QA instead if code finds a
+    reason QA must approve (the reasons are in `qa_reasons`)."""
+    return await asyncio.to_thread(workflow.approve, guide_id, body, get_deps(), get_kb())
+
+
 @app.post("/api/guides/{guide_id}/review")
 def review_guide(guide_id: str, body: GuideReview) -> Guide:
     """QA approves the guide for printing, or rejects it with a reason."""
@@ -341,7 +366,58 @@ async def close_guide(guide_id: str, body: GuideClose) -> Guide:
     return await asyncio.to_thread(workflow.close, guide_id, body, get_deps(), get_kb())
 
 
+@app.post("/api/guides/{guide_id}/release")
+def release_guide(guide_id: str, body: GuideRelease) -> Guide:
+    """QA's line clearance after the repair: the machine may go back to production."""
+    return workflow.release(guide_id, body, get_kb())
+
+
 # --- Easier input: voice, machine logs, CMMS exports ---
+
+
+def _same_origin(ws: WebSocket) -> bool:
+    """Browsers send Origin on WebSockets; only this site (or the dev UI) may open one."""
+    origin = ws.headers.get("origin")
+    if not origin:
+        return True
+    host = origin.split("://", 1)[-1]
+    return host == ws.headers.get("host") or origin in settings.cors_origins
+
+
+@app.websocket("/api/intake/live")
+async def intake_live(
+    ws: WebSocket, mode: IntakeMode = "breakdown", guide_id: str | None = None
+) -> None:
+    """A spoken conversation on Gemini Live that fills a breakdown report or a closure.
+
+    The browser sends 16 kHz PCM audio; replies come back as 24 kHz PCM and JSON events
+    (see app/intake/live.py).
+    """
+    await ws.accept()
+    reason = None
+    if not _same_origin(ws):
+        reason = "Voice is only available on this site."
+    else:
+        try:
+            limiter.check(client_id(ws))
+        except HTTPException as err:
+            reason = str(err.detail)
+    kb = get_kb()
+    guide = None
+    if not reason and guide_id:
+        try:
+            guide = workflow.load(guide_id, kb)
+        except workflow.GuideError as err:
+            reason = str(err)
+    if reason:
+        await ws.send_json({"type": "error", "message": reason})
+        await ws.close(code=1008)
+        return
+    session = live.LiveSession(mode=mode, assets=list_assets(kb), guide=guide)
+    codes = list(dict.fromkeys(c.code for c in kb.codes.all()))
+    await live.run(ws, session, get_live_client(), settings, codes)
+    with contextlib.suppress(RuntimeError):  # already closed by the browser
+        await ws.close()
 
 
 @app.post("/api/intake/turn", dependencies=[Depends(limit_ai_calls)])

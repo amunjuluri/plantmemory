@@ -83,6 +83,25 @@ def _new_client() -> genai.Client:
     return genai.Client(api_key=api_key, http_options=http_options)
 
 
+_live_client: genai.Client | None = None
+
+
+def get_live_client() -> genai.Client:
+    """A client for Gemini Live, which on Vertex AI is served from `live_location`."""
+    global _live_client
+    with _client_lock:
+        if _live_client is None:
+            s = get_settings()
+            if s.use_vertexai:
+                _live_client = genai.Client(
+                    vertexai=True, project=s.google_cloud_project, location=s.live_location
+                )
+            else:
+                api_key = s.google_api_key.get_secret_value() if s.google_api_key else None
+                _live_client = genai.Client(api_key=api_key)
+        return _live_client
+
+
 class StructuredLLM(Protocol):
     """Anything that can turn a prompt into a validated Pydantic object."""
 

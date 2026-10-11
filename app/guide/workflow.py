@@ -1,24 +1,32 @@
-"""A guide's life: draft -> in review (translated) -> approved or rejected -> printed -> closed.
+"""A guide's life: draft -> approved (by the manager, or by QA when needed) -> printed ->
+closed -> released to production by QA.
 
 Rules enforced here, not in the UI:
 - Only drafts and rejected guides can be edited; an edit is re-checked like a new draft.
+- The manager reviews the AI draft and may approve it, unless code finds a reason QA must
+  (see `qa_reasons`); then it goes to QA, translated, before it can be printed.
 - QA cannot approve a guide they submitted themselves, and a rejection needs a reason.
 - Only approved guides can be printed; every printed copy is counted in the audit trail.
 - Closing a guide saves what was actually done as a new incident, so memory grows.
+- QA releases the machine to production after the repair (line clearance); the person who
+  closed the guide cannot release it.
 """
 
 from app.agent.tools import AgentDeps
 from app.approval import new_record_id
+from app.config import get_settings
 from app.embeddings import incident_text
 from app.guide import guardrails
 from app.guide.translate import translate_guide
 from app.kb import KnowledgeBase
 from app.models import (
+    RELEASE_CHECKS,
     Guide,
     GuideAction,
     GuideClose,
     GuideEdit,
     GuideEvent,
+    GuideRelease,
     GuideReview,
     GuideSummary,
     IncidentRecord,
@@ -54,6 +62,37 @@ def _save(guide: Guide, kb: KnowledgeBase, event: GuideEvent) -> Guide:
 def _require(guide: Guide, *statuses: str, doing: str) -> None:
     if guide.status not in statuses:
         raise GuideError(f"This guide is {guide.status.replace('_', ' ')}; it cannot be {doing}.")
+
+
+def qa_reasons(guide: Guide, policy: str | None = None) -> list[str]:
+    """Why QA must approve this guide before it is printed. Empty: the manager may.
+
+    The manager is the person who checks the AI's draft. QA is needed when the guide holds
+    something that is not from the plant's own sources, or when QA has already been involved.
+    """
+    policy = policy or get_settings().qa_approval
+    reasons = []
+    if policy == "always":
+        reasons.append("This plant's setting: QA approves every guide.")
+    if any(e.action == "rejected" for e in guide.events):
+        reasons.append("QA sent an earlier version back.")
+    if not guide.manual_sections:
+        reasons.append("No manual section matched this breakdown.")
+    for label, items in (
+        ("Safety point", guide.safety),
+        ("Step", guide.steps),
+        ("Restart check", guide.restart_checks),
+    ):
+        for n, item in enumerate(items, 1):
+            if item.flags:
+                reasons.append(f"{label} {n}: {item.flags[0]}")
+            elif item.general and label == "Step":
+                reasons.append(f"Step {n} is not from the manual or a past fix.")
+    for t in guide.translations:
+        if t.flags:
+            lines = f"{len(t.flags)} line{'s' if len(t.flags) > 1 else ''}"
+            reasons.append(f"{t.language_name}: {lines} may not match the English.")
+    return reasons
 
 
 def summarize(guide: Guide) -> GuideSummary:
@@ -110,6 +149,7 @@ def edit(guide_id: str, body: GuideEdit, kb: KnowledgeBase) -> Guide:
         guide.status = "draft"
         guide.version += 1
     guide.translations = []
+    guide.qa_reasons = qa_reasons(guide)
     return _save(guide, kb, GuideEvent(by=body.by, action="edited"))
 
 
@@ -122,8 +162,40 @@ def submit(guide_id: str, body: GuideAction, deps: AgentDeps, kb: KnowledgeBase)
     if guide.status == "rejected":
         guide.version += 1
     guide.translations = translate_guide(guide, deps.settings.guide_languages, deps)
+    guide.qa_reasons = qa_reasons(guide, deps.settings.qa_approval)
     guide.status = "in_review"
     return _save(guide, kb, GuideEvent(by=body.by, action="submitted", comment=body.comment))
+
+
+def approve(guide_id: str, body: GuideAction, deps: AgentDeps, kb: KnowledgeBase) -> Guide:
+    """The manager approves the guide they checked. It is translated first; if code then
+    finds a reason QA must approve, it goes to QA instead, with the reasons."""
+    guide = load(guide_id, kb)
+    _require(guide, "draft", "rejected", doing="approved")
+    if not guide.steps:
+        raise GuideError("A guide needs at least one step.", status_code=422)
+    if guide.status == "rejected":
+        guide.version += 1
+    if not guide.translations:
+        guide.translations = translate_guide(guide, deps.settings.guide_languages, deps)
+    guide.qa_reasons = qa_reasons(guide, deps.settings.qa_approval)
+    if guide.qa_reasons:
+        guide.status = "in_review"
+        return _save(
+            guide,
+            kb,
+            GuideEvent(by=body.by, action="submitted", comment="QA needed: " + guide.qa_reasons[0]),
+        )
+    guide.status = "approved"
+    return _save(
+        guide,
+        kb,
+        GuideEvent(
+            by=body.by,
+            action="approved",
+            comment="Checked by the manager. Every line cites the manual or a past fix.",
+        ),
+    )
 
 
 def review(guide_id: str, body: GuideReview, kb: KnowledgeBase) -> Guide:
@@ -189,3 +261,20 @@ def close(guide_id: str, body: GuideClose, deps: AgentDeps, kb: KnowledgeBase) -
         kb,
         GuideEvent(by=body.by, action="closed", comment=f"Saved to plant memory as {record.id}"),
     )
+
+
+def release(guide_id: str, body: GuideRelease, kb: KnowledgeBase) -> Guide:
+    """QA's line clearance: the repaired machine may go back to production."""
+    guide = load(guide_id, kb)
+    _require(guide, "closed", doing="released")
+    closer = next((e.by for e in reversed(guide.events) if e.action == "closed"), None)
+    if closer and _same_person(closer, body.by):
+        raise GuideError(
+            "The person who closed the repair cannot also release the machine.", status_code=403
+        )
+    missing = [c for c in RELEASE_CHECKS if c not in body.checks]
+    if missing:
+        raise GuideError(f"Confirm every check first: {missing[0]}.", status_code=422)
+    comment = "; ".join([*RELEASE_CHECKS, *([body.comment.strip()] if body.comment else [])])
+    guide.status = "released"
+    return _save(guide, kb, GuideEvent(by=body.by, action="released", comment=comment))

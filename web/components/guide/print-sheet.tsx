@@ -80,10 +80,13 @@ function Lines({ english, translated }: { english: string; translated: (string |
 const Box = () => <span aria-hidden className="inline-block size-[5mm] shrink-0 rounded-[1mm] border-[1.5px] border-black" />;
 
 function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation[] }) {
-  const approved = guide.status === "approved" || guide.status === "closed";
+  const approved = ["approved", "closed", "released"].includes(guide.status);
   const made = guide.events.find((e) => e.action === "created");
   const approval = [...guide.events].reverse().find((e) => e.action === "approved");
   const printed = [...guide.events].reverse().find((e) => e.action === "printed");
+  // QA approved it if it was ever sent to QA; otherwise the manager did.
+  const byQa = approval && guide.events.some((e) => e.action === "submitted" && e.at <= approval.at);
+  const synthetic = guide.manual_sections.some((m) => m.manual_title.toLowerCase().includes("synthetic"));
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
@@ -136,7 +139,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             <dd className="font-semibold">{made ? `${made.by}, ${formatDateTime(made.at)}` : "–"}</dd>
           </div>
           <div>
-            <dt className="text-neutral-500">Approved by QA</dt>
+            <dt className="text-neutral-500">Approved by{approval ? (byQa ? " (QA)" : " (manager)") : ""}</dt>
             <dd className="font-semibold">{approval ? `${approval.by}, ${formatDateTime(approval.at)}` : "NOT APPROVED"}</dd>
           </div>
         </dl>
@@ -253,8 +256,8 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
         </section>
       )}
 
-      <section className="mt-5 grid break-inside-avoid grid-cols-3 gap-4 text-[8.5pt]">
-        {["Work done by", "Finished at (time)", "Checked by supervisor"].map((label) => (
+      <section className="mt-5 grid break-inside-avoid grid-cols-4 gap-4 text-[8.5pt]">
+        {["Work done by", "Finished at (time)", "Checked by supervisor", "Line clearance by QA"].map((label) => (
           <div key={label}>
             <div className="h-[9mm] border-b border-black" />
             <p className="mt-1 text-neutral-600">{label}</p>
@@ -264,7 +267,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
 
       <footer className="mt-4 border-t border-neutral-300 pt-2 text-[7.5pt] leading-snug text-neutral-500">
         Sources: {sources.map(sourceLabel).join(", ") || "none"}. Drafted by PlantMemory from plant records and
-        equipment manuals; approved by QA before printing. Synthetic demo data.
+        equipment manuals; checked and approved by a person before printing.{synthetic && " Synthetic demo data."}
       </footer>
     </article>
   );
@@ -334,15 +337,15 @@ export function PrintView() {
           })}
           <Button variant="primary" onClick={print} loading={printing} disabled={!approved}>
             <Printer />
-            {approved ? `Print copy ${guide.copies_printed + 1}` : "Needs QA approval"}
+            {approved ? `Print copy ${guide.copies_printed + 1}` : "Needs approval"}
           </Button>
         </div>
       </div>
       {!approved && (
         <p className="mx-auto w-full max-w-[210mm] rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-text print:hidden">
-          {guide.status === "closed"
+          {guide.status === "closed" || guide.status === "released"
             ? "This guide is closed. The preview is for reference only."
-            : "Only QA-approved guides can be printed. This is a preview."}
+            : "Only approved guides can be printed. This is a preview."}
         </p>
       )}
       <Sheet guide={guide} languages={languages} />

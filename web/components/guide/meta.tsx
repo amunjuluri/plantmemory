@@ -1,4 +1,4 @@
-import { CircleCheck, CircleDashed, Clock3, FileWarning, Lock } from "lucide-react";
+import { CircleCheck, CircleDashed, Clock3, Factory, FileWarning, Lock } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { figureUrl, type GuideStatus } from "@/lib/api";
@@ -9,7 +9,8 @@ export const STATUS_LABEL: Record<GuideStatus, string> = {
   in_review: "Waiting for QA",
   approved: "Approved",
   rejected: "Sent back",
-  closed: "Closed",
+  closed: "Waiting for release",
+  released: "Released",
 };
 
 export function StatusBadge({ status }: { status: GuideStatus }) {
@@ -19,8 +20,9 @@ export function StatusBadge({ status }: { status: GuideStatus }) {
     approved: <CircleCheck />,
     rejected: <FileWarning />,
     closed: <Lock />,
+    released: <Factory />,
   }[status];
-  const tone = ({ draft: "neutral", in_review: "warn", approved: "success", rejected: "danger", closed: "accent" } as const)[
+  const tone = ({ draft: "neutral", in_review: "warn", approved: "success", rejected: "danger", closed: "accent", released: "success" } as const)[
     status
   ];
   return (

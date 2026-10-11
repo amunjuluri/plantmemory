@@ -12,7 +12,9 @@ function ThemedToaster() {
     <Toaster
       theme={resolvedTheme === "dark" ? "dark" : "light"}
       position="bottom-right"
-      mobileOffset={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+      // Above the phone tab bar and any action bar (see --bottom-chrome in globals.css).
+      offset={{ bottom: "calc(max(var(--bottom-chrome), var(--action-bar)) + 16px)" }}
+      mobileOffset={{ bottom: "calc(max(var(--bottom-chrome), var(--action-bar)) + 12px)" }}
       toastOptions={{ className: "!font-sans" }}
     />
   );

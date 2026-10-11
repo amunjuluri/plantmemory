@@ -18,7 +18,7 @@ from app.agent.guardrails import _display_date, format_minutes, ordinal
 from app.agent.tools import AgentDeps
 from app.approval import new_record_id
 from app.embeddings import incident_text
-from app.guide import guardrails
+from app.guide import guardrails, workflow
 from app.kb import KnowledgeBase, code_key
 from app.kb.loader import list_assets
 from app.llm import BUSY_MESSAGE, is_overloaded
@@ -199,7 +199,7 @@ def write_guide(request: GuideRequest, ev: Evidence, deps: AgentDeps) -> Guide:
     flags = guardrails.guide_flags(ev.sections, steps) + part_flags
 
     now = datetime.now(UTC)
-    return Guide(
+    guide = Guide(
         id=new_record_id("GDE"),
         request=request.text,
         incident=ev.incident,
@@ -229,6 +229,8 @@ def write_guide(request: GuideRequest, ev: Evidence, deps: AgentDeps) -> Guide:
         created_at=now,
         updated_at=now,
     )
+    guide.qa_reasons = workflow.qa_reasons(guide, deps.settings.qa_approval)
+    return guide
 
 
 def source_refs(
@@ -244,7 +246,11 @@ def source_refs(
         if m.record
     ]
     refs += [
-        SourceRef(id=s.id, kind="manual", label=f"{s.manual_id} manual p.{s.page}: {s.title}")
+        SourceRef(
+            id=s.id,
+            kind="manual",
+            label=f"{s.equipment_model} manual p.{s.page}: {s.title}",
+        )
         for s in sections
     ]
     return refs
@@ -295,7 +301,7 @@ async def build_guide_events(
             manual = ev.sections[0]
             yield done(
                 "search_manuals",
-                f"{_plural(len(ev.sections), 'section')} from the {manual.manual_id} manual",
+                f"{_plural(len(ev.sections), 'section')} from the {manual.equipment_model} manual",
             )
         else:
             yield done("search_manuals", "No manual section matched")

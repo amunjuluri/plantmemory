@@ -1,17 +1,19 @@
 "use client";
 
-import { CheckCheck, ClipboardCheck, Lock, Mic, Pencil, Printer, Send, Undo2 } from "lucide-react";
+import { Check, CheckCheck, ClipboardCheck, Factory, Lock, Mic, Pencil, Printer, Send, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { TranslatingLoader } from "@/components/ui/loaders";
 import { Modal } from "@/components/ui/modal";
 import { Segmented } from "@/components/ui/segmented";
-import { VoicePanel } from "@/components/voice-panel";
-import { api, type Guide, type Outcome } from "@/lib/api";
+import { LiveVoice } from "@/components/voice/live-voice";
+import { api, type Guide, type IntakeFields, type Outcome } from "@/lib/api";
+import { useLiveVoice } from "@/lib/stores/live-voice";
 import { useActorName, useSession } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
 import { STATUS_LABEL } from "./meta";
@@ -82,6 +84,16 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
   const [minutes, setMinutes] = useState("");
   const [outcome, setOutcome] = useState<Outcome>("resolved");
   const [busy, setBusy] = useState(false);
+  const [heard, setHeard] = useState(false);
+
+  // Fields fill in while the manager talks, so they can see what will be saved.
+  const fill = (f: IntakeFields) => {
+    if (f.action_taken) setAction(f.action_taken);
+    if (f.root_cause) setCause(f.root_cause);
+    if (f.parts_used) setParts(f.parts_used);
+    if (f.downtime_minutes != null) setMinutes(String(f.downtime_minutes));
+    if (f.outcome) setOutcome(f.outcome);
+  };
 
   const save = async () => {
     setBusy(true);
@@ -96,8 +108,8 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
       });
       onDone(closed);
       setOpen(false);
-      toast.success("Saved to plant memory", {
-        description: `The next search for this problem will find ${closed.closure_record_id}.`,
+      toast.success("Closed and saved to plant memory", {
+        description: `The next search for this problem will find ${closed.closure_record_id}. QA releases the machine to production.`,
       });
     } catch (err) {
       toast.error("Couldn’t close the guide", { description: errorText(err) });
@@ -114,32 +126,49 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
       </Button>
       <Modal
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) setVoice(false);
+        }}
         title="What was actually done?"
         description="This is saved to plant memory, so the next breakdown like this finds it."
         className="max-w-xl"
       >
-        {voice ? (
-          <VoicePanel
-            mode="closure"
-            doneLabel="Use this"
-            onClose={() => setVoice(false)}
-            onDone={(result) => {
-              const f = result.state.fields;
-              if (f.action_taken) setAction(f.action_taken);
-              if (f.root_cause) setCause(f.root_cause);
-              if (f.parts_used) setParts(f.parts_used);
-              if (f.downtime_minutes != null) setMinutes(String(f.downtime_minutes));
-              if (f.outcome) setOutcome(f.outcome);
-              setVoice(false);
-            }}
-          />
-        ) : (
-          <div className="flex flex-col gap-4">
-            <Button variant="secondary" className="self-start" onClick={() => setVoice(true)}>
+        <div className="flex flex-col gap-4">
+          {voice ? (
+            <div className="rounded-xl bg-surface-2/60 p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
+              <LiveVoice
+                mode="closure"
+                guideId={guide.id}
+                doneLabel="Use these answers"
+                onClose={() => setVoice(false)}
+                onFields={fill}
+                onDone={(result) => {
+                  fill(result.state.fields);
+                  setVoice(false);
+                  setHeard(true);
+                }}
+              />
+            </div>
+          ) : heard ? (
+            <p className="flex items-center gap-2 rounded-lg bg-success-soft px-3 py-2 text-[0.8125rem] text-success-text">
+              <Check className="size-4 shrink-0" strokeWidth={2.5} />
+              Filled in from what you said. If the fields are right, save to close the breakdown.
+            </p>
+          ) : (
+            <Button
+              variant="secondary"
+              className="self-start"
+              onClick={() => {
+                setVoice(true);
+                // Started inside the tap, so the browser allows the microphone and audio.
+                void useLiveVoice.getState().start("closure", guide.id);
+              }}
+            >
               <Mic />
               Speak it instead
             </Button>
+          )}
             <Field label="What was done" htmlFor="close-action">
               <Textarea id="close-action" value={action} onChange={(e) => setAction(e.target.value)} maxLength={4000} />
             </Field>
@@ -168,14 +197,134 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
                 Cancel
               </Button>
               <Button variant="primary" onClick={save} loading={busy} disabled={action.trim().length < 3}>
-                Save to memory
+                Save and close
               </Button>
             </div>
-          </div>
-        )}
+        </div>
       </Modal>
     </>
   );
+}
+
+/** QA's line clearance after the repair: every check ticked before the machine restarts. */
+function ReleaseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => void }) {
+  const by = useActorName();
+  const [open, setOpen] = useState(false);
+  const [checks, setChecks] = useState<string[]>([]);
+  const [ticked, setTicked] = useState<Set<string>>(new Set());
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open && !checks.length) api.config().then((c) => setChecks(c.release_checks), () => undefined);
+  }, [open, checks.length]);
+
+  const release = async () => {
+    setBusy(true);
+    try {
+      onDone(await api.releaseGuide(guide.id, by, [...ticked], comment.trim() || undefined));
+      setOpen(false);
+      toast.success("Released to production", { description: `${guide.asset_tag ?? "The machine"} can restart.` });
+    } catch (err) {
+      toast.error("Couldn’t release it", { description: errorText(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button variant="primary" onClick={() => setOpen(true)}>
+        <Factory />
+        Release to production
+      </Button>
+      <Modal
+        open={open}
+        onOpenChange={setOpen}
+        title="Release to production"
+        description="Line clearance after the repair. Tick each check once you have seen it on the floor."
+      >
+        <ul className="flex flex-col gap-2">
+          {checks.map((check) => {
+            const on = ticked.has(check);
+            return (
+              <li key={check}>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg p-2.5 shadow-[inset_0_0_0_1px_var(--color-line)] transition-[background-color] duration-150 ease-out hover:bg-surface-2">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() =>
+                      setTicked((t) => {
+                        const next = new Set(t);
+                        if (on) next.delete(check);
+                        else next.add(check);
+                        return next;
+                      })
+                    }
+                    className="size-4 accent-(--color-accent)"
+                  />
+                  <span className="text-sm">{check}</span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <Textarea
+          aria-label="Note (optional)"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Note (optional), e.g. batch B-2241 resumed at 14:20."
+          className="mt-3 min-h-16"
+          maxLength={2000}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={release}
+            loading={busy}
+            disabled={!checks.length || checks.some((c) => !ticked.has(c))}
+          >
+            Release
+          </Button>
+        </div>
+      </Modal>
+    </>
+  );
+}
+
+/** Keeps toasts above the action bar: publishes how far its top is from the bottom of the
+ * screen. It is sticky, so that distance changes as the page scrolls to its end. */
+function useActionBarSpace(shown: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const space = Math.max(0, Math.round(window.innerHeight - el.getBoundingClientRect().top));
+        root.style.setProperty("--action-bar", `${space}px`);
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+      root.style.removeProperty("--action-bar");
+    };
+  }, [shown]);
+  return ref;
 }
 
 /** The next action for this guide, depending on its state and who is acting. */
@@ -194,32 +343,64 @@ export function GuideActions({
   const role = useSession((s) => s.role);
   const by = useActorName();
   const [busy, setBusy] = useState<"submit" | "approve" | null>(null);
+  const bar = useActionBarSpace(!editing);
   if (editing) return null;
+
+  const translating = (then: string) =>
+    toast.loading("Translating into the shop-floor languages…", {
+      description: `${then} About 10 to 20 seconds.`,
+      icon: <TranslatingLoader className="text-fg-muted" />,
+    });
 
   const submit = async () => {
     setBusy("submit");
-    const id = toast.loading("Translating into the shop-floor languages…", {
-      description: "Then it goes to QA. About 10 to 20 seconds.",
-    });
+    const id = translating("Then it goes to QA.");
     try {
       const sent = await api.submitGuide(guide.id, by);
       onChange(sent);
       const flags = sent.translations.reduce((n, t) => n + t.flags.length, 0);
       toast.success("Sent to QA", {
         id,
+        icon: undefined,
         description: flags
           ? `${flags} translated line${flags > 1 ? "s" : ""} flagged for QA to check.`
           : "Switch to QA in the top bar to review it.",
       });
       router.push(`/guides/view/?id=${encodeURIComponent(sent.id)}`);
     } catch (err) {
-      toast.error("Couldn’t send to QA", { id, description: errorText(err) });
+      toast.error("Couldn’t send to QA", { id, icon: undefined, description: errorText(err) });
     } finally {
       setBusy(null);
     }
   };
 
-  const approve = async () => {
+  // The manager approves what they checked. Code may still send it to QA (e.g. a translated
+  // line lost a number); then the reasons are shown.
+  const approveAsManager = async () => {
+    setBusy("approve");
+    const id = translating("Then it’s ready to print.");
+    try {
+      const result = await api.approveGuide(guide.id, by);
+      onChange(result);
+      if (result.status === "approved") {
+        toast.success("Approved. Opening the print view.", { id, icon: undefined });
+        router.push(`/guides/print/?id=${encodeURIComponent(result.id)}`);
+      } else {
+        toast.warning("QA needs to check this one first", {
+          id,
+          icon: undefined,
+          description: result.qa_reasons[0],
+        });
+        router.push(`/guides/view/?id=${encodeURIComponent(result.id)}`);
+      }
+    } catch (err) {
+      toast.error("Couldn’t approve", { id, icon: undefined, description: errorText(err) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const approveAsQa = async () => {
     setBusy("approve");
     try {
       onChange(await api.reviewGuide(guide.id, by, "approve"));
@@ -231,36 +412,62 @@ export function GuideActions({
     }
   };
 
-  const submitter = [...guide.events].reverse().find((e) => e.action === "submitted")?.by;
-  const ownGuide = submitter && submitter.trim().toLowerCase() === by.trim().toLowerCase();
+  const lastBy = (action: string) => [...guide.events].reverse().find((e) => e.action === action)?.by;
+  const same = (a?: string) => Boolean(a) && a!.trim().toLowerCase() === by.trim().toLowerCase();
+  const ownGuide = same(lastBy("submitted"));
+  const reasons = guide.qa_reasons;
 
-  let hint: string | null = null;
+  let hint: React.ReactNode = null;
   let actions: React.ReactNode = null;
   const s = guide.status;
   if (s === "draft" || s === "rejected") {
-    hint =
-      role === "qa"
-        ? "The manager sends this to QA when it’s ready."
-        : "Check the steps, then send it to QA. It’s translated on the way.";
-    actions = (
-      <>
-        <Button onClick={onEdit}>
-          <Pencil />
-          Edit
-        </Button>
-        <Button variant="primary" onClick={submit} loading={busy === "submit"}>
-          <Send />
-          Send to QA
-        </Button>
-      </>
-    );
+    if (role === "qa") {
+      hint = "The manager approves this, or sends it to QA if it needs a check.";
+    } else if (reasons.length) {
+      hint = (
+        <>
+          QA must check it first: {reasons[0]}
+          {reasons.length > 1 && ` (+${reasons.length - 1} more)`} Edit to fix it, or send it to QA.
+        </>
+      );
+      actions = (
+        <>
+          <Button onClick={onEdit}>
+            <Pencil />
+            Edit
+          </Button>
+          <Button variant="primary" onClick={submit} loading={busy === "submit"}>
+            <Send />
+            Send to QA
+          </Button>
+        </>
+      );
+    } else {
+      hint = "Every line cites the manual or a past fix. Check the steps, then approve and print.";
+      actions = (
+        <>
+          <Button onClick={onEdit}>
+            <Pencil />
+            Edit
+          </Button>
+          <Button variant="ghost" onClick={submit} loading={busy === "submit"} disabled={busy === "approve"}>
+            Ask QA to check
+          </Button>
+          <Button variant="primary" onClick={approveAsManager} loading={busy === "approve"} disabled={busy === "submit"}>
+            <CheckCheck />
+            Approve and print
+          </Button>
+        </>
+      );
+    }
   } else if (s === "in_review") {
+    const why = reasons.length ? ` Why: ${reasons[0]}${reasons.length > 1 ? ` (+${reasons.length - 1} more)` : ""}` : "";
     if (role === "qa" && !ownGuide) {
-      hint = "Check the steps and each translation, then decide.";
+      hint = `Check the steps and each translation, then decide.${why}`;
       actions = (
         <>
           <RejectDialog guide={guide} onDone={onChange} />
-          <Button variant="primary" onClick={approve} loading={busy === "approve"}>
+          <Button variant="primary" onClick={approveAsQa} loading={busy === "approve"}>
             <CheckCheck />
             Approve for printing
           </Button>
@@ -268,13 +475,13 @@ export function GuideActions({
       );
     } else {
       hint = ownGuide
-        ? "You sent this guide, so someone else must review it. Switch to QA (top bar) with another name."
-        : "Waiting for QA. Switch to QA in the top bar to review it.";
+        ? `You sent this guide, so someone else must review it. Switch to QA (top bar) with another name.${why}`
+        : `Waiting for QA. Switch to QA in the top bar to review it.${why}`;
     }
   } else if (s === "approved") {
     hint =
       guide.copies_printed > 0
-        ? `${guide.copies_printed} cop${guide.copies_printed > 1 ? "ies" : "y"} printed. Close it once the machine is running.`
+        ? `${guide.copies_printed} cop${guide.copies_printed > 1 ? "ies" : "y"} printed. Close it once the repair is done.`
         : "Print it for the workers.";
     actions = (
       <>
@@ -286,11 +493,18 @@ export function GuideActions({
       </>
     );
   } else if (s === "closed") {
-    hint = "Closed and saved to plant memory.";
+    if (role === "qa" && !same(lastBy("closed"))) {
+      hint = "Repair recorded. Do the line clearance, then release the machine.";
+      actions = <ReleaseDialog guide={guide} onDone={onChange} />;
+    } else {
+      hint = "Saved to plant memory. QA does the line clearance and releases the machine.";
+    }
+  } else if (s === "released") {
+    hint = `Released to production by ${lastBy("released") ?? "QA"}.`;
   }
 
   return (
-    <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 md:bottom-4 print:hidden">
+    <div ref={bar} className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 md:bottom-4 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-(--radius-card) bg-surface/90 p-3 pl-4 shadow-raised backdrop-blur-xl">
         <p className="flex min-w-0 items-center gap-2 text-[0.8125rem] text-fg-muted">
           <ClipboardCheck className="size-4 shrink-0" />
@@ -312,6 +526,7 @@ const ACTION_LABEL = {
   rejected: "Sent back",
   printed: "Printed",
   closed: "Closed",
+  released: "Released to production",
 } as const;
 
 export function AuditTrail({ guide }: { guide: Guide }) {
@@ -324,7 +539,7 @@ export function AuditTrail({ guide }: { guide: Guide }) {
             aria-hidden
             className={cn(
               "mt-1.5 size-2.5 shrink-0 rounded-full",
-              event.action === "approved" || event.action === "closed"
+              event.action === "approved" || event.action === "closed" || event.action === "released"
                 ? "bg-success"
                 : event.action === "rejected"
                   ? "bg-danger"

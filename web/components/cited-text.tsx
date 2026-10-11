@@ -6,10 +6,12 @@ import { splitCitations } from "@/lib/citations";
 import { isManualId, useRecords } from "@/lib/stores/records";
 import { cn } from "@/lib/utils";
 
-/** "MAN-RTP37-16" -> "RTP37 p.16"; incident ids stay as they are. */
+/** "MAN-RTP37-16" -> "Manual p.16"; incident ids stay as they are. A guide uses one
+ * machine's manual, so the page is enough; the manual's own code (RTP37) reads like a
+ * machine tag and confused managers who had said TP-01. */
 export function sourceLabel(id: string): string {
   const match = id.match(/^MAN-(.+)-(\d+)([A-Z]?)$/);
-  return match ? `${match[1]} p.${match[2]}` : id;
+  return match ? `Manual p.${match[2]}` : id;
 }
 
 /** A record id or manual section as a chip. Hover highlights its card; click opens it. */

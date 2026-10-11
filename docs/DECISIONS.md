@@ -222,3 +222,46 @@ Short log of choices and why. Newest last.
     Only manual sections need a vector index; other lookups are equality filters.
 56. **Per-client AI limit raised from 40 to 120 requests an hour** on Cloud Run: one
     breakdown now uses several AI requests (voice turns, guide, translation).
+57. **Voice is a live conversation on Gemini Live.** The turn-based voice read questions
+    with the browser's speech synthesis, which sounded robotic and missing for some
+    languages. Now the browser streams 16 kHz PCM over a WebSocket (`/api/intake/live`)
+    to `gemini-3.8-live`, and its native audio replies stream back: first audio about 0.7 s
+    after the manager stops talking, and they can interrupt. On Vertex AI the Live model
+    is served from `us-central1` (not `global` or `asia-south1`; probed 12 Oct), so voice
+    audio leaves India while the rest stays in `asia-south1`. The model fills the report
+    only through an `update_report` tool; code merges, normalises spoken tags ("TP one" ->
+    TP-01), decides what is missing and accepts `confirm_report` only when nothing is.
+    Sessions end after 8 minutes; Cloud Run's request timeout is 600 s. The browser's
+    Origin must be this site. The old `/api/intake/turn` endpoint stays for clients that
+    can't stream audio.
+58. **Closing a breakdown by voice uses the guide.** The model gets the guide's steps,
+    parts and the time since it was drafted, so "did what the guide said" becomes
+    "Followed guide GDE-…: <steps>", downtime can be offered from the elapsed time, and
+    "upper punch" becomes RTP-PN-U-10. Code refuses a bare "did it / as per guide" and,
+    when the guide listed parts, requires an answer on which were used ("None" is fine).
+    The form fills while they talk; the manager still presses Save.
+59. **The manager approves guides; QA approves only when code finds a reason.** The
+    plant contact said QA approves, but research found no rule that QA pre-approves every
+    breakdown repair. GMP practice: maintenance restores the qualified state under an
+    engineering work order; QA comes in through change control (anything not
+    like-for-like), deviations (product impact) and line clearance before production
+    restarts. The EU draft GMP Annex 22 allows generative AI only in non-critical use
+    with a qualified person reviewing every output, which is the manager here. So QA must
+    approve when the guide holds something not from the plant's sources: a flagged value,
+    a step with no source, no manual match, a translation flag, or an earlier rejection
+    (`qa_reasons`, computed in code and shown to both). A plant whose SOP says otherwise
+    sets `QA_APPROVAL=always`. Making QA approve every guide would add QA's queue time to
+    every breakdown's downtime.
+60. **QA releases the machine to production after the repair.** New status `released`
+    after `closed`: QA ticks three line-clearance checks (cleaned, tools and old parts
+    removed, line clearance done); the person who closed the repair can't release it. The
+    printed sheet gains a "Line clearance by QA" sign-off box.
+61. **Manual citations read "Manual p.16", not "RTP37 p.16".** A manager who said TP-01
+    saw "RTP37" and thought the app had picked another machine; RTP-37 is TP-01's model.
+    The sources list now says "Manual: Kestrel RTP-37 rotary tablet press, the model of
+    TP-01 and TP-02".
+62. **The synthetic-data label belongs to the data, not the app.** It is in the demo
+    manuals' titles, the header chip and the printed footer only when the guide's manual
+    is synthetic. A plant that loads its own manuals and records sees no such label. It
+    stays on the demo data, because an invented torque or temperature on a printed sheet
+    must never be mistaken for a real manual's.

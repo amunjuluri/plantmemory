@@ -10,10 +10,12 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/field";
 import { Kbd } from "@/components/ui/kbd";
 import { ModKey } from "@/components/ui/mod-key";
-import { VoicePanel } from "@/components/voice-panel";
+import { ScanningLoader } from "@/components/ui/loaders";
+import { LiveVoice } from "@/components/voice/live-voice";
 import { api, type Asset } from "@/lib/api";
 import { prepareImage } from "@/lib/image";
 import { useBreakdown } from "@/lib/stores/breakdown";
+import { useLiveVoice } from "@/lib/stores/live-voice";
 import { useActorName } from "@/lib/stores/session";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +57,10 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
 
   const readPhoto = async (file: File) => {
     setReading(true);
-    const id = toast.loading("Reading the logbook photo…", { description: "This usually takes 10 to 40 seconds." });
+    const id = toast.loading("Reading the logbook photo…", {
+      description: "This usually takes 10 to 40 seconds.",
+      icon: <ScanningLoader className="text-fg-muted" />,
+    });
     try {
       const { blob, name } = await prepareImage(file);
       const result = await api.readLogbook(blob, name, "pharma");
@@ -79,138 +84,17 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-4">
+  const speak = () => {
+    setVoice(true);
+    // Started inside the tap, so the browser allows the microphone and the reply audio.
+    void useLiveVoice.getState().start("breakdown");
+  };
+
+  if (voice && !running) {
+    return (
       <Card className="p-4 sm:p-5">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
-          }}
-          className="flex flex-col gap-4"
-        >
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <label htmlFor="breakdown" className="text-sm font-medium whitespace-nowrap">
-                What has broken down?
-              </label>
-              <select
-                aria-label="Machine"
-                value={assetTag ?? ""}
-                disabled={running}
-                onChange={(e) => setAssetTag(e.target.value || null)}
-                className={select}
-              >
-                <option value="">Machine: detect</option>
-                {assets.map((a) => (
-                  <option key={a.tag} value={a.tag}>
-                    {a.tag}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Textarea
-              id="breakdown"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-              placeholder="Machine, alarm on the screen, what the worker saw. Any language, short forms are fine."
-              disabled={running}
-              maxLength={8000}
-              className="indic min-h-32"
-              enterKeyHint="send"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button
-              type="button"
-              variant={voice ? "primary" : "secondary"}
-              size="sm"
-              disabled={running}
-              onClick={() => setVoice((v) => !v)}
-              aria-pressed={voice}
-            >
-              <Mic />
-              Speak
-            </Button>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && readPhoto(e.target.files[0])}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              loading={reading}
-              disabled={running}
-              onClick={() => fileInput.current?.click()}
-            >
-              <Camera />
-              Logbook photo
-            </Button>
-            <Link
-              href="/alarms/"
-              className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-(--radius-control) px-2.5 text-[0.8125rem] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg [&_svg]:size-3.5"
-            >
-              <Siren />
-              From an alarm log
-            </Link>
-          </div>
-
-          {running ? (
-            <Button type="button" size="lg" onClick={cancel}>
-              <Square className="fill-current" />
-              Stop
-            </Button>
-          ) : (
-            <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
-              Draft repair guide
-              <ArrowRight />
-              <span className="ml-1 hidden items-center gap-0.5 [@media(pointer:fine)]:inline-flex">
-                <Kbd>
-                  <ModKey />
-                </Kbd>
-                <Kbd>↵</Kbd>
-              </span>
-            </Button>
-          )}
-        </form>
-
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="mb-2 text-xs font-medium text-fg-subtle">Try an example</p>
-          <div className="flex flex-wrap gap-1.5">
-            {EXAMPLES.map((example) => (
-              <button
-                key={example.label}
-                type="button"
-                disabled={running}
-                onClick={() => {
-                  setText(example.text);
-                  setAssetTag(example.asset);
-                }}
-                className={cn(
-                  "h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)]",
-                  "transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-3 hover:text-fg active:scale-[0.97] disabled:opacity-50",
-                )}
-              >
-                {example.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      {voice && !running && (
-        <VoicePanel
+        <p className="mb-3 text-sm font-medium">What has broken down?</p>
+        <LiveVoice
           mode="breakdown"
           doneLabel="Draft repair guide"
           onClose={() => setVoice(false)}
@@ -224,7 +108,130 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
             setTimeout(() => void useBreakdown.getState().run(by), 0);
           }}
         />
-      )}
-    </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4 sm:p-5">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="flex flex-col gap-4"
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="breakdown" className="text-sm font-medium whitespace-nowrap">
+              What has broken down?
+            </label>
+            <select
+              aria-label="Machine"
+              value={assetTag ?? ""}
+              disabled={running}
+              onChange={(e) => setAssetTag(e.target.value || null)}
+              className={select}
+            >
+              <option value="">Machine: detect</option>
+              {assets.map((a) => (
+                <option key={a.tag} value={a.tag}>
+                  {a.tag}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Textarea
+            id="breakdown"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="Machine, alarm on the screen, what the worker saw. Any language, short forms are fine."
+            disabled={running}
+            maxLength={8000}
+            className="indic min-h-32"
+            enterKeyHint="send"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button type="button" variant="secondary" size="sm" disabled={running} onClick={speak}>
+            <Mic />
+            Speak
+          </Button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && readPhoto(e.target.files[0])}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            loading={reading}
+            disabled={running}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Camera />
+            Logbook photo
+          </Button>
+          <Link
+            href="/alarms/"
+            className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-(--radius-control) px-2.5 text-[0.8125rem] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg [&_svg]:size-3.5"
+          >
+            <Siren />
+            From an alarm log
+          </Link>
+        </div>
+
+        {running ? (
+          <Button type="button" size="lg" onClick={cancel}>
+            <Square className="fill-current" />
+            Stop
+          </Button>
+        ) : (
+          <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
+            Draft repair guide
+            <ArrowRight />
+            <span className="ml-1 hidden items-center gap-0.5 [@media(pointer:fine)]:inline-flex">
+              <Kbd>
+                <ModKey />
+              </Kbd>
+              <Kbd>↵</Kbd>
+            </span>
+          </Button>
+        )}
+      </form>
+
+      <div className="mt-5 border-t border-line pt-4">
+        <p className="mb-2 text-xs font-medium text-fg-subtle">Try an example</p>
+        <div className="flex flex-wrap gap-1.5">
+          {EXAMPLES.map((example) => (
+            <button
+              key={example.label}
+              type="button"
+              disabled={running}
+              onClick={() => {
+                setText(example.text);
+                setAssetTag(example.asset);
+              }}
+              className={cn(
+                "h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)]",
+                "transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-3 hover:text-fg active:scale-[0.97] disabled:opacity-50",
+              )}
+            >
+              {example.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Card>
   );
 }

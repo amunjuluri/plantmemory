@@ -86,7 +86,14 @@ function ThemeToggle() {
   );
 }
 
+/** Shown only while the demo data is loaded: the label belongs to the data, so a plant
+ * running on its own manuals and records never sees it. */
 function SyntheticBadge() {
+  const [synthetic, setSynthetic] = useState(false);
+  useEffect(() => {
+    api.manuals().then((ms) => setSynthetic(ms.some((m) => /synthetic/i.test(m.manual_title))), () => undefined);
+  }, []);
+  if (!synthetic) return null;
   return (
     <Tooltip.Root>
       <Tooltip.Trigger className="hidden h-7 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 text-xs font-medium text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)] lg:inline-flex">

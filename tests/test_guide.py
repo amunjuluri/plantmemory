@@ -15,6 +15,7 @@ from app.guide.translate import missing_tokens
 from app.kb import set_kb
 from app.main import app
 from app.models import (
+    RELEASE_CHECKS,
     Asset,
     GuideAction,
     GuideClose,
@@ -22,6 +23,7 @@ from app.models import (
     GuideEdit,
     GuideItemOut,
     GuidePartPick,
+    GuideRelease,
     GuideRequest,
     GuideReview,
     GuideStep,
@@ -329,6 +331,85 @@ def test_only_approved_guides_print_and_close_saves_to_memory(env) -> None:
         "printed",
         "closed",
     ]
+
+
+def clean_edit(guide, keep_t12: bool = True) -> GuideEdit:
+    """The draft with every flagged or unsourced line removed. The fake Telugu loses
+    "T-12", so without step 1 nothing is left for QA to check."""
+    steps = [s for s in guide.steps if not s.flags and not s.general]
+    if not keep_t12:
+        steps = [s for s in steps if "T-12" not in s.text]
+    steps.append(GuideStep(text="Clean the bore.", citations=["MAN-RTP37-16"]))
+    return GuideEdit(
+        by="Ravi",
+        title=guide.title,
+        summary=guide.summary,
+        safety=[i for i in guide.safety if not i.flags],
+        steps=steps,
+        restart_checks=[i for i in guide.restart_checks if not i.flags],
+    )
+
+
+def test_qa_reasons_explain_why_qa_must_approve(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    reasons = guide.qa_reasons
+    assert reasons[0].startswith("Step 2: Check “25 nm”")
+    assert "Step 4 is not from the manual or a past fix." in reasons
+    assert workflow.qa_reasons(guide, "always")[0].startswith("This plant's setting")
+
+
+def test_manager_approves_a_clean_guide_but_flagged_ones_go_to_qa(env) -> None:
+    deps, kb = env
+    _, flagged = draft(deps, kb)
+    sent = workflow.approve(flagged.id, GuideAction(by="Ravi"), deps, kb)
+    assert sent.status == "in_review"
+    assert sent.events[-1].action == "submitted"
+    assert sent.events[-1].comment.startswith("QA needed: ")
+
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    approved = workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    assert approved.status == "approved", approved.qa_reasons
+    assert approved.qa_reasons == []
+    assert [t.language for t in approved.translations] == ["te", "hi"]
+    assert approved.events[-1].action == "approved" and approved.events[-1].by == "Ravi"
+
+
+def test_a_lost_code_in_translation_sends_the_guide_to_qa(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide), kb)
+    sent = workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    assert sent.status == "in_review"
+    assert "Telugu: 1 line may not match the English." in sent.qa_reasons
+
+
+def test_qa_always_policy_sends_every_guide_to_qa(env) -> None:
+    deps, kb = env
+    deps.settings.qa_approval = "always"
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    assert workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb).status == "in_review"
+
+
+def test_qa_releases_the_machine_after_the_repair(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
+    with pytest.raises(workflow.GuideError):
+        workflow.release(guide.id, GuideRelease(by="Sita", checks=list(RELEASE_CHECKS)), kb)
+    workflow.close(guide.id, GuideClose(by="Ravi", action_taken="Freed the punch."), deps, kb)
+    with pytest.raises(workflow.GuideError) as own:
+        workflow.release(guide.id, GuideRelease(by="ravi", checks=list(RELEASE_CHECKS)), kb)
+    assert own.value.status_code == 403
+    with pytest.raises(workflow.GuideError) as unchecked:
+        workflow.release(guide.id, GuideRelease(by="Sita", checks=list(RELEASE_CHECKS[:2])), kb)
+    assert unchecked.value.status_code == 422
+    released = workflow.release(guide.id, GuideRelease(by="Sita", checks=list(RELEASE_CHECKS)), kb)
+    assert released.status == "released"
+    assert released.events[-1].action == "released"
 
 
 # --- API ---

@@ -21,7 +21,8 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "approved", label: "Approved" },
   { value: "draft", label: "Drafts" },
   { value: "rejected", label: "Sent back" },
-  { value: "closed", label: "Closed" },
+  { value: "closed", label: "Waiting for release" },
+  { value: "released", label: "Released" },
 ];
 
 function Row({ guide }: { guide: GuideSummary }) {
@@ -90,7 +91,7 @@ export function GuidesList() {
         <div className="max-w-2xl">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Repair guides</h1>
           <p className="mt-1.5 text-[0.9375rem] text-fg-muted">
-            Every guide from draft to QA approval, printing and closure, with who did what.
+            Every guide from draft to approval, printing, closure and release, with who did what.
           </p>
         </div>
       </header>
