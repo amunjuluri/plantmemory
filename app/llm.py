@@ -1,6 +1,7 @@
 """Gemini client and a small structured-output helper shared by the agent and ingest."""
 
 import threading
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Literal, Protocol, TypeVar
 
 import httpx
@@ -91,6 +92,7 @@ class StructuredLLM(Protocol):
         schema: type[T],
         thinking: ThinkingLevel = "low",
         timeout_ms: int | None = None,
+        hedge_after_s: float | None = None,
     ) -> T: ...
 
 
@@ -113,11 +115,27 @@ class GeminiLLM:
         schema: type[T],
         thinking: ThinkingLevel = "low",
         timeout_ms: int | None = None,
+        hedge_after_s: float | None = None,
     ) -> T:
         """Generate a response that must match `schema`; raises if it does not.
 
         `timeout_ms` overrides the per-call timeout, e.g. for reading a long PDF.
+        `hedge_after_s`: if no answer arrives in that time, send the same request again and
+        use whichever answers first. The same request takes 8 s or 100 s on a bad minute.
         """
+        if hedge_after_s:
+            return _hedged(
+                lambda: self._generate(contents, schema, thinking, timeout_ms), hedge_after_s
+            )
+        return self._generate(contents, schema, thinking, timeout_ms)
+
+    def _generate(
+        self,
+        contents: types.ContentListUnion,
+        schema: type[T],
+        thinking: ThinkingLevel,
+        timeout_ms: int | None,
+    ) -> T:
         # Temperature is left at the default: Google advises against lowering it on
         # Gemini 3.x models (it can cause looping).
         config = types.GenerateContentConfig(
@@ -134,3 +152,31 @@ class GeminiLLM:
         if not response.text:
             raise RuntimeError(f"Empty response from {self.settings.gemini_model}")
         return schema.model_validate_json(response.text)
+
+
+# Hedged requests run on their own pool so a slow call never blocks the caller's pool.
+_hedge_pool = ThreadPoolExecutor(max_workers=16, thread_name_prefix="gemini-hedge")
+MAX_HEDGES = 2  # at most three copies of one request in flight
+
+
+def _hedged(call, after_s: float):
+    """Run `call`; each time `after_s` passes without an answer, start one more copy.
+
+    Returns the first successful result. Raises the last error only if every copy failed.
+    """
+    pending: set[Future] = {_hedge_pool.submit(call)}
+    started = 1
+    error: BaseException | None = None
+    while pending:
+        done, pending = wait(pending, timeout=after_s, return_when=FIRST_COMPLETED)
+        for future in done:
+            if future.exception() is None:
+                for other in pending:
+                    other.cancel()
+                return future.result()
+            error = future.exception()
+        if (not done or not pending) and started <= MAX_HEDGES:
+            pending.add(_hedge_pool.submit(call))
+            started += 1
+    assert error is not None
+    raise error

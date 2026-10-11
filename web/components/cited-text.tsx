@@ -3,10 +3,16 @@
 import { Fragment } from "react";
 
 import { splitCitations } from "@/lib/citations";
-import { useRecords } from "@/lib/stores/records";
+import { isManualId, useRecords } from "@/lib/stores/records";
 import { cn } from "@/lib/utils";
 
-/** A record id as a chip. Hover highlights its card; click opens the record. */
+/** "MAN-RTP37-16" -> "RTP37 p.16"; incident ids stay as they are. */
+export function sourceLabel(id: string): string {
+  const match = id.match(/^MAN-(.+)-(\d+)([A-Z]?)$/);
+  return match ? `${match[1]} p.${match[2]}` : id;
+}
+
+/** A record id or manual section as a chip. Hover highlights its card; click opens it. */
 export function CitationChip({ id, className }: { id: string; className?: string }) {
   const { open, highlight } = useRecords();
   return (
@@ -17,14 +23,15 @@ export function CitationChip({ id, className }: { id: string; className?: string
       onPointerLeave={() => highlight(null)}
       onFocus={() => highlight(id)}
       onBlur={() => highlight(null)}
-      aria-label={`Open record ${id}`}
+      aria-label={isManualId(id) ? `Open manual ${sourceLabel(id)}` : `Open record ${id}`}
       className={cn(
-        "mx-0.5 inline-flex h-5 translate-y-[-1px] items-center rounded-md bg-accent-soft px-1.5 align-middle font-mono text-[0.6875rem] font-medium text-accent-text",
-        "transition-[background-color,scale] duration-150 ease-out hover:bg-accent/15 active:scale-[0.96]",
+        "mx-0.5 inline-flex h-5 translate-y-[-1px] items-center rounded-md px-1.5 align-middle font-mono text-[0.6875rem] font-medium",
+        isManualId(id) ? "bg-surface-3 text-fg-muted" : "bg-accent-soft text-accent-text",
+        "transition-[background-color,scale,color] duration-150 ease-out hover:bg-accent/15 hover:text-accent-text active:scale-[0.96]",
         className,
       )}
     >
-      {id}
+      {sourceLabel(id)}
     </button>
   );
 }

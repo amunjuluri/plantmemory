@@ -382,3 +382,20 @@ def test_samples_are_served(env) -> None:
     ):
         assert client.get(f"/samples/{name}").status_code == 200
     assert json.loads(client.get("/api/config").content)["store_backend"] in {"local", "firestore"}
+
+
+VAGUE = ["Machine stopped", "stopped", "not working", "The press has stopped."]
+
+
+@pytest.mark.parametrize("symptom", VAGUE)
+def test_a_stop_alone_is_not_a_symptom(env, symptom: str) -> None:
+    deps, _ = env
+    deps.llm.responses[IntakeTurnOut] = IntakeTurnOut(
+        transcript="x",
+        language="hi",
+        fields=IntakeFields(equipment="BL-3", symptom=symptom, machine_stopped=True),
+        question=None,
+    )
+    result = voice.take_turn(IntakeState(), deps, ASSETS, text="x")
+    assert not result.done and result.missing == ["symptom"]
+    assert result.question == voice.FALLBACK_QUESTION["symptom"]

@@ -4,7 +4,7 @@ import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Card } from "@/components/ui/card";
-import { STEPS, useAnalysis, type StepStatus } from "@/lib/stores/analysis";
+import type { StepState, StepStatus } from "@/lib/stores/breakdown";
 import { cn } from "@/lib/utils";
 
 function StepIcon({ status }: { status: StepStatus }) {
@@ -38,9 +38,20 @@ function useElapsed(startedAt: number | null, finishedAt: number | null) {
   return Math.max(0, ((finishedAt ?? now) - startedAt) / 1000);
 }
 
-/** Live view of the agent's four tool calls. */
-export function AgentSteps() {
-  const { steps, status, startedAt, finishedAt } = useAnalysis();
+/** Live view of a multi-step AI run: each step's status and a one-line result. */
+export function StepsCard<Id extends string>({
+  steps: list,
+  state: steps,
+  status,
+  startedAt,
+  finishedAt,
+}: {
+  steps: { id: Id; label: string }[];
+  state: Record<Id, StepState>;
+  status: "idle" | "running" | "done" | "error";
+  startedAt: number | null;
+  finishedAt: number | null;
+}) {
   const elapsed = useElapsed(startedAt, finishedAt);
   if (status === "idle") return null;
 
@@ -55,11 +66,11 @@ export function AgentSteps() {
         )}
       </div>
       <ol className="flex flex-col">
-        {STEPS.map((step, i) => {
+        {list.map((step, i) => {
           const state = steps[step.id];
           return (
             <li key={step.id} className="relative flex gap-3 pb-4 last:pb-0">
-              {i < STEPS.length - 1 && (
+              {i < list.length - 1 && (
                 <span
                   aria-hidden
                   className={cn(

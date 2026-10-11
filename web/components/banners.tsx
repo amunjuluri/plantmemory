@@ -2,27 +2,28 @@ import { RotateCcw, SearchCheck, SearchX } from "lucide-react";
 
 import { CitedText } from "@/components/cited-text";
 import type { Recurrence } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatMinutes } from "@/lib/utils";
 
-function Banner({
+export function Banner({
   tone,
   icon,
   title,
   children,
 }: {
-  tone: "warn" | "neutral";
+  tone: "warn" | "neutral" | "danger" | "success";
   icon: React.ReactNode;
   title: string;
   children: React.ReactNode;
 }) {
   return (
     <div
-      role={tone === "warn" ? "alert" : "status"}
+      role={tone === "warn" || tone === "danger" ? "alert" : "status"}
       className={cn(
         "flex gap-3 rounded-(--radius-card) p-4 transition-[opacity,translate] duration-250 ease-out starting:translate-y-1 starting:opacity-0",
-        tone === "warn"
-          ? "bg-warn-soft text-warn-text shadow-[inset_0_0_0_1px_oklch(0.72_0.15_70/0.3)]"
-          : "bg-surface-2 text-fg shadow-[inset_0_0_0_1px_var(--color-line)]",
+        tone === "warn" && "bg-warn-soft text-warn-text shadow-[inset_0_0_0_1px_oklch(0.72_0.15_70/0.3)]",
+        tone === "danger" && "bg-danger-soft text-danger-text shadow-[inset_0_0_0_1px_oklch(0.58_0.2_27/0.25)]",
+        tone === "success" && "bg-success-soft text-success-text shadow-[inset_0_0_0_1px_oklch(0.6_0.14_155/0.25)]",
+        tone === "neutral" && "bg-surface-2 text-fg shadow-[inset_0_0_0_1px_var(--color-line)]",
       )}
     >
       <span className="mt-0.5 shrink-0 [&_svg]:size-4.5">{icon}</span>
@@ -39,13 +40,6 @@ const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" });
 
 function ordinal(n: number) {
   return `${n}${ORDINAL_SUFFIX[ordinalRules.select(n)]}`;
-}
-
-function formatMinutes(minutes: number) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (!hours) return `${mins} min`;
-  return mins ? `${hours} h ${mins} min` : `${hours} h`;
 }
 
 function Stat({ value, label }: { value: string; label: string }) {

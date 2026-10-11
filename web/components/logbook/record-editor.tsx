@@ -9,7 +9,6 @@ import { Card } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import type { Incident, Outcome } from "@/lib/api";
-import { useLogbook } from "@/lib/stores/logbook";
 import { INDUSTRY_LABEL, plural } from "@/lib/utils";
 
 const OUTCOMES: { value: Outcome; label: string }[] = [
@@ -24,8 +23,20 @@ const CheckTag = () => (
   </Badge>
 );
 
-export function RecordEditor({ record, index }: { record: Incident; index: number }) {
-  const { update, remove } = useLogbook();
+/** One extracted record for a person to check before it is saved (logbook photo or CMMS row). */
+export function RecordEditor({
+  record,
+  index,
+  update,
+  remove,
+  noun = "Entry",
+}: {
+  record: Incident;
+  index: number;
+  update: (id: string, patch: Partial<Incident>) => void;
+  remove: (id: string) => void;
+  noun?: string;
+}) {
   const uid = useId();
   const flagged = (field: string) => record.confidence_flags.includes(field);
   const text = (field: keyof Incident) => ({
@@ -48,7 +59,10 @@ export function RecordEditor({ record, index }: { record: Incident; index: numbe
       style={{ transitionDelay: `${index * 60}ms` }}
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-        <h3 className="font-medium">Entry {index + 1}</h3>
+        <h3 className="font-medium">
+          {noun} {index + 1}
+          {noun !== "Entry" && <span className="ml-2 font-mono text-xs font-normal text-fg-subtle">{record.id}</span>}
+        </h3>
         <Badge>{INDUSTRY_LABEL[record.industry]}</Badge>
         {flags > 0 ? (
           <Badge tone="warn">{plural(flags, "field")} to check</Badge>

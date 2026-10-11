@@ -43,7 +43,7 @@ class FakeLLM:
         # Replies for any other schema: an object, a list (one per call) or a callable.
         self.responses: dict[type, object] = {}
 
-    def generate(self, contents, schema, thinking="low", timeout_ms=None):
+    def generate(self, contents, schema, thinking="low", timeout_ms=None, hedge_after_s=None):
         self.prompts.append((schema.__name__, contents))
         if schema in self.responses:
             reply = self.responses[schema]

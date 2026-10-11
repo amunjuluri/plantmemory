@@ -281,8 +281,10 @@ INTAKE_CLOSURE = "record how a breakdown was fixed, so the plant remembers it ne
 
 INTAKE_FIELD_RULES = {
     "breakdown": (
-        "`equipment`: the machine tag or name. `symptom`: what is wrong, in the "
-        "manager's words. `machine_stopped`: true if the machine has stopped, false if it "
+        "`equipment`: the machine tag or name. `symptom`: what is wrong (the fault, the "
+        "alarm text, what the worker saw or heard), in the manager's words. That the machine "
+        "stopped is not a symptom; leave `symptom` null until the fault is described. "
+        "`machine_stopped`: true if the machine has stopped, false if it "
         "is still running. `error_code`: an alarm code shown on the machine. `started`: "
         "when it started. `already_tried`: anything already done."
     ),

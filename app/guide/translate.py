@@ -28,6 +28,7 @@ LANGUAGE_NAMES = {
     "te": "Telugu",
     "ur": "Urdu",
 }
+HEDGE_S = 15.0  # a translation normally takes 8 to 12 s
 _LISTS = ("safety", "steps", "step_cautions", "restart_checks", "escalate_if")
 _ITEM_LABEL = {
     "safety": "Safety point",
@@ -117,11 +118,11 @@ def translate_one(guide: Guide, language: str, deps: AgentDeps) -> GuideTranslat
     prompt = prompts.TRANSLATE_PROMPT.format(
         language_name=name, source=json.dumps(source, ensure_ascii=False, indent=1)
     )
-    out = deps.llm.generate(prompt, TranslationOut, thinking="low")
+    out = deps.llm.generate(prompt, TranslationOut, thinking="low", hedge_after_s=HEDGE_S)
     wrong = _wrong_lengths(source, out)
     if wrong:
         retry = prompt + prompts.TRANSLATE_RETRY.format(lists=", ".join(wrong))
-        out = deps.llm.generate(retry, TranslationOut, thinking="low")
+        out = deps.llm.generate(retry, TranslationOut, thinking="low", hedge_after_s=HEDGE_S)
     flags = check_translation(source, out)
     return GuideTranslation(
         language=language,

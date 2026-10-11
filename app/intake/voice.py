@@ -6,6 +6,8 @@ required and when the report is complete; the model never decides that it is don
 Stateless: the client sends the conversation back each turn.
 """
 
+import re
+
 from google.genai import types
 
 from app.agent import prompts
@@ -72,8 +74,20 @@ def sniff_audio_type(data: bytes) -> str:
     raise InvalidAudioError("Send a voice recording (WebM, Ogg, MP4/M4A, WAV, MP3 or FLAC).")
 
 
+# "Stopped" or "not working" says nothing about the fault, so it does not count as one.
+_VAGUE_SYMPTOM = re.compile(
+    r"^(the )?(machine|press|line|it)?\s*(has )?(stopped|stopping|not working|broken( down)?|"
+    r"breakdown|down|tripped|problem|issue|fault)\.?$",
+    re.IGNORECASE,
+)
+
+
 def missing_fields(state: IntakeState) -> list[str]:
-    return [f for f in REQUIRED[state.mode] if getattr(state.fields, f) in (None, "")]
+    missing = [f for f in REQUIRED[state.mode] if getattr(state.fields, f) in (None, "")]
+    symptom = state.fields.symptom
+    if state.mode == "breakdown" and symptom and _VAGUE_SYMPTOM.match(symptom.strip()):
+        missing.insert(min(1, len(missing)), "symptom")
+    return missing
 
 
 def merge(old: IntakeFields, new: IntakeFields) -> IntakeFields:
@@ -146,7 +160,7 @@ def take_turn(
         contents.append(types.Part.from_bytes(data=audio, mime_type=mime))
     else:
         contents.append(f"Manager (typed): {text.strip()}")
-    heard = deps.llm.generate(contents, IntakeTurnOut, thinking="low")
+    heard = deps.llm.generate(contents, IntakeTurnOut, thinking="low", hedge_after_s=10.0)
 
     fields = merge(state.fields, heard.fields)
     if state.mode == "closure" and fields.downtime_minutes is not None:
