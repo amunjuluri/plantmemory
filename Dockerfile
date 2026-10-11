@@ -31,6 +31,7 @@ COPY app/ app/
 COPY scripts/ scripts/
 COPY data/seed/ data/seed/
 COPY data/glossary/ data/glossary/
+COPY data/kb/ data/kb/
 COPY data/samples/ data/samples/
 COPY --from=web /web/out/ web/out/
 USER plantmemory
