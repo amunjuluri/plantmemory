@@ -60,7 +60,7 @@ function PhotoPanel() {
 }
 
 function ReviewList() {
-  const { records, pageNotes, status, error, save, reset } = useLogbook();
+  const { records, pageNotes, status, error, save, reset, update, remove } = useLogbook();
   const flagged = records.reduce((n, r) => n + r.confidence_flags.length, 0);
 
   if (status === "reading") {
@@ -109,7 +109,7 @@ function ReviewList() {
         </p>
       )}
       {records.map((record, i) => (
-        <RecordEditor key={record.id} record={record} index={i} />
+        <RecordEditor key={record.id} record={record} index={i} update={update} remove={remove} />
       ))}
       {error && (
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-text">
@@ -151,7 +151,7 @@ function Saved() {
           View in Memory
         </Link>
         <Button variant="primary" onClick={reset}>
-          Digitize another page
+          Read another page
         </Button>
       </div>
     </Card>
@@ -165,13 +165,10 @@ export function LogbookView() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-2xl">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Digitize a logbook page</h1>
-          <p className="mt-1.5 text-[0.9375rem] text-fg-muted text-pretty">
-            Turn handwritten entries into searchable records. Anything hard to read is marked for you to
-            check. Nothing is saved until you confirm.
-          </p>
-        </div>
+        <p className="max-w-2xl text-[0.9375rem] text-fg-muted text-pretty">
+          Turn handwritten breakdown and logbook entries into searchable records. Anything hard to read is
+          marked for you to check. Nothing is saved until you confirm.
+        </p>
         {idle && (
           <Segmented
             label="Industry"

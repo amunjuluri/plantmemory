@@ -13,6 +13,34 @@ export type Industry = Incident["industry"];
 export type Outcome = Incident["outcome"];
 export type AgentStep = "structure_incident" | "search_similar" | "check_recurrence" | "draft_report";
 
+export type Guide = Schemas["Guide"];
+export type GuideStatus = Guide["status"];
+export type GuideStep = Schemas["GuideStep-Output"];
+export type GuideItem = Schemas["GuideItem-Output"];
+export type GuidePart = Schemas["GuidePart"];
+export type GuidePartPick = Schemas["GuidePartPick"];
+export type GuideSummary = Schemas["GuideSummary"];
+export type GuideProgress = Schemas["GuideProgress"];
+export type GuideEdit = Schemas["GuideEdit"];
+export type GuideTranslation = Schemas["GuideTranslation"];
+export type GuideEvent = Schemas["GuideEvent"];
+export type SourceRef = Schemas["SourceRef"];
+export type DowntimeEstimate = Schemas["DowntimeEstimate"];
+export type ManualSection = Schemas["ManualSectionPublic"];
+export type ManualSummary = Schemas["ManualSummary"];
+export type ManualUploadResult = Schemas["ManualUploadResult"];
+export type Part = Schemas["Part"];
+export type Asset = Schemas["Asset"];
+export type AppConfig = Schemas["AppConfig"];
+export type IntakeState = Schemas["IntakeState"];
+export type IntakeFields = Schemas["IntakeFields"];
+export type IntakeTurnResult = Schemas["IntakeTurnResult"];
+export type IntakeMode = IntakeState["mode"];
+export type LogAnalysis = Schemas["LogAnalysis"];
+export type LogCodeSummary = Schemas["LogCodeSummary"];
+export type CmmsImportResult = Schemas["CmmsImportResult"];
+export type GuideStepId = "understand" | "search_history" | "search_manuals" | "find_parts" | "write_guide";
+
 /** Same origin in production; the FastAPI dev server during `next dev`. */
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
@@ -54,18 +82,11 @@ const json = (body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-/** Runs the agent and yields each step as it happens, then the draft. */
-export async function* analyzeStream(
-  text: string,
-  industry: Industry | null,
-  signal: AbortSignal,
-): AsyncGenerator<Progress> {
+/** POST a JSON body and yield each server-sent event's data as it arrives. */
+async function* postEvents<T>(path: string, body: unknown, signal: AbortSignal): AsyncGenerator<T> {
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}/api/incidents/analyze/stream`, {
-      ...json({ text, industry }),
-      signal,
-    });
+    response = await fetch(`${API_BASE}${path}`, { ...json(body), signal });
   } catch (err) {
     if (signal.aborted) throw err;
     throw new ApiError("Can't reach PlantMemory. Check your connection and try again.", 0);
@@ -87,9 +108,34 @@ export async function* analyzeStream(
         .filter((line) => line.startsWith("data:"))
         .map((line) => line.slice(5).trimStart())
         .join("\n");
-      if (data) yield JSON.parse(data) as Progress;
+      if (data) yield JSON.parse(data) as T;
     }
   }
+}
+
+/** Runs the agent and yields each step as it happens, then the draft. */
+export function analyzeStream(text: string, industry: Industry | null, signal: AbortSignal) {
+  return postEvents<Progress>("/api/incidents/analyze/stream", { text, industry }, signal);
+}
+
+/** Drafts a repair guide and yields each step as it happens, then the saved guide. */
+export function guideStream(
+  body: { text: string; asset_tag?: string | null; by: string },
+  signal: AbortSignal,
+) {
+  return postEvents<GuideProgress>("/api/guides/stream", body, signal);
+}
+
+const put = (body: unknown): RequestInit => ({ ...json(body), method: "PUT" });
+
+function upload(fields: Record<string, string | Blob | null | undefined>, filename?: string): RequestInit {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === null || value === undefined || value === "") continue;
+    if (value instanceof Blob) form.set(key, value, filename ?? (value instanceof File ? value.name : key));
+    else form.set(key, value);
+  }
+  return { method: "POST", body: form };
 }
 
 export const api = {
@@ -120,4 +166,67 @@ export const api = {
 
   confirmLogbook: (records: Incident[]) =>
     request<Incident[]>("/api/ingest/confirm", json({ records })),
+
+  config: () => request<AppConfig>("/api/config"),
+  assets: () => request<Asset[]>("/api/assets"),
+  manuals: () => request<ManualSummary[]>("/api/manuals"),
+  manualSections: (manualId: string) =>
+    request<ManualSection[]>(`/api/manuals/${encodeURIComponent(manualId)}/sections`),
+  manualSection: (id: string) => request<ManualSection>(`/api/manuals/sections/${encodeURIComponent(id)}`),
+  uploadManual: (file: File, assetTags: string, signal?: AbortSignal) =>
+    request<ManualUploadResult>("/api/manuals/upload", {
+      ...upload({ file, asset_tags: assetTags }),
+      signal,
+    }),
+  deleteManual: (manualId: string) =>
+    request<{ sections_removed: number }>(`/api/manuals/${encodeURIComponent(manualId)}`, {
+      method: "DELETE",
+    }),
+  parts: (asset?: string | null) =>
+    request<Part[]>(`/api/parts${asset ? `?asset=${encodeURIComponent(asset)}` : ""}`),
+
+  guides: (status?: GuideStatus | null) =>
+    request<GuideSummary[]>(`/api/guides${status ? `?status=${status}` : ""}`),
+  guide: (id: string) => request<Guide>(`/api/guides/${encodeURIComponent(id)}`),
+  editGuide: (id: string, body: GuideEdit) => request<Guide>(`/api/guides/${encodeURIComponent(id)}`, put(body)),
+  submitGuide: (id: string, by: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/submit`, json({ by })),
+  reviewGuide: (id: string, by: string, decision: "approve" | "reject", comment?: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/review`, json({ by, decision, comment })),
+  printGuide: (id: string, by: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/print`, json({ by })),
+  closeGuide: (
+    id: string,
+    body: {
+      by: string;
+      action_taken: string;
+      root_cause?: string | null;
+      outcome: Outcome;
+      downtime_minutes?: number | null;
+      parts_used?: string | null;
+    },
+  ) => request<Guide>(`/api/guides/${encodeURIComponent(id)}/close`, json(body)),
+
+  intakeTurn: (state: IntakeState, input: { audio?: Blob; text?: string }, signal?: AbortSignal) =>
+    request<IntakeTurnResult>("/api/intake/turn", {
+      ...upload({ state: JSON.stringify(state), audio: input.audio, text: input.text }, "voice.webm"),
+      signal,
+    }),
+
+  analyzeLog: (file: File, assetTag: string | null, signal?: AbortSignal) =>
+    request<LogAnalysis>("/api/logs/analyze", { ...upload({ file, asset_tag: assetTag }), signal }),
+
+  importCmms: (file: File, signal?: AbortSignal) =>
+    request<CmmsImportResult>("/api/ingest/cmms", { ...upload({ file }), signal }),
 };
+
+/** URL of a manual figure or part photo. */
+export const figureUrl = (id: string) => `${API_BASE}/api/figures/${encodeURIComponent(id)}`;
+
+/** Fetch one of the bundled sample files as a File, as if the user picked it. */
+export async function sampleFile(name: string, type: string): Promise<File> {
+  const response = await fetch(`${API_BASE}/samples/${name}`);
+  if (!response.ok) throw new ApiError("Couldn't load the sample file.", response.status);
+  const blob = await response.blob();
+  return new File([blob], name, { type: blob.type || type });
+}

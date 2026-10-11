@@ -1,15 +1,15 @@
 "use client";
 
 import { Drawer } from "@base-ui/react/drawer";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, BookOpen, Clock, X } from "lucide-react";
 
 import { OutcomeBadge, RecordId } from "@/components/incident-meta";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
-import type { Incident } from "@/lib/api";
+import { figureUrl, type Incident, type ManualSection } from "@/lib/api";
 import { useMediaQuery } from "@/lib/hooks/use-media-query";
-import { useRecords } from "@/lib/stores/records";
-import { cn, formatDate, INDUSTRY_LABEL, SOURCE_LABEL } from "@/lib/utils";
+import { isManualId, useRecords } from "@/lib/stores/records";
+import { cn, formatDate, formatMinutes, INDUSTRY_LABEL, SECTION_KIND_LABEL, SOURCE_LABEL } from "@/lib/utils";
 
 const FIELD_LABEL: Record<string, string> = {
   area_or_equipment: "Equipment or area",
@@ -80,11 +80,54 @@ function RecordBody({ record }: { record: Incident }) {
   );
 }
 
-/** One record, opened from any citation chip or card. Side panel on desktop, sheet on phones. */
+function SectionBody({ section }: { section: ManualSection }) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <RecordId id={section.id} />
+        <span className="text-fg-subtle">·</span>
+        <span className="text-xs text-fg-muted">Page {section.page}</span>
+      </div>
+      <Drawer.Title className="mt-2 text-lg leading-7 font-semibold tracking-tight text-balance">
+        {section.title}
+      </Drawer.Title>
+      <p className="mt-1 flex items-center gap-1.5 text-[0.8125rem] text-fg-muted">
+        <BookOpen className="size-3.5 shrink-0" />
+        {section.manual_title}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <Badge tone="accent">{SECTION_KIND_LABEL[section.kind]}</Badge>
+        {section.error_codes.map((code) => (
+          <Badge key={code} className="font-mono">
+            {code}
+          </Badge>
+        ))}
+        {section.repair_minutes ? (
+          <Badge>
+            <Clock />
+            About {formatMinutes(section.repair_minutes)}
+          </Badge>
+        ) : null}
+      </div>
+      <p className="mt-5 whitespace-pre-wrap text-fg">{section.text}</p>
+      {section.figure_ids.map((id) => (
+        <figure key={id} className="mt-5 overflow-hidden rounded-xl bg-white shadow-[inset_0_0_0_1px_var(--color-line)]">
+          {/* eslint-disable-next-line @next/next/no-img-element -- served by the API */}
+          <img src={figureUrl(id)} alt="" className="w-full object-contain" loading="lazy" />
+        </figure>
+      ))}
+      <p className="mt-4 text-xs text-fg-subtle">Applies to {section.asset_tags.join(", ") || "this equipment"}.</p>
+    </>
+  );
+}
+
+/** One record or manual section, opened from any citation chip or card. Side panel on desktop, sheet on phones. */
 export function RecordSheet() {
-  const { openId, cache, close } = useRecords();
+  const { openId, cache, sections, close } = useRecords();
   const wide = useMediaQuery("(min-width: 768px)");
-  const record = openId ? cache[openId] : undefined;
+  const manual = openId !== null && isManualId(openId);
+  const record = openId && !manual ? cache[openId] : undefined;
+  const section = openId && manual ? sections[openId] : undefined;
 
   return (
     <Drawer.Root
@@ -117,6 +160,8 @@ export function RecordSheet() {
             <Drawer.Content className="px-5 pt-5 pb-6 sm:px-6">
               {record ? (
                 <RecordBody record={record} />
+              ) : section ? (
+                <SectionBody section={section} />
               ) : (
                 <div className="flex items-center gap-2 py-10 text-sm text-fg-muted">
                   <Spinner /> Loading record

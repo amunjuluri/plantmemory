@@ -186,7 +186,9 @@ def write_guide(request: GuideRequest, ev: Evidence, deps: AgentDeps) -> Guide:
         allowed=", ".join(sources) or "none",
         no_source_rule="" if ev.sections else prompts.GUIDE_NO_MANUAL,
     )
-    content = deps.llm.generate(prompt, GuideContent, thinking=deps.settings.draft_thinking_level)
+    content = deps.llm.generate(
+        prompt, GuideContent, thinking=deps.settings.draft_thinking_level, hedge_after_s=20.0
+    )
 
     steps = guardrails.check_steps(content.steps, sources, figures)
     safety = [guardrails.check_item(i, sources) for i in content.safety if i.text.strip()]

@@ -1,5 +1,5 @@
-import { AnalyzeView } from "@/components/analyze/analyze-view";
+import { BreakdownView } from "@/components/breakdown/breakdown-view";
 
-export default function AnalyzePage() {
-  return <AnalyzeView />;
+export default function BreakdownPage() {
+  return <BreakdownView />;
 }

@@ -6,6 +6,8 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-indic: var(--font-geist-sans), var(--font-telugu), var(--font-devanagari), ui-sans-serif,
+    system-ui, sans-serif;
 
   --color-bg: oklch(0.982 0.002 247);
   --color-surface: oklch(1 0 0);
@@ -159,4 +161,27 @@
   to {
     transform: translateY(400%);
   }
+}
+
+/* Printed repair guides: plain black on white, A4, no app chrome. */
+@page {
+  size: A4;
+  margin: 12mm 12mm 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .dark {
+    color-scheme: light;
+  }
+}
+
+/* Telugu and Devanagari need more line height than Latin text to stay readable. */
+.indic {
+  font-family: var(--font-indic);
+  line-height: 1.7;
 }

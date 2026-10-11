@@ -115,7 +115,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm Logbook
-         * @description Save reviewed logbook records so future searches can find them.
+         * @description Save reviewed logbook or CMMS records so future searches can find them.
          */
         post: operations["confirm_logbook_api_ingest_confirm_post"];
         delete?: never;
@@ -164,6 +164,369 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** App Config */
+        get: operations["app_config_api_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Assets
+         * @description Machines the plant has manuals or spare parts for.
+         */
+        get: operations["assets_api_assets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Manuals */
+        get: operations["manuals_api_manuals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manuals/sections/{section_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Manual Section */
+        get: operations["manual_section_api_manuals_sections__section_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manuals/{manual_id}/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Manual Sections */
+        get: operations["manual_sections_api_manuals__manual_id__sections_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manuals/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Manual
+         * @description Read a manual so guides can cite it by page. Replaces an earlier upload of it.
+         */
+        post: operations["upload_manual_api_manuals_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manuals/{manual_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Manual */
+        delete: operations["delete_manual_api_manuals__manual_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Parts
+         * @description Spare parts and stock, optionally for one machine.
+         */
+        get: operations["parts_api_parts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/figures/{figure_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Figure
+         * @description A manual figure or part photo. Figures never change once stored.
+         */
+        get: operations["figure_api_figures__figure_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Guide
+         * @description Draft a repair guide, streamed as server-sent events: each step, then the guide.
+         */
+        post: operations["draft_guide_api_guides_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guides */
+        get: operations["guides_api_guides_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guide */
+        get: operations["guide_api_guides__guide_id__get"];
+        /**
+         * Edit Guide
+         * @description Save the manager's edits. Sources, values, figures and parts are re-checked.
+         */
+        put: operations["edit_guide_api_guides__guide_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Guide
+         * @description Translate the guide into the shop-floor languages and send it to QA.
+         */
+        post: operations["submit_guide_api_guides__guide_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Guide
+         * @description QA approves the guide for printing, or rejects it with a reason.
+         */
+        post: operations["review_guide_api_guides__guide_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Print Guide
+         * @description Count a printed copy of an approved guide.
+         */
+        post: operations["print_guide_api_guides__guide_id__print_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close Guide
+         * @description Record what was actually done; it is saved to plant memory.
+         */
+        post: operations["close_guide_api_guides__guide_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intake/turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Intake Turn
+         * @description One turn of the spoken report: hear it, fill fields, ask for what is missing.
+         */
+        post: operations["intake_turn_api_intake_turn_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/logs/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Log
+         * @description Split a log into errors and warnings, with manual first actions and time estimates.
+         */
+        post: operations["analyze_log_api_logs_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ingest/cmms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Cmms
+         * @description Read maintenance history from a CMMS export for review. Nothing is saved yet.
+         */
+        post: operations["ingest_cmms_api_ingest_cmms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -180,6 +543,16 @@ export interface components {
              * @description Restrict search to one industry. Omit to search all.
              */
             industry?: ("paper" | "pharma" | "generic") | null;
+        };
+        /**
+         * AppConfig
+         * @description What the UI needs to know about this deployment.
+         */
+        AppConfig: {
+            /** Guide Languages */
+            guide_languages: components["schemas"]["LanguageOption"][];
+            /** Store Backend */
+            store_backend: string;
         };
         /**
          * ApproveRequest
@@ -200,6 +573,38 @@ export interface components {
             /** Downtime Minutes */
             downtime_minutes?: number | null;
         };
+        /**
+         * Asset
+         * @description A machine the plant has a manual or spare parts for.
+         */
+        Asset: {
+            /** Tag */
+            tag: string;
+            /** Equipment Model */
+            equipment_model: string;
+            /** Manual Id */
+            manual_id: string | null;
+        };
+        /** Body_analyze_log_api_logs_analyze_post */
+        Body_analyze_log_api_logs_analyze_post: {
+            /**
+             * File
+             * @description Machine or instrument log (CSV or text)
+             */
+            file: string;
+            /** Asset Tag */
+            asset_tag?: string | null;
+        };
+        /** Body_ingest_cmms_api_ingest_cmms_post */
+        Body_ingest_cmms_api_ingest_cmms_post: {
+            /**
+             * File
+             * @description CMMS export: CSV or Excel
+             */
+            file: string;
+            /** Industry */
+            industry?: ("paper" | "pharma" | "generic") | null;
+        };
         /** Body_ingest_logbook_api_ingest_logbook_post */
         Body_ingest_logbook_api_ingest_logbook_post: {
             /**
@@ -210,13 +615,137 @@ export interface components {
             /** Industry */
             industry?: ("paper" | "pharma" | "generic") | null;
         };
+        /** Body_intake_turn_api_intake_turn_post */
+        Body_intake_turn_api_intake_turn_post: {
+            /**
+             * State
+             * @description The IntakeState from the previous turn, as JSON
+             */
+            state: string;
+            /**
+             * Audio
+             * @description Voice recording
+             */
+            audio?: string | null;
+            /** Text */
+            text?: string | null;
+        };
+        /** Body_upload_manual_api_manuals_upload_post */
+        Body_upload_manual_api_manuals_upload_post: {
+            /**
+             * File
+             * @description Equipment manual as a PDF
+             */
+            file: string;
+            /**
+             * Asset Tags
+             * @description Machines it covers, e.g. TP-01, TP-02
+             */
+            asset_tags?: string | null;
+        };
+        /**
+         * CmmsImportResult
+         * @description Rows read from a CMMS export, not yet saved.
+         */
+        CmmsImportResult: {
+            /** Source Ref */
+            source_ref: string;
+            /** Records */
+            records: components["schemas"]["IncidentPublic-Output"][];
+            /** Page Notes */
+            page_notes: string | null;
+            /**
+             * Glossary Terms
+             * @description Glossary entries given to the model.
+             * @default 0
+             */
+            glossary_terms: number;
+            mapping: components["schemas"]["CmmsMapping"];
+            /**
+             * Rows
+             * @description Data rows in the file.
+             */
+            rows: number;
+            /**
+             * Skipped
+             * @description Why rows were skipped.
+             */
+            skipped: string[];
+        };
+        /**
+         * CmmsMapping
+         * @description Which columns of a CMMS export hold which incident field. The model proposes it;
+         *     code applies it to every row, so no row is ever paraphrased.
+         */
+        CmmsMapping: {
+            /**
+             * System
+             * @description What the export looks like, e.g. "SAP PM notification list".
+             */
+            system: string | null;
+            /** Id Column */
+            id_column: string | null;
+            /** Date Column */
+            date_column: string;
+            /** Equipment Columns */
+            equipment_columns: string[];
+            /** Description Columns */
+            description_columns: string[];
+            /** Cause Columns */
+            cause_columns: string[];
+            /** Action Columns */
+            action_columns: string[];
+            /** Downtime Column */
+            downtime_column: string | null;
+            /**
+             * Downtime Unit
+             * @default hours
+             * @enum {string}
+             */
+            downtime_unit: "minutes" | "hours" | "days";
+            /** Status Column */
+            status_column: string | null;
+            /**
+             * Completed Values
+             * @description Status values meaning the work was completed.
+             */
+            completed_values: string[];
+        };
         /**
          * ConfirmRequest
-         * @description Reviewed (possibly edited) records from /api/ingest/logbook, to be saved.
+         * @description Reviewed (possibly edited) records from a logbook photo or CMMS export, to be saved.
          */
         ConfirmRequest: {
             /** Records */
             records: components["schemas"]["IncidentPublic-Input"][];
+        };
+        /**
+         * DowntimeEstimate
+         * @description How long the repair may take, from the manual and from past fixes. Worked out in code.
+         */
+        DowntimeEstimate: {
+            /** Manual Minutes */
+            manual_minutes: number | null;
+            /**
+             * Manual Source
+             * @description Section id the time came from.
+             */
+            manual_source: string | null;
+            /**
+             * History Minutes
+             * @description Median of past downtimes.
+             */
+            history_minutes: number | null;
+            /**
+             * History Records
+             * @default 0
+             */
+            history_records: number;
+            /**
+             * Note
+             * @default No time estimate: neither the manual nor past records give one.
+             */
+            note: string;
         };
         /**
          * Draft
@@ -346,6 +875,494 @@ export interface components {
              */
             general: boolean;
         };
+        /**
+         * ErrorCode
+         * @description One row of a manual's alarm table: what the code means and what to do first.
+         */
+        ErrorCode: {
+            /** Id */
+            id: string;
+            /**
+             * Code
+             * @description As shown on the machine, e.g. "E-104".
+             */
+            code: string;
+            /**
+             * Code Key
+             * @description Normalised for lookup, e.g. "E104".
+             */
+            code_key: string;
+            /** Manual Id */
+            manual_id: string;
+            /** Equipment Model */
+            equipment_model: string;
+            /** Asset Tags */
+            asset_tags: string[];
+            /** Title */
+            title: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "warning" | "error";
+            /** Stops Machine */
+            stops_machine: boolean;
+            /** Likely Causes */
+            likely_causes: string[];
+            /** First Actions */
+            first_actions: string[];
+            /** Repair Minutes */
+            repair_minutes: number | null;
+            /**
+             * Section Id
+             * @description Section with the full procedure.
+             */
+            section_id: string | null;
+        };
+        /**
+         * Guide
+         * @description A repair guide for one breakdown: drafted by AI, edited by the manager, approved by QA,
+         *     printed for the workers, then closed with what was actually done.
+         */
+        Guide: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @default draft
+             * @enum {string}
+             */
+            status: "draft" | "in_review" | "approved" | "rejected" | "closed";
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Request
+             * @description The manager's description, as given.
+             */
+            request: string;
+            incident: components["schemas"]["StructuredIncident-Output"];
+            /** Asset Tag */
+            asset_tag: string | null;
+            /** Equipment Model */
+            equipment_model: string | null;
+            /** Error Codes */
+            error_codes: string[];
+            /** Title */
+            title: string;
+            /** Summary */
+            summary: string;
+            /** Safety */
+            safety: components["schemas"]["GuideItem-Output"][];
+            /** Steps */
+            steps: components["schemas"]["GuideStep-Output"][];
+            /** Parts */
+            parts: components["schemas"]["GuidePart"][];
+            /** Restart Checks */
+            restart_checks: components["schemas"]["GuideItem-Output"][];
+            /** Escalate If */
+            escalate_if: string[];
+            /** Open Questions */
+            open_questions: string[];
+            /** Similar Incidents */
+            similar_incidents: components["schemas"]["SimilarIncident-Output"][];
+            recurrence: components["schemas"]["Recurrence-Output"] | null;
+            /** Recurrence Note */
+            recurrence_note: string | null;
+            /** Manual Sections */
+            manual_sections: components["schemas"]["ManualSectionPublic"][];
+            /** Sources */
+            sources: components["schemas"]["SourceRef"][];
+            downtime: components["schemas"]["DowntimeEstimate"];
+            /** Flags */
+            flags: string[];
+            /** Translations */
+            translations: components["schemas"]["GuideTranslation"][];
+            /** Events */
+            events: components["schemas"]["GuideEvent"][];
+            /**
+             * Copies Printed
+             * @default 0
+             */
+            copies_printed: number;
+            /** Closure Record Id */
+            closure_record_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Notice
+             * @default AI-drafted from plant records and equipment manuals. Only a QA-approved, printed copy may be used on the shop floor.
+             */
+            notice: string;
+        };
+        /**
+         * GuideAction
+         * @description Submit for review or record a printed copy.
+         */
+        GuideAction: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Comment */
+            comment?: string | null;
+        };
+        /**
+         * GuideClose
+         * @description What was actually done. Saved to plant memory so the next search finds it.
+         */
+        GuideClose: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Action Taken */
+            action_taken: string;
+            /** Root Cause */
+            root_cause?: string | null;
+            /**
+             * Outcome
+             * @default resolved
+             * @enum {string}
+             */
+            outcome: "resolved" | "recurred" | "unknown";
+            /** Downtime Minutes */
+            downtime_minutes?: number | null;
+            /** Parts Used */
+            parts_used?: string | null;
+        };
+        /**
+         * GuideEdit
+         * @description The manager's edited guide content. Code re-checks sources, parts and figures.
+         */
+        GuideEdit: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Title */
+            title: string;
+            /** Summary */
+            summary: string;
+            /** Safety */
+            safety: components["schemas"]["GuideItem-Input"][];
+            /** Steps */
+            steps: components["schemas"]["GuideStep-Input"][];
+            /** Parts */
+            parts?: components["schemas"]["GuidePartPick"][];
+            /** Restart Checks */
+            restart_checks?: components["schemas"]["GuideItem-Input"][];
+            /** Escalate If */
+            escalate_if?: string[];
+            /** Open Questions */
+            open_questions?: string[];
+        };
+        /**
+         * GuideEvent
+         * @description One entry in a guide's audit trail.
+         */
+        GuideEvent: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "printed" | "closed";
+            /** Comment */
+            comment: string | null;
+        };
+        /**
+         * GuideItem
+         * @description A safety point, restart check or similar line, with its sources.
+         */
+        "GuideItem-Input": {
+            /** Text */
+            text: string;
+            /** Citations */
+            citations?: string[];
+            /**
+             * General
+             * @description True when no source supports it.
+             * @default false
+             */
+            general: boolean;
+            /**
+             * Flags
+             * @description Warnings added by code for the reviewer.
+             */
+            flags?: string[];
+        };
+        /**
+         * GuideItem
+         * @description A safety point, restart check or similar line, with its sources.
+         */
+        "GuideItem-Output": {
+            /** Text */
+            text: string;
+            /** Citations */
+            citations: string[];
+            /**
+             * General
+             * @description True when no source supports it.
+             * @default false
+             */
+            general: boolean;
+            /**
+             * Flags
+             * @description Warnings added by code for the reviewer.
+             */
+            flags: string[];
+        };
+        /**
+         * GuidePart
+         * @description A spare part the guide needs, with stock looked up by code.
+         */
+        GuidePart: {
+            /** Part No */
+            part_no: string;
+            /**
+             * Qty
+             * @default 1
+             */
+            qty: number;
+            /**
+             * Why
+             * @default
+             */
+            why: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Unit
+             * @default pc
+             */
+            unit: string;
+            /**
+             * Stock Qty
+             * @default 0
+             */
+            stock_qty: number;
+            /**
+             * Bin Location
+             * @default
+             */
+            bin_location: string;
+            /** Lead Time Days */
+            lead_time_days: number | null;
+            /** Figure Id */
+            figure_id: string | null;
+            /**
+             * In Stock
+             * @default true
+             */
+            in_stock: boolean;
+        };
+        /**
+         * GuidePartPick
+         * @description A part picked from the offered list.
+         */
+        GuidePartPick: {
+            /** Part No */
+            part_no: string;
+            /** Qty */
+            qty: number;
+            /**
+             * Why
+             * @default
+             */
+            why: string;
+        };
+        /**
+         * GuideProgress
+         * @description One update while a guide is drafted: a step starting or finishing, then the guide.
+         */
+        GuideProgress: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "step" | "guide" | "error";
+            /** Step */
+            step: string | null;
+            /** Status */
+            status: ("started" | "done" | "error") | null;
+            /** Summary */
+            summary: string | null;
+            /** Detail */
+            detail: string | null;
+            guide: components["schemas"]["Guide"] | null;
+        };
+        /**
+         * GuideRequest
+         * @description A breakdown described by the manager, typed or from voice intake or an alarm log.
+         */
+        GuideRequest: {
+            /** Text */
+            text: string;
+            /** Asset Tag */
+            asset_tag?: string | null;
+            /**
+             * By
+             * @default Manager
+             */
+            by: string;
+        };
+        /**
+         * GuideReview
+         * @description QA's decision. A rejection must say why.
+         */
+        GuideReview: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "reject";
+            /** Comment */
+            comment?: string | null;
+        };
+        /**
+         * GuideStep
+         * @description One numbered repair step.
+         */
+        "GuideStep-Input": {
+            /** Text */
+            text: string;
+            /** Citations */
+            citations?: string[];
+            /**
+             * General
+             * @description True when no source supports it.
+             * @default false
+             */
+            general: boolean;
+            /**
+             * Flags
+             * @description Warnings added by code for the reviewer.
+             */
+            flags?: string[];
+            /** Caution */
+            caution?: string | null;
+            /** Figure Id */
+            figure_id?: string | null;
+        };
+        /**
+         * GuideStep
+         * @description One numbered repair step.
+         */
+        "GuideStep-Output": {
+            /** Text */
+            text: string;
+            /** Citations */
+            citations: string[];
+            /**
+             * General
+             * @description True when no source supports it.
+             * @default false
+             */
+            general: boolean;
+            /**
+             * Flags
+             * @description Warnings added by code for the reviewer.
+             */
+            flags: string[];
+            /** Caution */
+            caution: string | null;
+            /** Figure Id */
+            figure_id: string | null;
+        };
+        /**
+         * GuideSummary
+         * @description A guide in a list.
+         */
+        GuideSummary: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "in_review" | "approved" | "rejected" | "closed";
+            /** Version */
+            version: number;
+            /** Title */
+            title: string;
+            /** Asset Tag */
+            asset_tag: string | null;
+            /** Author */
+            author: string | null;
+            /** Steps */
+            steps: number;
+            /** Copies Printed */
+            copies_printed: number;
+            /** Flags */
+            flags: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * GuideTranslation
+         * @description The guide's text in one shop-floor language, item for item.
+         */
+        GuideTranslation: {
+            /** Language */
+            language: string;
+            /** Language Name */
+            language_name: string;
+            /** Title */
+            title: string;
+            /** Summary */
+            summary: string;
+            /** Safety */
+            safety: string[];
+            /** Steps */
+            steps: string[];
+            /** Step Cautions */
+            step_cautions: string[];
+            /** Restart Checks */
+            restart_checks: string[];
+            /** Escalate If */
+            escalate_if: string[];
+            /**
+             * Flags
+             * @description Lines QA should check against the English.
+             */
+            flags: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -409,7 +1426,7 @@ export interface components {
              * @default seed
              * @enum {string}
              */
-            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft";
+            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft" | "cmms_import" | "guide_closure";
             /** Source Ref */
             source_ref?: string | null;
             /**
@@ -467,7 +1484,7 @@ export interface components {
              * @default seed
              * @enum {string}
              */
-            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft";
+            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft" | "cmms_import" | "guide_closure";
             /** Source Ref */
             source_ref: string | null;
             /**
@@ -498,6 +1515,277 @@ export interface components {
              * @default 0
              */
             glossary_terms: number;
+        };
+        /**
+         * IntakeFields
+         * @description What the manager has said so far. Values in English; codes and numbers as spoken.
+         */
+        IntakeFields: {
+            /** Equipment */
+            equipment: string | null;
+            /** Symptom */
+            symptom: string | null;
+            /** Machine Stopped */
+            machine_stopped: boolean | null;
+            /** Error Code */
+            error_code: string | null;
+            /** Started */
+            started: string | null;
+            /** Product Or Batch */
+            product_or_batch: string | null;
+            /** Already Tried */
+            already_tried: string | null;
+            /** Action Taken */
+            action_taken: string | null;
+            /** Root Cause */
+            root_cause: string | null;
+            /** Parts Used */
+            parts_used: string | null;
+            /** Downtime Minutes */
+            downtime_minutes: number | null;
+            /** Outcome */
+            outcome: ("resolved" | "recurred" | "unknown") | null;
+        };
+        /** IntakeMessage */
+        IntakeMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "manager" | "assistant";
+            /** Text */
+            text: string;
+        };
+        /**
+         * IntakeState
+         * @description The conversation so far. The client keeps it and sends it back each turn.
+         */
+        IntakeState: {
+            /**
+             * Mode
+             * @default breakdown
+             * @enum {string}
+             */
+            mode: "breakdown" | "closure";
+            fields: components["schemas"]["IntakeFields"];
+            /** History */
+            history: components["schemas"]["IntakeMessage"][];
+            /** Language */
+            language: string | null;
+            /**
+             * Turns
+             * @default 0
+             */
+            turns: number;
+        };
+        /**
+         * IntakeTurnResult
+         * @description The updated conversation, what is still missing, and a summary once complete.
+         */
+        IntakeTurnResult: {
+            state: components["schemas"]["IntakeState"];
+            /** Transcript */
+            transcript: string;
+            /** Question */
+            question: string | null;
+            /** Missing */
+            missing: string[];
+            /** Done */
+            done: boolean;
+            /**
+             * Summary
+             * @description The report so far, in English, ready for a guide.
+             */
+            summary: string;
+        };
+        /** LanguageOption */
+        LanguageOption: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * LogAnalysis
+         * @description A machine or instrument log, split into errors (machine stopped) and warnings.
+         */
+        LogAnalysis: {
+            /** Source Ref */
+            source_ref: string;
+            /**
+             * Parser
+             * @enum {string}
+             */
+            parser: "table" | "ai";
+            /** Asset Tag */
+            asset_tag: string | null;
+            /** Equipment Model */
+            equipment_model: string | null;
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Total Events */
+            total_events: number;
+            /** Errors */
+            errors: components["schemas"]["LogCodeSummary"][];
+            /** Warnings */
+            warnings: components["schemas"]["LogCodeSummary"][];
+            /**
+             * Info Events
+             * @default 0
+             */
+            info_events: number;
+            /** Notes */
+            notes: string[];
+        };
+        /**
+         * LogCodeSummary
+         * @description Everything known about one alarm code in the log.
+         */
+        LogCodeSummary: {
+            /** Code */
+            code: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning" | "info";
+            /** Count */
+            count: number;
+            /** First Seen */
+            first_seen: string | null;
+            /** Last Seen */
+            last_seen: string | null;
+            /** Stops Machine */
+            stops_machine: boolean;
+            /** Trend */
+            trend: string | null;
+            manual: components["schemas"]["ErrorCode"] | null;
+            section: components["schemas"]["ManualSectionPublic"] | null;
+            /** Immediate Actions */
+            immediate_actions: string[];
+            /** Likely Causes */
+            likely_causes: string[];
+            downtime: components["schemas"]["DowntimeEstimate"] | null;
+            /** History */
+            history: components["schemas"]["SimilarIncident-Output"][];
+            /**
+             * Guide Prompt
+             * @description A breakdown report to start a repair guide from.
+             */
+            guide_prompt: string;
+        };
+        /**
+         * ManualSectionPublic
+         * @description A manual section as returned to clients (no embedding).
+         */
+        ManualSectionPublic: {
+            /**
+             * Manual Id
+             * @description Short manual code, e.g. "RTP37".
+             */
+            manual_id: string;
+            /** Manual Title */
+            manual_title: string;
+            /** Equipment Model */
+            equipment_model: string;
+            /**
+             * Asset Tags
+             * @description Plant machines this manual covers, e.g. TP-01.
+             */
+            asset_tags: string[];
+            /** Page */
+            page: number;
+            /** Title */
+            title: string;
+            /**
+             * Kind
+             * @default general
+             * @enum {string}
+             */
+            kind: "safety" | "troubleshooting" | "procedure" | "error_codes" | "maintenance" | "general";
+            /** Text */
+            text: string;
+            /** Error Codes */
+            error_codes: string[];
+            /**
+             * Repair Minutes
+             * @description Typical time for this procedure, if the manual says.
+             */
+            repair_minutes: number | null;
+            /** Figure Ids */
+            figure_ids: string[];
+            /** Id */
+            id: string;
+        };
+        /**
+         * ManualSummary
+         * @description One manual in the knowledge base.
+         */
+        ManualSummary: {
+            /** Manual Id */
+            manual_id: string;
+            /** Manual Title */
+            manual_title: string;
+            /** Equipment Model */
+            equipment_model: string;
+            /** Asset Tags */
+            asset_tags: string[];
+            /** Sections */
+            sections: number;
+            /** Pages */
+            pages: number;
+            /** Error Codes */
+            error_codes: number;
+            /** Figures */
+            figures: number;
+        };
+        /** ManualUploadResult */
+        ManualUploadResult: {
+            summary: components["schemas"]["ManualSummary"];
+            /** Sections */
+            sections: components["schemas"]["ManualSectionPublic"][];
+        };
+        /**
+         * Part
+         * @description A spare part with its stock in the plant store.
+         */
+        Part: {
+            /** Part No */
+            part_no: string;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Equipment Model */
+            equipment_model: string;
+            /** Asset Tags */
+            asset_tags: string[];
+            /**
+             * Stock Qty
+             * @default 0
+             */
+            stock_qty: number;
+            /**
+             * Unit
+             * @default pc
+             */
+            unit: string;
+            /**
+             * Bin Location
+             * @default
+             */
+            bin_location: string;
+            /** Lead Time Days */
+            lead_time_days: number | null;
+            /** Figure Id */
+            figure_id: string | null;
         };
         /**
          * Progress
@@ -639,6 +1927,21 @@ export interface components {
              */
             why: string;
             record: components["schemas"]["IncidentPublic-Output"] | null;
+        };
+        /**
+         * SourceRef
+         * @description Something a guide may cite: a past incident or a manual section.
+         */
+        SourceRef: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "incident" | "manual";
+            /** Label */
+            label: string;
         };
         /**
          * StructuredIncident
@@ -964,6 +2267,625 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncidentPublic-Output"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    app_config_api_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppConfig"];
+                };
+            };
+        };
+    };
+    assets_api_assets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"][];
+                };
+            };
+        };
+    };
+    manuals_api_manuals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualSummary"][];
+                };
+            };
+        };
+    };
+    manual_section_api_manuals_sections__section_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualSectionPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manual_sections_api_manuals__manual_id__sections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                manual_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualSectionPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_manual_api_manuals_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_manual_api_manuals_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualUploadResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_manual_api_manuals__manual_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                manual_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    parts_api_parts_get: {
+        parameters: {
+            query?: {
+                asset?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Part"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    figure_api_figures__figure_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                figure_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_guide_api_guides_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guides_api_guides_get: {
+        parameters: {
+            query?: {
+                status?: ("draft" | "in_review" | "approved" | "rejected" | "closed") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuideSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guide_api_guides__guide_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_guide_api_guides__guide_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideEdit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_guide_api_guides__guide_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_guide_api_guides__guide_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideReview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    print_guide_api_guides__guide_id__print_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_guide_api_guides__guide_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideClose"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    intake_turn_api_intake_turn_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_intake_turn_api_intake_turn_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeTurnResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_log_api_logs_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_analyze_log_api_logs_analyze_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogAnalysis"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_cmms_api_ingest_cmms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_ingest_cmms_api_ingest_cmms_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmmsImportResult"];
                 };
             };
             /** @description Validation Error */
