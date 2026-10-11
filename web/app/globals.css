@@ -153,6 +153,100 @@
   }
 }
 
+/* What covers the bottom of the screen, so toasts sit above it: the phone tab bar, and an
+   action bar when a page has one (it sets --action-bar to how far its top is from the
+   bottom of the screen). */
+:root {
+  --bottom-chrome: 0px;
+  --action-bar: 0px;
+}
+@media (max-width: 767px) {
+  :root {
+    --bottom-chrome: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Loaders and the voice orb. Predetermined loops are CSS animations, so they stay smooth
+   while the page is busy. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+@keyframes draw-line {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  45%,
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes scan-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(var(--scan-distance, 10px));
+  }
+}
+@keyframes glyph-cycle {
+  0%,
+  28% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  33%,
+  95% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@keyframes travel {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(14px);
+    opacity: 0;
+  }
+}
+@keyframes ping-soft {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
 /* The band is a quarter of the photo's height, so 400% of itself crosses the photo. */
 @keyframes scan {
   from {

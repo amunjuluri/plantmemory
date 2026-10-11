@@ -373,10 +373,16 @@ class Asset(Model):
 
 # --- Repair guides ---
 
-GuideStatus = Literal["draft", "in_review", "approved", "rejected", "closed"]
+GuideStatus = Literal["draft", "in_review", "approved", "rejected", "closed", "released"]
 GUIDE_NOTICE = (
-    "AI-drafted from plant records and equipment manuals. Only a QA-approved, printed copy "
-    "may be used on the shop floor."
+    "AI-drafted from plant records and equipment manuals, then checked and approved by a "
+    "person. Only an approved, printed copy may be used on the shop floor."
+)
+# What QA confirms before a repaired machine goes back to production (line clearance).
+RELEASE_CHECKS = (
+    "Machine and area cleaned after the repair",
+    "All tools, old parts and loose items removed",
+    "Line clearance done; the machine can restart",
 )
 
 
@@ -453,13 +459,16 @@ class GuideEvent(Model):
 
     at: datetime = Field(default_factory=_now)
     by: str
-    action: Literal["created", "edited", "submitted", "approved", "rejected", "printed", "closed"]
+    action: Literal[
+        "created", "edited", "submitted", "approved", "rejected", "printed", "closed", "released"
+    ]
     comment: str | None = None
 
 
 class Guide(Model):
-    """A repair guide for one breakdown: drafted by AI, edited by the manager, approved by QA,
-    printed for the workers, then closed with what was actually done."""
+    """A repair guide for one breakdown: drafted by AI, checked and approved by the manager
+    (or by QA when it needs it), printed for the workers, closed with what was actually
+    done, then released back to production by QA."""
 
     id: str
     status: GuideStatus = "draft"
@@ -484,6 +493,10 @@ class Guide(Model):
     sources: list[SourceRef] = Field(default_factory=list)
     downtime: DowntimeEstimate = Field(default_factory=DowntimeEstimate)
     flags: list[str] = Field(default_factory=list)
+    qa_reasons: list[str] = Field(
+        default_factory=list,
+        description="Why QA must approve before it is printed. Empty: the manager may approve.",
+    )
     translations: list[GuideTranslation] = Field(default_factory=list)
     events: list[GuideEvent] = Field(default_factory=list)
     copies_printed: int = 0
@@ -597,6 +610,14 @@ class GuideReview(Model):
 
     by: SignerName
     decision: Literal["approve", "reject"]
+    comment: str | None = Field(default=None, max_length=2000)
+
+
+class GuideRelease(Model):
+    """QA's line clearance after the repair: every check confirmed."""
+
+    by: SignerName
+    checks: list[str] = Field(default_factory=list, max_length=10)
     comment: str | None = Field(default=None, max_length=2000)
 
 

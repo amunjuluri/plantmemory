@@ -312,6 +312,11 @@ export function SourcesList({ guide }: { guide: Guide }) {
       )}
       {guide.manual_sections.length > 0 && (
         <Card className="overflow-hidden">
+          <p className="border-b border-line bg-surface-2/60 px-4 py-2 text-xs text-fg-muted">
+            Manual: <span className="font-medium text-fg">{guide.manual_sections[0].equipment_model}</span>
+            {guide.manual_sections[0].asset_tags.length > 0 &&
+              `, the model of ${guide.manual_sections[0].asset_tags.join(" and ")}`}
+          </p>
           <ul className="divide-y divide-line">
             {guide.manual_sections.map((section) => (
               <li key={section.id}>
@@ -322,7 +327,6 @@ export function SourcesList({ guide }: { guide: Guide }) {
                 >
                   <span className="tabular w-12 shrink-0 font-mono text-xs text-fg-subtle">p.{section.page}</span>
                   <span className="min-w-0 flex-1 truncate text-sm">{section.title}</span>
-                  <span className="hidden shrink-0 text-xs text-fg-subtle sm:inline">{section.manual_id}</span>
                 </button>
               </li>
             ))}

@@ -9,6 +9,7 @@ import time
 from collections import deque
 
 from fastapi import HTTPException, Request
+from starlette.requests import HTTPConnection
 
 from app.config import get_settings
 
@@ -48,7 +49,7 @@ class RateLimiter:
                     del self._calls[c]
 
 
-def client_id(request: Request) -> str:
+def client_id(request: HTTPConnection) -> str:
     """The caller's IP: first X-Forwarded-For hop on Cloud Run, else the socket peer."""
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:

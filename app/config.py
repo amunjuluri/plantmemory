@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Models. Defaults follow current Google docs; override per environment.
     gemini_model: str = "gemini-3.8-flash"
     embedding_model: str = "gemini-embedding-2"
+    # Spoken conversations (voice reports). On Vertex AI the Live models are served from
+    # a few regions only, not "global"; us-central1 has gemini-3.8-live.
+    live_model: str = "gemini-3.8-live"
+    live_location: str = "us-central1"
+    live_voice: str = "Aoede"
     embedding_dim: int = 768
 
     # Storage.
@@ -60,6 +65,10 @@ class Settings(BaseSettings):
     # Languages the printed repair guide is translated into, as ISO 639-1 codes. English
     # is always printed too. Change here (or GUIDE_LANGUAGES='["ta"]') with no code change.
     guide_languages: list[str] = ["te", "hi"]
+    # Who approves a repair guide before it is printed. "when_needed": the manager, unless
+    # code finds a reason QA must (a flagged value, a step with no source, a translation
+    # that may not match, an earlier rejection). "always": QA approves every guide.
+    qa_approval: Literal["when_needed", "always"] = "when_needed"
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 
     # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.

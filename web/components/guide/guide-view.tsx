@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, Languages, Lock, PackageX, ShieldCheck, Undo2 } from "lucide-react";
+import { CircleCheck, Factory, Languages, Lock, PackageX, ShieldAlert, ShieldCheck, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Banner, RecurrenceBanner } from "@/components/banners";
@@ -38,15 +38,32 @@ function StatusBanner({ guide }: { guide: Guide }) {
   if (guide.status === "approved") {
     const event = last("approved");
     return (
-      <Banner tone="success" icon={<ShieldCheck />} title={`Approved by ${event?.by ?? "QA"}`}>
+      <Banner tone="success" icon={<ShieldCheck />} title={`Approved by ${event?.by ?? "the manager"}`}>
         {event ? `${formatDateTime(event.at)}. ` : ""}
         {event?.comment ? `“${event.comment}” ` : ""}Ready to print for the workers.
       </Banner>
     );
   }
-  if (guide.status === "closed") {
+  if (guide.status === "in_review" && guide.qa_reasons.length) {
     return (
-      <Banner tone="success" icon={<Lock />} title="Closed and saved to plant memory">
+      <Banner tone="warn" icon={<ShieldAlert />} title="Why QA must check this guide">
+        <ul className="list-disc pl-4">
+          {guide.qa_reasons.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ul>
+      </Banner>
+    );
+  }
+  if (guide.status === "closed" || guide.status === "released") {
+    const release = last("released");
+    return (
+      <Banner
+        tone="success"
+        icon={release ? <Factory /> : <Lock />}
+        title={release ? `Released to production by ${release.by}` : "Closed and saved to plant memory"}
+      >
+        {release ? `${formatDateTime(release.at)}. ` : "QA does the line clearance and releases the machine. "}
         What was done is now a record the next search will find:
         {guide.closure_record_id && <CitationChip id={guide.closure_record_id} />}
       </Banner>

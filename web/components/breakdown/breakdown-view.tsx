@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { GuideView } from "@/components/guide/guide-view";
 import { StepsCard } from "@/components/steps-card";
 import { Card } from "@/components/ui/card";
+import { DraftingLoader } from "@/components/ui/loaders";
 import { ErrorState, Shimmer } from "@/components/ui/states";
 import { api } from "@/lib/api";
 import { useMediaQuery } from "@/lib/hooks/use-media-query";
@@ -26,8 +27,8 @@ const POINTS = [
   },
   {
     icon: Languages,
-    title: "QA-approved, printed in their language",
-    body: "QA approves it, then you print a controlled copy in English, Telugu and Hindi with the manual’s figures.",
+    title: "Approved, printed in their language",
+    body: "You check and approve it (QA steps in when something needs a check), then print a controlled copy in English, Telugu and Hindi with the manual’s figures.",
   },
 ];
 
@@ -64,26 +65,43 @@ function Idle() {
 }
 
 function Loading() {
+  const steps = useBreakdown((s) => s.steps);
+  const active = GUIDE_STEPS.filter((step) => steps[step.id].status === "active").map((step) => step.label);
+  const line = active.length ? `${active.join(" · ")}…` : "Starting…";
   return (
-    <div className="flex flex-col gap-4" aria-hidden>
-      <Shimmer className="h-6 w-2/3" />
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((i) => (
-          <Card key={i} className="flex flex-col gap-2 p-3.5">
-            <Shimmer className="h-3 w-20" />
-            <Shimmer className="h-5 w-16" />
+    <div className="flex flex-col gap-4">
+      <Card className="flex flex-col items-center gap-3 px-6 py-8 text-center">
+        <DraftingLoader className="h-28" />
+        <div>
+          <p className="text-sm font-medium">Drafting the repair guide</p>
+          <p
+            key={line}
+            className="mt-0.5 text-[0.8125rem] text-fg-muted transition-[opacity,translate] duration-250 ease-out starting:translate-y-1 starting:opacity-0"
+          >
+            {line}
+          </p>
+        </div>
+      </Card>
+      <div className="flex flex-col gap-4" aria-hidden>
+        <Shimmer className="h-6 w-2/3" />
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i} className="flex flex-col gap-2 p-3.5">
+              <Shimmer className="h-3 w-20" />
+              <Shimmer className="h-5 w-16" />
+            </Card>
+          ))}
+        </div>
+        {[0, 1, 2].map((i) => (
+          <Card key={i} className="flex gap-3 p-4">
+            <Shimmer className="size-8 shrink-0 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Shimmer className="h-3 w-full" />
+              <Shimmer className="h-3 w-3/4" />
+            </div>
           </Card>
         ))}
       </div>
-      {[0, 1, 2].map((i) => (
-        <Card key={i} className="flex gap-3 p-4">
-          <Shimmer className="size-8 shrink-0 rounded-full" />
-          <div className="flex flex-1 flex-col gap-2">
-            <Shimmer className="h-3 w-full" />
-            <Shimmer className="h-3 w-3/4" />
-          </div>
-        </Card>
-      ))}
     </div>
   );
 }
@@ -126,7 +144,7 @@ export function BreakdownView() {
         <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-[1.75rem]">A machine has stopped?</h1>
         <p className="mt-1.5 text-[0.9375rem] text-fg-muted text-pretty">
           Describe it, or say it in your language. PlantMemory drafts a repair guide from past fixes and the
-          equipment manual, with parts and time, for QA to approve and the workers to follow.
+          equipment manual, with parts and time, for you to approve and the workers to follow.
         </p>
       </header>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">

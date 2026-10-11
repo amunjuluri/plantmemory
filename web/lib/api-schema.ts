@@ -407,6 +407,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/guides/{guide_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Guide
+         * @description The manager approves the guide they checked; it goes to QA instead if code finds a
+         *     reason QA must approve (the reasons are in `qa_reasons`).
+         */
+        post: operations["approve_guide_api_guides__guide_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/guides/{guide_id}/review": {
         parameters: {
             query?: never;
@@ -461,6 +482,26 @@ export interface paths {
          * @description Record what was actually done; it is saved to plant memory.
          */
         post: operations["close_guide_api_guides__guide_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release Guide
+         * @description QA's line clearance after the repair: the machine may go back to production.
+         */
+        post: operations["release_guide_api_guides__guide_id__release_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -553,6 +594,10 @@ export interface components {
             guide_languages: components["schemas"]["LanguageOption"][];
             /** Store Backend */
             store_backend: string;
+            /** Qa Approval */
+            qa_approval: string;
+            /** Release Checks */
+            release_checks: string[];
         };
         /**
          * ApproveRequest
@@ -921,8 +966,9 @@ export interface components {
         };
         /**
          * Guide
-         * @description A repair guide for one breakdown: drafted by AI, edited by the manager, approved by QA,
-         *     printed for the workers, then closed with what was actually done.
+         * @description A repair guide for one breakdown: drafted by AI, checked and approved by the manager
+         *     (or by QA when it needs it), printed for the workers, closed with what was actually
+         *     done, then released back to production by QA.
          */
         Guide: {
             /** Id */
@@ -932,7 +978,7 @@ export interface components {
              * @default draft
              * @enum {string}
              */
-            status: "draft" | "in_review" | "approved" | "rejected" | "closed";
+            status: "draft" | "in_review" | "approved" | "rejected" | "closed" | "released";
             /**
              * Version
              * @default 1
@@ -978,6 +1024,11 @@ export interface components {
             downtime: components["schemas"]["DowntimeEstimate"];
             /** Flags */
             flags: string[];
+            /**
+             * Qa Reasons
+             * @description Why QA must approve before it is printed. Empty: the manager may approve.
+             */
+            qa_reasons: string[];
             /** Translations */
             translations: components["schemas"]["GuideTranslation"][];
             /** Events */
@@ -1001,7 +1052,7 @@ export interface components {
             updated_at: string;
             /**
              * Notice
-             * @default AI-drafted from plant records and equipment manuals. Only a QA-approved, printed copy may be used on the shop floor.
+             * @default AI-drafted from plant records and equipment manuals, then checked and approved by a person. Only an approved, printed copy may be used on the shop floor.
              */
             notice: string;
         };
@@ -1086,7 +1137,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "printed" | "closed";
+            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "printed" | "closed" | "released";
             /** Comment */
             comment: string | null;
         };
@@ -1215,6 +1266,21 @@ export interface components {
             guide: components["schemas"]["Guide"] | null;
         };
         /**
+         * GuideRelease
+         * @description QA's line clearance after the repair: every check confirmed.
+         */
+        GuideRelease: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Checks */
+            checks?: string[];
+            /** Comment */
+            comment?: string | null;
+        };
+        /**
          * GuideRequest
          * @description A breakdown described by the manager, typed or from voice intake or an alarm log.
          */
@@ -1308,7 +1374,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "draft" | "in_review" | "approved" | "rejected" | "closed";
+            status: "draft" | "in_review" | "approved" | "rejected" | "closed" | "released";
             /** Version */
             version: number;
             /** Title */
@@ -2566,7 +2632,7 @@ export interface operations {
     guides_api_guides_get: {
         parameters: {
             query?: {
-                status?: ("draft" | "in_review" | "approved" | "rejected" | "closed") | null;
+                status?: ("draft" | "in_review" | "approved" | "rejected" | "closed" | "released") | null;
             };
             header?: never;
             path?: never;
@@ -2695,6 +2761,41 @@ export interface operations {
             };
         };
     };
+    approve_guide_api_guides__guide_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     review_guide_api_guides__guide_id__review_post: {
         parameters: {
             query?: never;
@@ -2777,6 +2878,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["GuideClose"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_guide_api_guides__guide_id__release_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideRelease"];
             };
         };
         responses: {

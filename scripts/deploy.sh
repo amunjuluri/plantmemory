@@ -14,6 +14,8 @@ SERVICE="${SERVICE:-plantmemory}"
 SEED=false
 ASSUME_YES=false
 GEMINI_MODEL="${GEMINI_MODEL:-gemini-3.8-flash}"
+LIVE_MODEL="${LIVE_MODEL:-gemini-3.8-live}"
+LIVE_LOCATION="${LIVE_LOCATION:-us-central1}"
 EMBEDDING_MODEL="${EMBEDDING_MODEL:-gemini-embedding-2}"
 EMBEDDING_DIM="${EMBEDDING_DIM:-768}"
 COLLECTION="${FIRESTORE_COLLECTION:-incidents}"
@@ -134,8 +136,8 @@ gc run deploy "$SERVICE" \
   --build-service-account "projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
   --allow-unauthenticated \
   --min-instances 0 --max-instances "$MAX_INSTANCES" \
-  --cpu 1 --memory 1Gi --concurrency 20 --timeout 300 --cpu-boost \
-  --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@AI_REQUESTS_PER_HOUR=${AI_REQUESTS_PER_HOUR:-120}"
+  --cpu 1 --memory 1Gi --concurrency 20 --timeout 600 --cpu-boost \
+  --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@LIVE_MODEL=${LIVE_MODEL}@LIVE_LOCATION=${LIVE_LOCATION}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@AI_REQUESTS_PER_HOUR=${AI_REQUESTS_PER_HOUR:-120}"
 
 URL="$(gc run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
 step "Checking $URL"

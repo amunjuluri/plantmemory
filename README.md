@@ -17,10 +17,16 @@ it drafts a **repair guide**:
   when a part is short;
 - a time estimate from the manual and past downtime.
 
-QA approves the guide (not the person who drafted it). The manager then prints it for
-the workers as an A4 controlled copy in English, Telugu and Hindi, with the manual's
-figures and tick boxes. When the machine is running again, the manager says what was
-actually done and it is saved to plant memory for next time.
+The manager checks the AI's draft and approves it; QA must approve first only when code
+finds a reason (a value not in the manual, a step with no source, a translation that may
+not match, an earlier rejection). The manager then prints it for the workers as an A4
+controlled copy in English, Telugu and Hindi, with the manual's figures and tick boxes.
+When the repair is done, the manager says what was done (a short "did what the guide
+said" is enough; the app asks only what the guide can't tell it) and it is saved to plant
+memory. QA then does the line clearance and releases the machine to production.
+
+Voice is a live conversation on Gemini Live (`gemini-3.8-live`): it answers in the
+manager's language within about a second, and the manager can talk over it.
 
 Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
 Firestore vector search and Cloud Run.
@@ -32,9 +38,9 @@ Firestore vector search and Cloud Run.
 
 | Screen | What the manager does |
 |---|---|
-| Breakdown | Type or speak the report (the app asks for what's missing), or read a logbook photo. Get a cited repair guide. |
+| Breakdown | Type, or talk it through by voice (it asks for what's missing and reads the report back), or read a logbook photo. Get a cited repair guide. |
 | Alarm logs | Upload an HMI alarm export or controller log. Errors that stopped the machine come first with the manual's first actions and time; rising warnings are flagged. One click drafts the guide. |
-| Guides | Every guide from draft to QA approval, printing and closure, with an audit trail. QA reviews here. |
+| Guides | Every guide from draft to approval, printing, closure and QA release, with an audit trail. QA reviews and releases here. |
 | Memory | Past incidents, equipment manuals by page, spare parts and stock. |
 | Add records | Logbook photos, SAP PM / CMMS exports (CSV or Excel), equipment manual PDFs. |
 
@@ -48,8 +54,15 @@ Firestore vector search and Cloud Run.
 - Times come from the manual and past downtime, never from the model.
 - Each translation is checked: every number, part number, alarm code and machine tag in
   the English must appear in the Telugu and Hindi, or QA sees a flag.
+- The manager may approve a guide only when every line cites a source, no value is
+  flagged and every translation kept its numbers and codes; otherwise it goes to QA with
+  the reasons. `QA_APPROVAL=always` makes QA approve every guide.
 - QA can't approve a guide they sent; a rejection needs a reason; only approved guides
-  print, and every printed copy is numbered and logged.
+  print, and every printed copy is numbered and logged. The person who closed a repair
+  can't release the machine; release needs every line-clearance check ticked.
+- Voice: code decides what is still missing and when the report is complete; the model
+  only fills fields and talks. "Did what the guide said" doesn't count as an answer
+  until it is expanded from the guide.
 - Matches from plant memory are checked by Gemini before they count (0 false alarms on
   16 look-alike reports in the eval).
 

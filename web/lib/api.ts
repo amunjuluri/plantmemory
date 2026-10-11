@@ -189,6 +189,10 @@ export const api = {
     request<GuideSummary[]>(`/api/guides${status ? `?status=${status}` : ""}`),
   guide: (id: string) => request<Guide>(`/api/guides/${encodeURIComponent(id)}`),
   editGuide: (id: string, body: GuideEdit) => request<Guide>(`/api/guides/${encodeURIComponent(id)}`, put(body)),
+  approveGuide: (id: string, by: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/approve`, json({ by })),
+  releaseGuide: (id: string, by: string, checks: string[], comment?: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/release`, json({ by, checks, comment })),
   submitGuide: (id: string, by: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/submit`, json({ by })),
   reviewGuide: (id: string, by: string, decision: "approve" | "reject", comment?: string) =>
@@ -206,12 +210,6 @@ export const api = {
       parts_used?: string | null;
     },
   ) => request<Guide>(`/api/guides/${encodeURIComponent(id)}/close`, json(body)),
-
-  intakeTurn: (state: IntakeState, input: { audio?: Blob; text?: string }, signal?: AbortSignal) =>
-    request<IntakeTurnResult>("/api/intake/turn", {
-      ...upload({ state: JSON.stringify(state), audio: input.audio, text: input.text }, "voice.webm"),
-      signal,
-    }),
 
   analyzeLog: (file: File, assetTag: string | null, signal?: AbortSignal) =>
     request<LogAnalysis>("/api/logs/analyze", { ...upload({ file, asset_tag: assetTag }), signal }),
