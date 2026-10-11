@@ -136,3 +136,19 @@ another shift, and warns you when last time's fix didn't work."
   index is ready (fixed and redeployed). Live check: TP-02 E-104 guide in 19 s, Telugu and
   Hindi in 11 s with no flags, self-approval refused, QA approval, copy 1 printed
   (example guide GDE-B5EADE83 left in Firestore); alarm log sample correct.
+- **12 Oct.** Feedback round from the manager's view, deployed (revision 00009):
+  - **Voice on Gemini Live (`gemini-3.8-live`, us-central1).** The reply audio starts 0.6 to 0.7 s
+    after the manager stops talking (local and on Cloud Run). The voice now sits inside the
+    breakdown card, with an animated orb.
+    - Tested in the browser with Telugu speech: TP-01 / E-103 report, a spoken "yes"
+      started the draft.
+    - Closure by voice: "guide lo cheppinattu chesam" was expanded from the guide.
+      "oka gantanara" became 90 min, and "upper punch" became RTP-PN-U-10.
+  - **Approval.** The manager approves clean guides and QA only gets the ones code flags.
+    TP-01 E-103 was approved by the manager and printed. After the repair, QA releases
+    the machine with three line-clearance checks.
+  - **"RTP37" confusion fixed.** Citations now read "Manual p.N", and the sources name the
+    model of TP-01/TP-02.
+  - **Toasts and loaders.** Toasts sit above the action bar (measured as you scroll). New
+    SVG loaders for drafting, logbook reading and translation.
+  - **Tests.** 153 backend tests pass.
