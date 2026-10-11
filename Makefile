@@ -1,4 +1,4 @@
-.PHONY: install run dev test lint fmt check seed eval web web-check api-types deploy docker-run
+.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval web web-check api-types deploy docker-run
 
 PORT ?= 8473
 # HOST=0.0.0.0 to open it from a phone on the same Wi-Fi.
@@ -27,6 +27,15 @@ check: lint test web-check  ## Everything CI would run
 
 seed:  ## Embed and load the synthetic seed data (resets the store)
 	uv run python -m scripts.seed --reset
+
+seed-kb:  ## Load the synthetic manuals, alarm codes, parts and figures (resets them, keeps guides)
+	uv run python -m scripts.seed_kb --reset
+
+figures:  ## Draw any missing manual figures and part photos with Gemini
+	uv run python -m scripts.make_figures
+
+sample-manual:  ## Rewrite data/samples/manual_fbd120.pdf (the upload demo)
+	uv run python -m scripts.make_sample_manual
 
 eval:  ## Retrieval hit rates: semantic vs keyword baseline
 	uv run python -m scripts.eval_retrieval

@@ -19,7 +19,41 @@ anything runs late, cut scope, not the video.
 | 4. Logbook photo | Done | 10 Oct | Handwritten page to reviewed records; unreadable words flagged, never guessed |
 | 5. UI | Done | 10 Oct | Analyze, Digitize logbook, Memory; desktop and phone; light and dark |
 | 6. Cloud | Done | 10 Oct | Live at https://plantmemory-4l5hbd2imq-el.a.run.app (Cloud Run + Firestore vector search, `asia-south1`) |
-| 7. Docs | Not started | | README, architecture, data notice, eval results |
+| 8. Manager pivot | Done | 12 Oct | Repair guides, QA approval, Telugu/Hindi print, voice intake, alarm logs, SAP import, manual upload |
+| 7. Docs | Started | | README rewritten for the manager story; architecture and deck still to do |
+
+## Phase 8: built for the maintenance manager (12 Oct)
+
+Why: a relative who works in pharma said workers usually can't carry phones on the floor.
+After a breakdown they escalate and wait for the manager's instruction, and breakdown
+logs exist but are hard to use. So the user is the manager (and QA), and the workers get
+a printed sheet. See DECISIONS 42 to 56.
+
+What was built:
+
+1. **Easier input.** Voice in any language, with the app asking for what's missing
+   (Telugu audio → "TP-02, E104, stopped" in 5 s); logbook photos; SAP PM / CMMS exports
+   (CSV or Excel, Gemini maps the columns, code copies every row); manual PDFs (Gemini
+   reads pages and the alarm table, code cuts out the figures).
+2. **Repair guide for the manager.** Past fixes + the manual's procedure + parts with stock
+   + time estimate, every line cited, values not in a source flagged. QA approves (not the
+   submitter), translated into Telugu and Hindi on the way, printed as an A4 controlled
+   copy with figures, tick boxes and sign-off lines. Closing it saves what was done.
+3. **Machine logs.** HMI alarm exports parsed in code, other formats by Gemini; errors that
+   stopped the machine first with the manual's first actions, time from manual and
+   history, past fixes; rising warnings linked to the error they precede. One click to a
+   guide.
+
+Synthetic knowledge base: manuals for TP-01/02 (tablet press), BL-3 (blister line) and
+AC-2 (autoclave), 21 alarm codes, 23 parts, 16 figures drawn with Gemini; 8 new breakdown
+incidents (52 total); samples for every input. Eval re-run with 52 incidents: unchanged
+(30/30 right, 0 wrong records shown, 0/16 false alarms). 141 tests.
+
+Still to decide or do:
+- Ask the pharma contact to check the Telugu on a printed sheet (headings are fixed text
+  in `print-sheet.tsx`; step text is translated by Gemini and checked for numbers/codes).
+- Languages are one setting (`GUIDE_LANGUAGES`) if the plant needs others.
+- Live SAP or Maximo connectors are future work; the demo imports an IW29 export.
 
 ## After Phase 6, in priority order
 
@@ -34,10 +68,10 @@ that didn't hold.
 2. **Done 10 Oct. A more convincing eval.** Grow the synthetic set to about 40 to 60 incidents,
    including look-alikes that should *not* match. Report the false-alarm rate ("said it
    happened before when it hadn't") alongside the hit rate.
-3. **Matching across languages.** A new incident written in a regional language mixed
-   with English shorthand finds a past incident written in English. Add 1 or 2 such
-   queries to the eval so it's evidence, not a one-off demo. Use only a language
-   someone on the team can read and check (**to decide: which language**).
+3. **Matching across languages.** Partly done 12 Oct: a Telugu autoclave report finds the
+   English record PHA-0028 and the autoclave manual, and voice intake keeps the manager's own
+   words. Telugu chosen (the team can read it). Still to do: add 1 or 2 Telugu queries
+   to the eval so it's measured, not a one-off.
    Hand-written sample pages beat generated ones if we can make them.
 4. **Stretch, only if 1 to 3 are done by 15 Oct:** a weekly "keeps coming back" view
    that lists recurring problem groups whose fixes didn't hold, without anyone
@@ -89,3 +123,10 @@ another shift, and warns you when last time's fix didn't work."
   match) and a PM2 hydraulic-leak look-alike (no match) all correct; 12 to 26 s each
   once warm, 46 s for the first request after a deploy.
 
+- **12 Oct.** Phase 8 (manager pivot) built and tested end to end in the browser: TP-02
+  E-104 guide in 17 to 31 s (3rd time in 12 months, cleaning alone did not hold, bushing
+  RTP-BS-07 last one in store), sent to QA with Telugu and Hindi, approved by a different
+  person, printed to PDF (5 A4 pages, three languages, manual figures). Found and fixed:
+  Gemini answering the same translation in 8 s or 101 s (now hedged: 13 to 30 s), a
+  spoken "machine stopped" counting as a symptom, alarm codes linking to the alarm list
+  page instead of the procedure. Eval unchanged with 52 incidents.

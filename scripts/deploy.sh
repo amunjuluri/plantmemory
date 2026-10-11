@@ -55,12 +55,14 @@ Deploying PlantMemory
 This enables APIs and creates (if missing):
   - Firestore database "(default)" in $REGION, Native mode, Standard edition
   - 3 Firestore indexes on "$COLLECTION" (vector search, filtered vector search, list by date)
+  - 1 Firestore vector index on "manual_sections" (equipment manual search)
   - service account $RUN_SA  (roles: datastore.user, aiplatform.user)
   - service account $BUILD_SA  (role: run.builder)
   - Artifact Registry repo "cloud-run-source-deploy" in $REGION (holds the image)
   - Cloud Run service "$SERVICE", built from source by Cloud Build
 EOF
-$SEED && echo "  - then loads the synthetic seed incidents into Firestore (replacing any there)"
+$SEED && echo "  - then loads the synthetic incidents, manuals, alarm codes, parts and figures into
+    Firestore (replacing any there; repair guides are kept)"
 
 if ! $ASSUME_YES; then
   read -r -p $'\nContinue? [y/N] ' answer
@@ -82,8 +84,8 @@ fi
 
 step "Firestore indexes"
 create_index() {
-  local out
-  if out="$(gc firestore indexes composite create --collection-group="$COLLECTION" \
+  local out group="${INDEX_GROUP:-$COLLECTION}"
+  if out="$(gc firestore indexes composite create --collection-group="$group" \
       --query-scope=COLLECTION "$@" --async 2>&1)"; then
     echo "requested"
   elif grep -qi "already exists" <<<"$out"; then
@@ -98,6 +100,7 @@ create_index --field-config="$VECTOR"
 create_index --field-config=order=ASCENDING,field-path=industry --field-config="$VECTOR"
 create_index --field-config=order=ASCENDING,field-path=industry \
   --field-config=order=DESCENDING,field-path=date
+INDEX_GROUP=manual_sections create_index --field-config="$VECTOR"
 
 step "Service accounts"
 ensure_sa() {
@@ -119,6 +122,8 @@ grant "$BUILD_SA" roles/run.builder
 if $SEED; then
   step "Seeding Firestore with synthetic incidents"
   STORE_BACKEND=firestore GOOGLE_CLOUD_PROJECT="$PROJECT_ID" uv run python -m scripts.seed --reset
+  step "Seeding Firestore with synthetic manuals, alarm codes, parts and figures"
+  STORE_BACKEND=firestore GOOGLE_CLOUD_PROJECT="$PROJECT_ID" uv run python -m scripts.seed_kb --reset
 fi
 
 step "Building and deploying to Cloud Run (takes a few minutes)"
@@ -130,7 +135,7 @@ gc run deploy "$SERVICE" \
   --allow-unauthenticated \
   --min-instances 0 --max-instances "$MAX_INSTANCES" \
   --cpu 1 --memory 1Gi --concurrency 20 --timeout 300 --cpu-boost \
-  --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@AI_REQUESTS_PER_HOUR=40"
+  --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@AI_REQUESTS_PER_HOUR=${AI_REQUESTS_PER_HOUR:-120}"
 
 URL="$(gc run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
 step "Checking $URL"

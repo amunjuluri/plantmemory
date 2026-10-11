@@ -154,3 +154,71 @@ Short log of choices and why. Newest last.
     `retrieval_cases.json` were not changed after seeing results, even where the
     check's answer is arguable (Q4, Q7).
 
+42. **The user is the maintenance manager, not the worker** (12 Oct). Workers in pharma
+    plants usually can't carry phones on the floor and wait for the manager's
+    instruction after escalating a breakdown. So the product drafts a repair guide for
+    the manager, QA approves it, and the workers get a printed controlled copy in their
+    language. The repeat-failure memory stays, as a warning inside the guide.
+43. **The guide pipeline is a fixed sequence, not an agent loop.** Understand the report,
+    then search past fixes and manuals side by side, then parts, then write. The order
+    never changes, so a model choosing it adds latency and risk; running the two
+    searches in parallel saves several seconds. The incident analysis agent (ADK) is
+    unchanged and still used by the eval.
+44. **Manual sections are cited as `MAN-<manual>-<page>`**, alongside incident ids, and
+    pass through the same citation check. Alarm codes link to the section that explains
+    them, not to the alarm list page that only names them.
+45. **Values with units must be in a cited source.** Code extracts number-plus-unit pairs
+    (including ranges like "8 to 10 mm") from each line and from the sources it cites;
+    any value not found is flagged for the manager and QA. Flags rather than rejection,
+    so a manager can deliberately add a value, but QA sees it.
+46. **Parts, stock and time are looked up in code.** The model may only pick part numbers
+    from the store's list for that machine; quantities are checked against stock, and
+    out-of-stock or last-in-store parts become warnings with the lead time. The time
+    estimate is the manual's typical time for the cited procedure plus the median of
+    past downtimes for confirmed matches.
+47. **Translation happens when the guide is sent to QA**, so QA approves exactly what will
+    be printed. Code checks each translated line keeps every number (Indian-script digits
+    are normalised), part number, alarm code and machine tag; failures are shown to QA.
+    Languages come from `GUIDE_LANGUAGES` (default Telugu and Hindi). Section headings
+    on the printed sheet are fixed strings, never model output.
+48. **QA approval rules in code**: the submitter cannot approve or reject their own guide
+    (names compared case-insensitively), a rejection needs a reason, only approved guides
+    print, every print increments a copy number in the audit trail, and approved guides
+    can't be edited. The demo has no sign-in, so the acting person picks a role and name;
+    this is not a 21 CFR Part 11 e-signature and is not presented as one.
+49. **Voice intake is stateless and code decides when it is complete.** Gemini hears the
+    audio (any language), fills English fields and asks for what is missing in the
+    manager's language; required fields are fixed per mode in code, and a symptom such
+    as "stopped" or "not working" does not count. The conversation stops after 5 turns.
+    The summary keeps the manager's own words, so a Telugu report still finds English
+    records by meaning (verified: a Telugu autoclave report found PHA-0028).
+50. **Machine logs: tables are parsed in code, everything else by Gemini.** Exported alarm
+    tables (WinCC-style `Date;Time;Number;Class;State;Text`) are parsed deterministically;
+    unknown formats (controller printouts) go to Gemini, last 300 lines. What a code means,
+    whether it stops the machine and the first actions come from the manual's alarm
+    table, never from the model. A warning whose manual section names an error that
+    appears in the same log is linked to it ("often comes before E-104").
+51. **CMMS import: Gemini maps columns, code copies rows.** The model sees the header and
+    four rows and names which columns hold date, machine, description, cause, action,
+    downtime (and unit) and status. Code drops any column it invented and applies the
+    mapping to every row, so nothing is paraphrased. Rows come back for review like
+    logbook pages and are saved as `CMMS-<notification>` records. SAP PM is the sample
+    because that is what the plant we spoke to uses; live SAP (`API_MAINTNOTIFICATION`)
+    or Maximo (OSLC `mxwo`) connectors are future work.
+52. **Manual PDFs: Gemini reads text and figure boxes; code cuts the figures.** Pages are
+    rendered with pdfium and each figure box is cropped, so a guide shows the manual's
+    own drawing, never a generated one. Figures are stored as base64 in Firestore
+    (one document each, under 1 MiB), so no Cloud Storage bucket or extra IAM is needed.
+53. **Synthetic manual figures are drawn by Gemini's image model** from invented
+    descriptions (`scripts/make_figures.py`), as black-on-white line drawings, because no
+    real manual may be copied. They are labelled synthetic like all other data.
+54. **Slow Gemini calls are hedged.** The same translation request took 8 s, 54 s and
+    101 s in three tries with identical output size. If a translation, guide or voice
+    turn has not answered within 15 s, 20 s or 10 s, the same request is sent again
+    (at most three copies) and the first answer wins. Measured: three full Telugu and
+    Hindi translations took 13, 18 and 30 s instead of up to 100 s.
+55. **The knowledge base uses one small document store per kind** (local JSON or one
+    Firestore collection each): manual sections, alarm codes, parts, figures, guides.
+    Only manual sections need a vector index; other lookups are equality filters.
+56. **Per-client AI limit raised from 40 to 120 requests an hour** on Cloud Run: one
+    breakdown now uses several AI requests (voice turns, guide, translation).
