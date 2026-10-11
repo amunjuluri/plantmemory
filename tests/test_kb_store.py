@@ -69,3 +69,24 @@ def test_manual_summary_and_assets(tmp_path: Path) -> None:
         ("TP-01", "RTP37"),
         ("TP-02", "RTP37"),
     ]
+
+
+def test_firestore_search_falls_back_when_the_index_is_not_ready() -> None:
+    from google.api_core.exceptions import FailedPrecondition
+
+    from app.kb.store import FirestoreDocStore
+    from app.models import ManualSection
+
+    store = FirestoreDocStore.__new__(FirestoreDocStore)
+    store.model, store.key = ManualSection, "id"
+    store.collection = type("C", (), {"id": "manual_sections"})()
+    common = {"manual_id": "M", "manual_title": "M", "equipment_model": "m", "page": 1, "text": "t"}
+    near = ManualSection(id="MAN-M-1", title="near", embedding=[1.0, 0.0], **common)
+    far = ManualSection(id="MAN-M-2", title="far", embedding=[0.0, 1.0], **common)
+
+    def missing_index(vector, k):
+        raise FailedPrecondition("index not ready")
+
+    store._nearest = missing_index
+    store.all = lambda **_: [far, near]
+    assert [d.id for d, _ in store.search([1.0, 0.1], k=1)] == ["MAN-M-1"]
