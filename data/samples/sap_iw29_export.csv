@@ -1,0 +1,13 @@
+Notification;Notif.Type;Notif.date;Description;Equipment;Equipment descr.;Functional Loc.;Malfunct.start;Malfunct.end;Breakdown;Breakdown dur.;Damage code text;Cause text;Activity text;System status
+10004512;M2;03.09.2025;Upper punch tight stn 9, press stopped;10000231;Tablet press TP-02;PL1-OSD-COMP-02;03.09.2025;03.09.2025;X;1,2;Punch binding;Fines in punch guide;Cleaned punch guide stn 9, oiled punches;NOCO
+10004588;M2;21.10.2025;Main motor overload trip after speed increase;10000230;Tablet press TP-01;PL1-OSD-COMP-01;21.10.2025;21.10.2025;X;0,5;Motor overload;Belt slipping, worn;Replaced V-belt RTP-BT-04, tension set;NOCO
+10004610;M2;14.11.2025;Feed frame stopped E-330;10000231;Tablet press TP-02;PL1-OSD-COMP-02;14.11.2025;14.11.2025;X;0,8;Drive fault;Powder packed in feed frame;Feed frame stripped and cleaned;NOCO
+10004701;M2;08.01.2026;Blister pockets uneven, forming temp alarm;10000410;Blister line BL-3;PL1-PACK-BL-03;08.01.2026;08.01.2026;X;1,5;Heater failure;Heater cartridge open circuit;Replaced heater cartridge BPM-HC-250;NOCO
+10004733;M2;27.01.2026;Film web break at forming station;10000410;Blister line BL-3;PL1-PACK-BL-03;27.01.2026;27.01.2026;X;0,4;Web break;Guide roller seized;Replaced guide roller BPM-GR-08;NOCO
+10004790;M2;19.02.2026;Door seal fault again, cycle would not start;10000520;Autoclave AC-2;PL1-STER-AC-02;19.02.2026;19.02.2026;X;3,0;Seal failure;Gasket flattened;Gasket replaced, leak test and BD test passed;NOCO
+10004812;M2;05.03.2026;Fluid bed dryer filter dP high, bags blinded;10000610;Fluid bed dryer FBD-1;PL1-OSD-GRAN-01;05.03.2026;05.03.2026;X;2,0;Filter blocked;Shaking interval too long;Bags cleaned, shake interval reduced;NOCO
+10004855;M2;30.03.2026;Punching die jam, cards stuck;10000410;Blister line BL-3;PL1-PACK-BL-03;30.03.2026;30.03.2026;X;0,7;Jam;Blunt die;Die sharpened by vendor;NOCO
+10004903;M2;22.04.2026;Drain temp low alarm, cycle aborted;10000520;Autoclave AC-2;PL1-STER-AC-02;22.04.2026;22.04.2026;X;1,0;Temperature low;Steam trap stuck closed;Steam trap SA-ST-15 replaced;NOCO
+10004950;M1;11.05.2026;Lube oil top-up requested;10000230;Tablet press TP-01;PL1-OSD-COMP-01;;;;;;;Reservoir topped up;NOCO
+10005012;M2;18.06.2026;Lower punch tight at ejection;10000230;Tablet press TP-01;PL1-OSD-COMP-01;18.06.2026;18.06.2026;X;0,9;Punch binding;Die not flush, 0.08 mm proud;Die reseated and checked with dial gauge;NOCO
+10005077;M2;02.08.2026;Vacuum level not reached in pre-vacuum;10000520;Autoclave AC-2;PL1-STER-AC-02;02.08.2026;;X;;No vacuum;Seal water valve closed;;OSNO

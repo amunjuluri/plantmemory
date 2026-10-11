@@ -160,13 +160,28 @@ def extract_records(
     )
 
 
+# Records that can be confirmed here, by id prefix, and the source each is saved with.
+CONFIRMABLE = {f"{LOG_ID_PREFIX}-": "logbook_photo", "CMMS-": "cmms_import"}
+
+
+def _source_for(record_id: str) -> str | None:
+    return next((src for prefix, src in CONFIRMABLE.items() if record_id.startswith(prefix)), None)
+
+
 def confirm_records(records: list[IncidentPublic], deps: AgentDeps) -> list[IncidentRecord]:
-    """Embed and save reviewed logbook records. Re-confirming the same ids updates them."""
-    bad = [r.id for r in records if not r.id.startswith(f"{LOG_ID_PREFIX}-")]
+    """Embed and save reviewed logbook or CMMS records. Re-confirming the same ids updates them.
+
+    Only ids from an extraction (LOG-, CMMS-) are accepted, so this cannot overwrite seed
+    or approved records. The source comes from the id, not from the request.
+    """
+    bad = [r.id for r in records if _source_for(r.id) is None]
     if bad:
-        raise ConfirmError(f"Only records from a logbook photo can be confirmed here: {bad}")
+        raise ConfirmError(
+            f"Only records read from a logbook photo or CMMS export can be confirmed here: {bad}"
+        )
     stored = [
-        IncidentRecord(**r.model_dump(exclude={"source"}), source="logbook_photo") for r in records
+        IncidentRecord(**r.model_dump(exclude={"source"}), source=_source_for(r.id))
+        for r in records
     ]
     vectors = deps.embedder.embed_documents([incident_text(r) for r in stored])
     for record, vector in zip(stored, vectors, strict=True):

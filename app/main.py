@@ -1,35 +1,62 @@
 """FastAPI entry point: API routes plus the static UI."""
 
 import asyncio
+import base64
 from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
 from google.genai import errors as genai_errors
+from pydantic import ValidationError
 
 from app.agent import agent
 from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
+from app.guide import workflow
+from app.guide.builder import build_guide_events
+from app.guide.translate import language_name
 from app.ingest import logbook_ocr
+from app.intake import cmms, machine_logs, voice
+from app.kb import get_kb, manual_ingest
+from app.kb.loader import list_assets, summarize_manuals
 from app.llm import BUSY_MESSAGE, is_overloaded
 from app.models import (
     AnalyzeRequest,
     ApproveRequest,
+    Asset,
+    CmmsImportResult,
     ConfirmRequest,
     Draft,
+    Guide,
+    GuideAction,
+    GuideClose,
+    GuideEdit,
+    GuideProgress,
+    GuideRequest,
+    GuideReview,
+    GuideStatus,
+    GuideSummary,
     IncidentPage,
     IncidentPublic,
     Industry,
     IngestResult,
+    IntakeState,
+    IntakeTurnResult,
+    LogAnalysis,
+    ManualSectionPublic,
+    ManualSummary,
+    ManualUploadResult,
+    Model,
+    Part,
 )
 from app.ratelimit import limit_ai_calls
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 settings = get_settings()
 app = FastAPI(title="PlantMemory", version=VERSION)
@@ -38,7 +65,7 @@ if settings.cors_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["content-type"],
     )
 
@@ -51,6 +78,11 @@ async def gemini_error(request: Request, err: genai_errors.APIError) -> JSONResp
             {"detail": BUSY_MESSAGE}, status_code=503, headers={"Retry-After": "30"}
         )
     return JSONResponse({"detail": "The AI service returned an error."}, status_code=502)
+
+
+@app.exception_handler(workflow.GuideError)
+async def guide_error(request: Request, err: workflow.GuideError) -> JSONResponse:
+    return JSONResponse({"detail": str(err)}, status_code=err.status_code)
 
 
 def _public(record) -> IncidentPublic:
@@ -117,7 +149,7 @@ async def ingest_logbook(
 
 @app.post("/api/ingest/confirm", status_code=201)
 def confirm_logbook(body: ConfirmRequest) -> list[IncidentPublic]:
-    """Save reviewed logbook records so future searches can find them."""
+    """Save reviewed logbook or CMMS records so future searches can find them."""
     try:
         saved = logbook_ocr.confirm_records(body.records, get_deps())
     except logbook_ocr.ConfirmError as err:
@@ -150,7 +182,219 @@ def get_incident(record_id: str) -> IncidentPublic:
     return _public(record)
 
 
-# Synthetic sample photos, so the UI can offer "try a sample page".
+# --- Knowledge base: manuals, parts, figures ---
+
+
+class LanguageOption(Model):
+    code: str
+    name: str
+
+
+class AppConfig(Model):
+    """What the UI needs to know about this deployment."""
+
+    guide_languages: list[LanguageOption]
+    store_backend: str
+
+
+@app.get("/api/config")
+def app_config() -> AppConfig:
+    return AppConfig(
+        guide_languages=[
+            LanguageOption(code=c, name=language_name(c)) for c in settings.guide_languages
+        ],
+        store_backend=settings.store_backend,
+    )
+
+
+@app.get("/api/assets")
+def assets() -> list[Asset]:
+    """Machines the plant has manuals or spare parts for."""
+    return list_assets(get_kb())
+
+
+@app.get("/api/manuals")
+def manuals() -> list[ManualSummary]:
+    return summarize_manuals(get_kb())
+
+
+def _section_public(section) -> ManualSectionPublic:
+    return ManualSectionPublic.model_validate(section.model_dump(exclude={"embedding"}))
+
+
+@app.get("/api/manuals/sections/{section_id}")
+def manual_section(section_id: str) -> ManualSectionPublic:
+    section = get_kb().sections.get(section_id)
+    if section is None:
+        raise HTTPException(status_code=404, detail=f"No manual section {section_id}")
+    return _section_public(section)
+
+
+@app.get("/api/manuals/{manual_id}/sections")
+def manual_sections(manual_id: str) -> list[ManualSectionPublic]:
+    sections = get_kb().sections.all(manual_id=manual_id)
+    return [_section_public(s) for s in sorted(sections, key=lambda s: s.page)]
+
+
+@app.post("/api/manuals/upload", status_code=201, dependencies=[Depends(limit_ai_calls)])
+async def upload_manual(
+    file: Annotated[UploadFile, File(description="Equipment manual as a PDF")],
+    asset_tags: Annotated[
+        str | None, Form(description="Machines it covers, e.g. TP-01, TP-02")
+    ] = None,
+) -> ManualUploadResult:
+    """Read a manual so guides can cite it by page. Replaces an earlier upload of it."""
+    data = await file.read(manual_ingest.MAX_PDF_BYTES + 1)
+    try:
+        return await asyncio.to_thread(
+            manual_ingest.ingest_manual,
+            data,
+            file.filename,
+            manual_ingest.parse_tags(asset_tags),
+            get_deps(),
+            get_kb(),
+        )
+    except manual_ingest.InvalidManualError as err:
+        raise HTTPException(status_code=415, detail=str(err)) from err
+
+
+@app.delete("/api/manuals/{manual_id}")
+def delete_manual(manual_id: str) -> dict[str, int]:
+    removed = manual_ingest.delete_manual(manual_id, get_kb())
+    if not removed:
+        raise HTTPException(status_code=404, detail=f"No manual {manual_id}")
+    return {"sections_removed": removed}
+
+
+@app.get("/api/parts")
+def parts(asset: str | None = Query(None, max_length=40)) -> list[Part]:
+    """Spare parts and stock, optionally for one machine."""
+    kb = get_kb()
+    found = kb.parts.all(asset_tags=asset) if asset else kb.parts.all()
+    return sorted(found, key=lambda p: p.part_no)
+
+
+@app.get("/api/figures/{figure_id}")
+def figure(figure_id: str) -> Response:
+    """A manual figure or part photo. Figures never change once stored."""
+    found = get_kb().figures.get(figure_id)
+    if found is None:
+        raise HTTPException(status_code=404, detail=f"No figure {figure_id}")
+    return Response(
+        base64.b64decode(found.data_b64),
+        media_type=found.mime,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+# --- Repair guides ---
+
+
+@app.post(
+    "/api/guides/stream",
+    response_class=EventSourceResponse,
+    dependencies=[Depends(limit_ai_calls)],
+)
+async def draft_guide(body: GuideRequest) -> AsyncIterator[GuideProgress]:
+    """Draft a repair guide, streamed as server-sent events: each step, then the guide."""
+    async for update in build_guide_events(body, get_deps(), get_kb()):
+        yield update
+
+
+@app.get("/api/guides")
+def guides(status: GuideStatus | None = None) -> list[GuideSummary]:
+    return workflow.list_guides(get_kb(), status)
+
+
+@app.get("/api/guides/{guide_id}")
+def guide(guide_id: str) -> Guide:
+    return workflow.load(guide_id, get_kb())
+
+
+@app.put("/api/guides/{guide_id}")
+def edit_guide(guide_id: str, body: GuideEdit) -> Guide:
+    """Save the manager's edits. Sources, values, figures and parts are re-checked."""
+    return workflow.edit(guide_id, body, get_kb())
+
+
+@app.post("/api/guides/{guide_id}/submit", dependencies=[Depends(limit_ai_calls)])
+async def submit_guide(guide_id: str, body: GuideAction) -> Guide:
+    """Translate the guide into the shop-floor languages and send it to QA."""
+    return await asyncio.to_thread(workflow.submit, guide_id, body, get_deps(), get_kb())
+
+
+@app.post("/api/guides/{guide_id}/review")
+def review_guide(guide_id: str, body: GuideReview) -> Guide:
+    """QA approves the guide for printing, or rejects it with a reason."""
+    return workflow.review(guide_id, body, get_kb())
+
+
+@app.post("/api/guides/{guide_id}/print")
+def print_guide(guide_id: str, body: GuideAction) -> Guide:
+    """Count a printed copy of an approved guide."""
+    return workflow.record_print(guide_id, body, get_kb())
+
+
+@app.post("/api/guides/{guide_id}/close")
+async def close_guide(guide_id: str, body: GuideClose) -> Guide:
+    """Record what was actually done; it is saved to plant memory."""
+    return await asyncio.to_thread(workflow.close, guide_id, body, get_deps(), get_kb())
+
+
+# --- Easier input: voice, machine logs, CMMS exports ---
+
+
+@app.post("/api/intake/turn", dependencies=[Depends(limit_ai_calls)])
+async def intake_turn(
+    state: Annotated[str, Form(description="The IntakeState from the previous turn, as JSON")],
+    audio: Annotated[UploadFile | None, File(description="Voice recording")] = None,
+    text: Annotated[str | None, Form(max_length=4000)] = None,
+) -> IntakeTurnResult:
+    """One turn of the spoken report: hear it, fill fields, ask for what is missing."""
+    try:
+        current = IntakeState.model_validate_json(state)
+    except ValidationError as err:
+        raise HTTPException(status_code=422, detail="Invalid conversation state.") from err
+    data = await audio.read(voice.MAX_AUDIO_BYTES + 1) if audio else None
+    try:
+        return await asyncio.to_thread(
+            voice.take_turn, current, get_deps(), list_assets(get_kb()), data or None, text
+        )
+    except voice.InvalidAudioError as err:
+        raise HTTPException(status_code=415, detail=str(err)) from err
+
+
+@app.post("/api/logs/analyze", dependencies=[Depends(limit_ai_calls)])
+async def analyze_log(
+    file: Annotated[UploadFile, File(description="Machine or instrument log (CSV or text)")],
+    asset_tag: Annotated[str | None, Form(max_length=40)] = None,
+) -> LogAnalysis:
+    """Split a log into errors and warnings, with manual first actions and time estimates."""
+    data = await file.read(machine_logs.MAX_LOG_BYTES + 1)
+    try:
+        return await asyncio.to_thread(
+            machine_logs.analyze_log, data, file.filename, get_deps(), get_kb(), asset_tag
+        )
+    except machine_logs.InvalidLogError as err:
+        raise HTTPException(status_code=415, detail=str(err)) from err
+
+
+@app.post("/api/ingest/cmms", dependencies=[Depends(limit_ai_calls)])
+async def ingest_cmms(
+    file: Annotated[UploadFile, File(description="CMMS export: CSV or Excel")],
+    industry: Annotated[Industry | None, Form()] = None,
+) -> CmmsImportResult:
+    """Read maintenance history from a CMMS export for review. Nothing is saved yet."""
+    data = await file.read(cmms.MAX_BYTES + 1)
+    try:
+        return await asyncio.to_thread(
+            cmms.import_export, data, file.filename, get_deps(), industry
+        )
+    except cmms.InvalidExportError as err:
+        raise HTTPException(status_code=415, detail=str(err)) from err
+
+
+# Synthetic samples (logbook photos, logs, CMMS export, a manual) for the UI's "try a sample".
 app.mount("/samples", StaticFiles(directory=ROOT_DIR / "data" / "samples"), name="samples")
 # Mounted last so API routes take precedence.
 app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="ui")

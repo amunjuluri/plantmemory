@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     local_store_path: Path = ROOT_DIR / "data" / "store" / "incidents.json"
     firestore_database: str = "(default)"
     firestore_collection: str = "incidents"
+    # Manuals, error codes, parts, figures and repair guides: one collection (or local
+    # JSON file) each, named "<prefix><kind>", e.g. "manual_sections".
+    kb_collection_prefix: str = ""
+    local_kb_dir: Path = ROOT_DIR / "data" / "store"
 
     # Retrieval and agent behaviour.
     # Search results scoring at least this are candidates; Gemini then checks each one
@@ -50,9 +54,15 @@ class Settings(BaseSettings):
     # Detail Gemini reads logbook photos at: MEDIA_RESOLUTION_{LOW,MEDIUM,HIGH,ULTRA_HIGH}.
     ocr_media_resolution: str = "MEDIA_RESOLUTION_HIGH"
     recurrence_window_months: int = 12
+    # Manual sections scoring at least this against a breakdown report are offered to
+    # the guide writer (see scripts/eval_retrieval.py and DECISIONS.md).
+    manual_threshold: float = 0.62
+    # Languages the printed repair guide is translated into, as ISO 639-1 codes. English
+    # is always printed too. Change here (or GUIDE_LANGUAGES='["ta"]') with no code change.
+    guide_languages: list[str] = ["te", "hi"]
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
 
-    # Per-client cap on requests that call Gemini (analyze, logbook). 0 disables.
+    # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.
     ai_requests_per_hour: int = 40
 
     # Origins allowed to call the API from another port (local UI dev only), e.g.
