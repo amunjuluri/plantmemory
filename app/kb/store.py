@@ -7,6 +7,7 @@ search on Cloud Run, like incidents.
 """
 
 import json
+import logging
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
@@ -15,6 +16,8 @@ from typing import Any
 
 import numpy as np
 from pydantic import BaseModel
+
+log = logging.getLogger(__name__)
 
 _BATCH = 400  # Firestore allows 500 writes per batch.
 _DISTANCE_FIELD = "vector_distance"
@@ -66,6 +69,21 @@ def _matches(doc: BaseModel, equals: dict[str, Any]) -> bool:
     return True
 
 
+def rank_by_cosine[T: BaseModel](
+    docs: list[T], vector: list[float], k: int
+) -> list[tuple[T, float]]:
+    """The k documents whose `embedding` is closest to `vector`, computed in memory."""
+    docs = [d for d in docs if getattr(d, "embedding", None)]
+    if not docs or k <= 0:
+        return []
+    matrix = np.asarray([d.embedding for d in docs], dtype=np.float32)
+    query = np.asarray(vector, dtype=np.float32)
+    norms = np.linalg.norm(matrix, axis=1) * (np.linalg.norm(query) or 1.0)
+    norms[norms == 0] = 1.0
+    scores = matrix @ query / norms
+    return [(docs[i], float(scores[i])) for i in np.argsort(-scores)[:k]]
+
+
 class LocalDocStore[T: BaseModel](DocStore[T]):
     """All documents in one JSON file, searched with numpy."""
 
@@ -104,15 +122,7 @@ class LocalDocStore[T: BaseModel](DocStore[T]):
             self._save()
 
     def search(self, vector: list[float], k: int = 5) -> list[tuple[T, float]]:
-        docs = [d for d in self._docs.values() if getattr(d, "embedding", None)]
-        if not docs or k <= 0:
-            return []
-        matrix = np.asarray([d.embedding for d in docs], dtype=np.float32)
-        query = np.asarray(vector, dtype=np.float32)
-        norms = np.linalg.norm(matrix, axis=1) * (np.linalg.norm(query) or 1.0)
-        norms[norms == 0] = 1.0
-        scores = matrix @ query / norms
-        return [(docs[i], float(scores[i])) for i in np.argsort(-scores)[:k]]
+        return rank_by_cosine(list(self._docs.values()), vector, k)
 
 
 class FirestoreDocStore[T: BaseModel](DocStore[T]):
@@ -170,11 +180,22 @@ class FirestoreDocStore[T: BaseModel](DocStore[T]):
             batch.commit()
 
     def search(self, vector: list[float], k: int = 5) -> list[tuple[T, float]]:
-        from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
-        from google.cloud.firestore_v1.vector import Vector
+        from google.api_core.exceptions import FailedPrecondition
 
         if k <= 0:
             return []
+        try:
+            return self._nearest(vector, k)
+        except FailedPrecondition:
+            # The vector index is still being built (minutes after a first deploy). These
+            # collections are small, so rank them in memory rather than fail the request.
+            log.warning("Vector index for %s not ready; ranking in memory", self.collection.id)
+            return rank_by_cosine(self.all(), vector, k)
+
+    def _nearest(self, vector: list[float], k: int) -> list[tuple[T, float]]:
+        from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
+        from google.cloud.firestore_v1.vector import Vector
+
         query = self.collection.find_nearest(
             vector_field="embedding",
             query_vector=Vector(vector),
