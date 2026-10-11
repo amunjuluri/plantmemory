@@ -86,7 +86,11 @@ class StructuredLLM(Protocol):
     """Anything that can turn a prompt into a validated Pydantic object."""
 
     def generate(
-        self, contents: types.ContentListUnion, schema: type[T], thinking: ThinkingLevel = "low"
+        self,
+        contents: types.ContentListUnion,
+        schema: type[T],
+        thinking: ThinkingLevel = "low",
+        timeout_ms: int | None = None,
     ) -> T: ...
 
 
@@ -104,15 +108,25 @@ class GeminiLLM:
         return self._client
 
     def generate(
-        self, contents: types.ContentListUnion, schema: type[T], thinking: ThinkingLevel = "low"
+        self,
+        contents: types.ContentListUnion,
+        schema: type[T],
+        thinking: ThinkingLevel = "low",
+        timeout_ms: int | None = None,
     ) -> T:
-        """Generate a response that must match `schema`; raises if it does not."""
+        """Generate a response that must match `schema`; raises if it does not.
+
+        `timeout_ms` overrides the per-call timeout, e.g. for reading a long PDF.
+        """
         # Temperature is left at the default: Google advises against lowering it on
         # Gemini 3.x models (it can cause looping).
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
             response_json_schema=schema.model_json_schema(),
             thinking_config=types.ThinkingConfig(thinking_level=thinking.upper()),
+            http_options=(
+                types.HttpOptions(timeout=timeout_ms, retry_options=RETRY) if timeout_ms else None
+            ),
         )
         response = self.client.models.generate_content(
             model=self.settings.gemini_model, contents=contents, config=config

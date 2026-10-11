@@ -1,0 +1,133 @@
+{
+  "manual_id": "BPM250",
+  "manual_title": "Vireo BPM-250 Blister Packing Machine: Operation and Maintenance Manual (synthetic)",
+  "equipment_model": "Vireo BPM-250 blister packing machine",
+  "asset_tags": ["BL-3"],
+  "sections": [
+    {
+      "page": 4,
+      "title": "1.3 Lockout and hot surfaces",
+      "kind": "safety",
+      "text": "1. Stop the machine with the STOP key at the end of a cycle. 2. Switch the main switch S0 to OFF and lock it with your personal padlock; attach a danger tag. 3. Close the compressed air ball valve and open the dump valve DV1 until the air gauge reads 0 bar. 4. Forming and sealing plates run at up to 160 °C. Wait until the plate temperature on the display is below 50 °C before touching them, or wear heat-resistant gloves. 5. Check for zero energy: press START; the machine must not move.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": ["FIG-BPM250-LOTO"]
+    },
+    {
+      "page": 9,
+      "title": "2.1 Machine overview",
+      "kind": "general",
+      "text": "PVC film runs from the unwind reel over the dancer arm to the forming station, where the upper and lower heating plates soften the film and compressed air forms the pockets in the forming die. Tablets are fed into the pockets, then aluminium lidding foil is sealed on at the sealing station by the heated sealing plate. The strip is embossed with the batch code, perforated and punched into blister cards. Each heating plate has heater cartridges and a type K thermocouple connected to a temperature controller with a solid-state relay.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": ["FIG-BPM250-PATH"]
+    },
+    {
+      "page": 13,
+      "title": "5.2 E-31 Forming heater temperature low",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-31, forming plate temperature more than 10 °C below the set point; pockets come out shallow or uneven and the machine stops. Likely causes: a failed heater cartridge, a loose or failed thermocouple, a failed solid-state relay. Procedure: 1. Lock out the machine and let the plates cool (section 1.3). 2. Disconnect the heater cartridges at the terminal box and measure each one: a good cartridge reads 40 to 50 ohm; open circuit means failed. Replace a failed cartridge with BPM-HC-250 (250 W, 230 V). 3. Check that the thermocouple sits fully in its bore and the clamp is tight. Refit it with heat-transfer paste BPM-HP-02; replace a damaged thermocouple with BPM-TC-K2. 4. If cartridges and thermocouple are good, ask the electrician to check solid-state relay BPM-SSR-40. 5. Heat up for 20 minutes and check pocket depth on 10 strips. Typical time: 60 minutes.",
+      "error_codes": ["E-31"],
+      "repair_minutes": 60,
+      "figure_ids": ["FIG-BPM250-HEATER"]
+    },
+    {
+      "page": 15,
+      "title": "5.3 E-44 Sealing temperature deviation",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-44, sealing plate temperature outside set point plus or minus 5 °C; risk of leaking blisters. The machine stops. Likely causes: failed sealing heater cartridge, thermocouple not in contact, display showing the controller set point instead of the actual temperature. Procedure: 1. Lock out and cool down (section 1.3). 2. Measure the sealing heater cartridges (40 to 50 ohm). Replace failed ones with BPM-HC-250. 3. Reseat the thermocouple with heat-transfer paste BPM-HP-02. 4. After heat-up, check the plate surface temperature with a calibrated contact thermometer; it must be within 5 °C of the set point. 5. Run a blue dye leak test on 20 blisters from each lane before restarting the batch. Typical time: 60 minutes.",
+      "error_codes": ["E-44"],
+      "repair_minutes": 60,
+      "figure_ids": ["FIG-BPM250-HEATER"]
+    },
+    {
+      "page": 17,
+      "title": "5.4 E-52 Film web break",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-52, the PVC web is broken or the film reel has run out; the machine stops. Likely causes: a bad splice, too high web tension, a worn or seized guide roller, film stuck to a hot forming plate. Procedure: 1. Lock out the machine (section 1.3). 2. Remove the broken film from the forming station. 3. Rethread the film along the path shown in the figure, under the dancer arm. 4. Check every guide roller turns freely; replace a seized roller with BPM-GR-08. 5. Join the film with splice tape, keeping the splice straight. 6. Run 5 empty cycles at low speed and check the web runs centred. Typical time: 20 minutes.",
+      "error_codes": ["E-52"],
+      "repair_minutes": 20,
+      "figure_ids": ["FIG-BPM250-PATH"]
+    },
+    {
+      "page": 18,
+      "title": "5.5 W-12 Film tracking deviation",
+      "kind": "troubleshooting",
+      "text": "Warning W-12 appears when the film edge sensor sees the web more than 2 mm off centre. The machine keeps running. First actions: check the film reel is pushed fully onto the unwind shaft and the reel core is not damaged; clean the edge sensor; adjust the web guide by turning the tracking knob a quarter turn at a time. Repeated W-12 warnings often come before an E-52 web break.",
+      "error_codes": ["W-12"],
+      "repair_minutes": 10,
+      "figure_ids": []
+    },
+    {
+      "page": 19,
+      "title": "5.6 E-60 Punching die jam",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-60, cut blister cards stuck in the punching die; the machine stops. Likely causes: a blunt punching die, misaligned perforation, foil build-up. Procedure: 1. Lock out (section 1.3). 2. Remove the stuck cards and foil pieces with plastic tweezers. 3. Inspect the punch and die edges; a blunt or chipped die set must be replaced with BPM-PD-01 by maintenance. 4. Check card position against the punch with one slow cycle. Typical time: 35 minutes.",
+      "error_codes": ["E-60"],
+      "repair_minutes": 35,
+      "figure_ids": []
+    },
+    {
+      "page": 20,
+      "title": "5.7 W-27 Compressed air pressure low",
+      "kind": "troubleshooting",
+      "text": "Warning W-27 appears when the supply air pressure is below 5.5 bar. Pocket forming needs at least 5.5 bar. First actions: check the plant air supply and the machine filter regulator; drain water from the filter bowl; look and listen for leaks at the forming station. If pressure falls below 5 bar the machine stops.",
+      "error_codes": ["W-27"],
+      "repair_minutes": 15,
+      "figure_ids": []
+    },
+    {
+      "page": 22,
+      "title": "7.1 Return to service after a repair",
+      "kind": "procedure",
+      "text": "1. Remove tools, close guards, remove your lock and tag. 2. Heat up for 20 minutes. 3. Run empty strips and check pocket shape, seal pattern and batch code. 4. Do a blue dye leak test on 20 blisters from each lane; all must pass before tablets are fed. 5. QA checks the first cards before the batch continues. 6. Do line clearance as per the plant SOP and record the repair in the equipment logbook.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": []
+    }
+  ],
+  "error_codes": [
+    {
+      "code": "E-31", "title": "Forming heater temperature low", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Failed heater cartridge", "Loose or failed thermocouple", "Failed solid-state relay"],
+      "first_actions": ["Lock out and let the plates cool below 50 °C", "Measure each heater cartridge: 40 to 50 ohm is good", "Check the thermocouple is fully in its bore"],
+      "repair_minutes": 60, "page": 13
+    },
+    {
+      "code": "E-44", "title": "Sealing temperature deviation", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Failed sealing heater cartridge", "Thermocouple not in contact"],
+      "first_actions": ["Lock out and cool down", "Measure sealing heater cartridges", "Run a dye leak test on 20 blisters per lane before restarting"],
+      "repair_minutes": 60, "page": 15
+    },
+    {
+      "code": "E-52", "title": "Film web break", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Bad splice", "Web tension too high", "Seized guide roller"],
+      "first_actions": ["Lock out", "Rethread the film under the dancer arm", "Check every guide roller turns freely"],
+      "repair_minutes": 20, "page": 17
+    },
+    {
+      "code": "E-60", "title": "Punching die jam", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Blunt punching die", "Misaligned perforation"],
+      "first_actions": ["Lock out", "Remove stuck cards with plastic tweezers", "Inspect punch and die edges"],
+      "repair_minutes": 35, "page": 19
+    },
+    {
+      "code": "E-08", "title": "Guard open", "severity": "error", "stops_machine": true,
+      "likely_causes": ["A guard door is open or its interlock is misaligned"],
+      "first_actions": ["Close all guards; never bypass an interlock"],
+      "repair_minutes": 10, "page": 4
+    },
+    {
+      "code": "W-12", "title": "Film tracking deviation", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Reel not fully on the shaft", "Dirty edge sensor", "Web guide out of adjustment"],
+      "first_actions": ["Push the reel fully onto the shaft", "Clean the edge sensor", "Adjust the tracking knob a quarter turn at a time"],
+      "repair_minutes": 10, "page": 18
+    },
+    {
+      "code": "W-27", "title": "Compressed air pressure low", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Low plant air pressure", "Water in the filter bowl", "Air leak at the forming station"],
+      "first_actions": ["Check plant air and the filter regulator", "Drain the filter bowl", "Listen for leaks"],
+      "repair_minutes": 15, "page": 20
+    }
+  ]
+}

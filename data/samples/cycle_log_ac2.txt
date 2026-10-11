@@ -1,0 +1,15 @@
+STERIMAX SA-600   SN 600-1182   UNIT: AC-2   CONTROLLER LOG (synthetic sample)
+-----------------------------------------------------------------
+12/10/2026 05:02:11  INFO   Operator R.K. logged in
+12/10/2026 05:03:40  INFO   Leak test cycle start
+12/10/2026 05:19:02  INFO   Leak test result 0.8 mbar/min  PASS
+12/10/2026 05:24:15  INFO   Bowie-Dick cycle start
+12/10/2026 05:31:50  WARN   W-05 Jacket pressure slow rise (11 min to working pressure)
+12/10/2026 05:52:30  INFO   Bowie-Dick cycle complete
+12/10/2026 06:10:05  INFO   Cycle 4 (porous load, 121C 20 min) start, load L-2610-03
+12/10/2026 06:18:44  WARN   W-05 Jacket pressure slow rise (12 min to working pressure)
+12/10/2026 06:29:31  INFO   Exposure phase start
+12/10/2026 06:36:12  ALARM  E-21 Drain temperature low  119.4 C < 121.0 C   CYCLE ABORTED
+12/10/2026 06:36:13  INFO   Chamber venting
+12/10/2026 06:44:50  INFO   Door unlocked, chamber 0.0 bar 78 C
+12/10/2026 06:45:30  INFO   Alarm E-21 acknowledged by R.K.

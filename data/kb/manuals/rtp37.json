@@ -1,0 +1,157 @@
+{
+  "manual_id": "RTP37",
+  "manual_title": "Kestrel RTP-37 Rotary Tablet Press: Operation and Maintenance Manual (synthetic)",
+  "equipment_model": "Kestrel RTP-37 rotary tablet press",
+  "asset_tags": ["TP-01", "TP-02"],
+  "sections": [
+    {
+      "page": 3,
+      "title": "1.2 Lockout before opening any guard",
+      "kind": "safety",
+      "text": "Never open a guard or put hands near the turret while the press can move. 1. Stop the press with the STOP key and wait until the turret has stopped completely (rundown takes up to 30 seconds). 2. Switch the main isolator Q1 to OFF and lock it with your personal padlock. Attach a danger tag with your name. 3. Press the hydraulic pressure release valve V3 until the gauge reads 0 bar. 4. Check for zero energy: press START; the press must not start. 5. Punch tips and die edges are sharp: wear cut-resistant gloves when handling tooling. 6. Wear the dust mask and gloves listed in the batch manufacturing record for the product on the press.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": ["FIG-RTP37-LOTO"]
+    },
+    {
+      "page": 8,
+      "title": "2.1 Machine overview",
+      "kind": "general",
+      "text": "The RTP-37 has a 37-station turret. Each station holds an upper punch, a lower punch and a die. Upper punches run in guide bores in the upper turret and are moved by the upper cam track; lower punches are moved by the lower cam track and the ejection cam. Powder flows from the hopper through the feed frame into the dies. Pre-compression and main compression rollers press the tablet; the take-off blade guides tablets to the discharge chute. The main drive turns the turret through a V-belt. A central lubrication pump feeds oil to the cam tracks and punch guides. The handwheel H1 (inching wheel) turns the turret by hand when the press is locked out.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": ["FIG-RTP37-OVERVIEW"]
+    },
+    {
+      "page": 14,
+      "title": "6.1 Alarm list",
+      "kind": "error_codes",
+      "text": "Alarms starting with E stop the press. Alarms starting with W are warnings: the press keeps running but the cause must be checked. E-104 Upper punch tight. E-118 Lower punch tight or ejection fault. E-150 Guard open. E-221 Main drive overload. E-330 Feed frame motor fault. W-212 Compression force deviation. W-305 Lubrication pressure low. W-401 Hopper level low.",
+      "error_codes": ["E-104", "E-118", "E-150", "E-221", "E-330", "W-212", "W-305", "W-401"],
+      "repair_minutes": null,
+      "figure_ids": []
+    },
+    {
+      "page": 16,
+      "title": "6.2 E-104 Upper punch tight",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-104 PUNCH TIGHT, the turret stops and the main drive torque is high. Likely causes: product fines packed in an upper punch guide bore; too little punch lubrication; a scored, burred or mushroomed punch; a worn guide bushing; wear on the upper cam track. Procedure: 1. Lock out the press (section 1.2). 2. Open the upper guard. Turn the turret slowly with handwheel H1 and feel for the station that resists; mark it. 3. Remove the upper punch from that station with punch removal tool T-12. 4. Inspect the punch barrel, head and tip for scoring, burrs or a mushroomed head. A damaged punch must be replaced with upper punch RTP-PN-U-10; never polish the barrel. 5. Clean the guide bore with a lint-free cloth moistened with 70% IPA. Never use a metal brush. 6. Check the bore with go/no-go gauge G-19. If the gauge does not pass, the guide bushing is worn: replace bushing RTP-BS-07 (maintenance engineer only, section 9.4). 7. Put 1 drop of food-grade punch oil RTP-LB-02 on the punch barrel and wipe off the excess. 8. Refit the punch and its dust cup RTP-SL-03. Turn the turret two full turns with H1: it must turn without resistance. Typical time: 45 minutes for one station; about 3 hours if a guide bushing must be replaced.",
+      "error_codes": ["E-104"],
+      "repair_minutes": 45,
+      "figure_ids": ["FIG-RTP37-PUNCH-REMOVAL", "FIG-RTP37-PUNCH-PARTS"]
+    },
+    {
+      "page": 17,
+      "title": "6.3 E-118 Lower punch tight or ejection fault",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-118, the turret stops at ejection or a lower punch sticks below the die table. Likely causes: powder under the die table, a lower punch with a damaged tip or barrel, a worn ejection cam, a die not seated flush. Procedure: 1. Lock out the press (section 1.2). 2. Remove the die table scraper and vacuum the powder from the lower turret. 3. Turn the turret with handwheel H1 and find the tight lower punch. 4. Remove it through the lower punch access door with tool T-14 and inspect it. Replace a damaged punch with lower punch RTP-PN-L-10. 5. Check that the die is flush with the die table using the dial gauge: maximum 0.05 mm proud. Reseat or replace die RTP-DI-10. 6. Inspect the ejection cam for grooves; report wear to the engineer. Typical time: 50 minutes.",
+      "error_codes": ["E-118"],
+      "repair_minutes": 50,
+      "figure_ids": []
+    },
+    {
+      "page": 19,
+      "title": "6.4 E-221 Main drive overload",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-221, the motor protection relay F3 trips and the press stops. Likely causes: over-compression after a tablet thickness change, tight punches (see E-104 and E-118), a jammed feed frame, a slipping or worn V-belt. Procedure: 1. Check the compression force history on the HMI: forces above the maximum for the tooling point to over-compression; correct the thickness setting to the value in the batch record. 2. Lock out the press (section 1.2) and turn the turret one full turn with handwheel H1; any tight station must be cleared first. 3. Check V-belt tension: deflection 8 to 10 mm when pressed with 50 N at the middle of the span. Replace a cracked or glazed belt with RTP-BT-04. 4. Let the motor cool for at least 10 minutes, then reset relay F3. 5. Restart at 20 rpm and increase speed in steps while watching the compression force. Typical time: 30 minutes.",
+      "error_codes": ["E-221"],
+      "repair_minutes": 30,
+      "figure_ids": ["FIG-RTP37-BELT"]
+    },
+    {
+      "page": 21,
+      "title": "6.5 W-212 Compression force deviation",
+      "kind": "troubleshooting",
+      "text": "Warning W-212 appears when the main compression force is more than 10% away from the set point over 50 tablets. The press keeps running. Likely causes: uneven die fill (hopper level, feed frame paddle speed, poor powder flow), lower punches of unequal working length, fines building up in punch guides. First actions: check the hopper level and feed frame speed; weigh 20 tablets and compare with the batch record limits. If W-212 appears more than 10 times in an hour, check punch working length with gauge G-21 at the next stop. Rising W-212 counts together with a higher main drive torque often come before an E-104 punch tight stop.",
+      "error_codes": ["W-212"],
+      "repair_minutes": 20,
+      "figure_ids": []
+    },
+    {
+      "page": 22,
+      "title": "6.6 W-305 Lubrication pressure low",
+      "kind": "troubleshooting",
+      "text": "Warning W-305 appears when the central lubrication pressure is below 2 bar. The press keeps running, but punch guides and cam tracks are no longer oiled. Running for long with W-305 leads to punch tightness (E-104). First actions: check the oil level in the central lubrication reservoir and top up with oil RTP-LB-01 only. Check the lines and the distributor block for leaks or a blocked line. Run the lubrication pump manually from the maintenance screen until pressure is above 2 bar. Typical time: 20 minutes.",
+      "error_codes": ["W-305"],
+      "repair_minutes": 20,
+      "figure_ids": []
+    },
+    {
+      "page": 23,
+      "title": "6.7 E-330 Feed frame motor fault",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-330, the feed frame paddles stop and the press stops. Likely causes: powder packed in the feed frame, a loose drive coupling, a failed motor drive. Procedure: 1. Lock out the press (section 1.2). 2. Remove the feed frame and clean the paddles and housing. 3. Check the drive coupling for play and tighten its clamping screws to 6 Nm. 4. Check the paddle set for bent or worn blades; replace with paddle set RTP-FF-11. 5. Refit the feed frame with 0.1 mm clearance to the die table (feeler gauge). Typical time: 40 minutes.",
+      "error_codes": ["E-330"],
+      "repair_minutes": 40,
+      "figure_ids": []
+    },
+    {
+      "page": 27,
+      "title": "9.1 Spare parts",
+      "kind": "maintenance",
+      "text": "Keep these parts in the plant store for each RTP-37: upper punch RTP-PN-U-10, lower punch RTP-PN-L-10, die RTP-DI-10, upper punch guide bushing RTP-BS-07, punch dust cups RTP-SL-03, food-grade punch oil RTP-LB-02, central lubrication oil RTP-LB-01, main drive V-belt RTP-BT-04, feed frame paddle set RTP-FF-11. Tools: punch removal tools T-12 (upper) and T-14 (lower), go/no-go gauge G-19, punch length gauge G-21.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": []
+    },
+    {
+      "page": 28,
+      "title": "9.6 Return to service after a repair",
+      "kind": "procedure",
+      "text": "1. Remove all tools and check that every punch and die is in place. 2. Close all guards and remove your lock and tag. 3. Run the turret empty at 10 rpm for 2 minutes and listen for abnormal noise. 4. Run the first tablets and give them to QA for in-process checks (weight, thickness, hardness) before the batch continues. 5. Do line clearance as per the plant SOP. 6. Record the repair, the parts used and the downtime in the equipment logbook.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": []
+    }
+  ],
+  "error_codes": [
+    {
+      "code": "E-104", "title": "Upper punch tight", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Fines packed in an upper punch guide bore", "Too little punch lubrication", "Damaged punch barrel or head", "Worn guide bushing"],
+      "first_actions": ["Lock out the press (isolator Q1, release valve V3)", "Find the tight station by turning handwheel H1", "Remove and inspect the upper punch; clean the guide bore with 70% IPA", "Check the bore with gauge G-19"],
+      "repair_minutes": 45, "page": 16
+    },
+    {
+      "code": "E-118", "title": "Lower punch tight or ejection fault", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Powder under the die table", "Damaged lower punch", "Die not seated flush", "Worn ejection cam"],
+      "first_actions": ["Lock out the press", "Vacuum powder from the lower turret", "Find and remove the tight lower punch with tool T-14"],
+      "repair_minutes": 50, "page": 17
+    },
+    {
+      "code": "E-150", "title": "Guard open", "severity": "error", "stops_machine": true,
+      "likely_causes": ["A guard door is open or its interlock switch is misaligned"],
+      "first_actions": ["Close all guards", "If the alarm stays, ask maintenance to check the interlock switch; never bypass it"],
+      "repair_minutes": 10, "page": 14
+    },
+    {
+      "code": "E-221", "title": "Main drive overload", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Over-compression after a thickness change", "Tight punches", "Jammed feed frame", "Slipping V-belt"],
+      "first_actions": ["Check the compression force history", "Lock out and turn the turret one turn by hand", "Let the motor cool 10 minutes, then reset relay F3"],
+      "repair_minutes": 30, "page": 19
+    },
+    {
+      "code": "E-330", "title": "Feed frame motor fault", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Powder packed in the feed frame", "Loose drive coupling", "Motor drive fault"],
+      "first_actions": ["Lock out the press", "Remove and clean the feed frame", "Check the drive coupling for play"],
+      "repair_minutes": 40, "page": 23
+    },
+    {
+      "code": "W-212", "title": "Compression force deviation", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Uneven die fill", "Lower punches of unequal length", "Fines building up in punch guides"],
+      "first_actions": ["Check hopper level and feed frame speed", "Weigh 20 tablets against the batch record limits", "If more than 10 times an hour, check punch length with gauge G-21 at the next stop"],
+      "repair_minutes": 20, "page": 21
+    },
+    {
+      "code": "W-305", "title": "Lubrication pressure low", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Low oil in the central lubrication reservoir", "Leaking or blocked lubrication line"],
+      "first_actions": ["Top up the reservoir with oil RTP-LB-01", "Check lines and the distributor block", "Run the lubrication pump manually until pressure is above 2 bar"],
+      "repair_minutes": 20, "page": 22
+    },
+    {
+      "code": "W-401", "title": "Hopper level low", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Hopper not refilled in time", "Level sensor dirty"],
+      "first_actions": ["Refill the hopper from the next container in the batch record", "Wipe the level sensor window"],
+      "repair_minutes": 5, "page": 14
+    }
+  ]
+}

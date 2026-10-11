@@ -1,0 +1,118 @@
+{
+  "manual_id": "SA600",
+  "manual_title": "Sterimax SA-600 Steam Sterilizer: Operation and Maintenance Manual (synthetic)",
+  "equipment_model": "Sterimax SA-600 steam sterilizer (autoclave)",
+  "asset_tags": ["AC-2"],
+  "sections": [
+    {
+      "page": 5,
+      "title": "1.4 Pressure, steam and lockout",
+      "kind": "safety",
+      "text": "The chamber and jacket hold steam under pressure. 1. Never try to open the door unless the chamber pressure gauge reads 0 bar and the chamber temperature is below 80 °C. 2. Before any repair, end or abort the cycle, close the steam supply valve SV-1 and lock it; switch the electrical isolator Q0 to OFF and lock it; attach danger tags. 3. Open the chamber vent valve and wait until the chamber and jacket gauges both read 0 bar. 4. Pipes, door and chamber surfaces stay hot: wear heat-resistant gloves and a face shield.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": ["FIG-SA600-LOTO"]
+    },
+    {
+      "page": 10,
+      "title": "2.1 Machine overview",
+      "kind": "general",
+      "text": "The SA-600 is a jacketed steam sterilizer with a hinged door. The door seals with an inflatable silicone gasket that sits in a groove around the door frame and is pressed against the door by compressed air during the cycle. A liquid ring vacuum pump removes air during the pre-vacuum pulses. Condensate leaves the chamber through the drain, where a PT100 sensor measures drain temperature, then through strainer ST-2 and the steam trap.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": []
+    },
+    {
+      "page": 14,
+      "title": "4.2 E-07 Door seal fault",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-07, door seal pressure not reached within 60 seconds of cycle start; the cycle does not start or is aborted. Likely causes: a cut, flattened or hardened door gasket; dirt in the gasket groove; low compressed air supply (below 5 bar); a faulty seal supply valve. Procedure: 1. Lock out the sterilizer and make sure the chamber is at 0 bar and below 80 °C (section 1.4). 2. Inspect the whole gasket for cuts, flat spots and hardening, especially near the hinge. 3. Clean the groove with a lint-free cloth and water for injection. 4. Replace a damaged gasket with door gasket SA-DG-600: press it evenly into the groove starting at the top centre, and apply a thin film of approved silicone grease SA-SG-01. 5. Check compressed air supply is at least 5 bar. 6. Run a vacuum leak test (limit 1.3 mbar/min) and a Bowie-Dick test; both must pass before the sterilizer is released. Typical time: 90 minutes.",
+      "error_codes": ["E-07"],
+      "repair_minutes": 90,
+      "figure_ids": ["FIG-SA600-GASKET"]
+    },
+    {
+      "page": 16,
+      "title": "4.3 E-12 Vacuum level not reached",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-12, the chamber does not reach the pre-vacuum set point; the cycle aborts. Likely causes: no seal water to the liquid ring vacuum pump, an air leak at the door gasket or a valve, a worn vacuum pump. Procedure: 1. Check the seal water flow to the vacuum pump (sight glass must show flow). 2. Run a vacuum leak test: above 1.3 mbar/min means a leak; check the door gasket first (section 4.2). 3. If there is no leak, ask maintenance to service the pump with kit SA-VP-KIT. Typical time: 60 minutes.",
+      "error_codes": ["E-12"],
+      "repair_minutes": 60,
+      "figure_ids": []
+    },
+    {
+      "page": 18,
+      "title": "4.4 E-21 Drain temperature low",
+      "kind": "troubleshooting",
+      "text": "Symptom: alarm E-21, drain temperature below 121 °C during the exposure phase; the cycle aborts and the load is not sterile. Likely causes: strainer ST-2 blocked with scale, a stuck steam trap, wet steam. Procedure: 1. Lock out the sterilizer (section 1.4). 2. Open the strainer cap and clean screen ST-2; replace a damaged screen with SA-STR-2. 3. Blow down the steam trap; replace a trap that stays closed with SA-ST-15. 4. Check the PT100 drain sensor reading against a calibrated probe; replace a faulty sensor with SA-PT100. 5. Run one empty cycle and check drain temperature stays at or above 121 °C for the whole exposure. The aborted load must be treated as not sterile and reported to QA. Typical time: 60 minutes.",
+      "error_codes": ["E-21"],
+      "repair_minutes": 60,
+      "figure_ids": ["FIG-SA600-TRAP"]
+    },
+    {
+      "page": 20,
+      "title": "4.5 W-05 Jacket pressure slow rise",
+      "kind": "troubleshooting",
+      "text": "Warning W-05 appears when the jacket takes more than 10 minutes to reach working pressure. The cycle continues but takes longer. First actions: check the plant steam supply pressure; check the jacket steam trap and strainer for blockage. Repeated W-05 warnings often come before E-21 drain temperature faults.",
+      "error_codes": ["W-05"],
+      "repair_minutes": 20,
+      "figure_ids": []
+    },
+    {
+      "page": 21,
+      "title": "4.6 W-09 Feed water conductivity high",
+      "kind": "troubleshooting",
+      "text": "Warning W-09 appears when the steam generator feed water conductivity is above 5 µS/cm. Scale and poor steam quality follow. First actions: inform the water system owner; check the purified water supply; increase blowdown frequency as per the maintenance plan.",
+      "error_codes": ["W-09"],
+      "repair_minutes": 10,
+      "figure_ids": []
+    },
+    {
+      "page": 23,
+      "title": "6.1 Return to service after a repair",
+      "kind": "procedure",
+      "text": "1. Remove locks and tags, open SV-1 slowly and let the jacket heat up. 2. Run a vacuum leak test: the leak rate must be 1.3 mbar/min or less. 3. Run a Bowie-Dick test cycle: the indicator sheet must show an even colour change. 4. QA reviews the test results and releases the sterilizer. 5. Record the repair, tests and downtime in the equipment logbook.",
+      "error_codes": [],
+      "repair_minutes": null,
+      "figure_ids": []
+    }
+  ],
+  "error_codes": [
+    {
+      "code": "E-07", "title": "Door seal fault", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Cut, flattened or hardened door gasket", "Dirt in the gasket groove", "Compressed air below 5 bar"],
+      "first_actions": ["Lock out: chamber at 0 bar and below 80 °C", "Inspect the gasket near the hinge", "Clean the groove with water for injection"],
+      "repair_minutes": 90, "page": 14
+    },
+    {
+      "code": "E-12", "title": "Vacuum level not reached", "severity": "error", "stops_machine": true,
+      "likely_causes": ["No seal water to the vacuum pump", "Air leak at the door gasket", "Worn vacuum pump"],
+      "first_actions": ["Check seal water flow at the sight glass", "Run a vacuum leak test"],
+      "repair_minutes": 60, "page": 16
+    },
+    {
+      "code": "E-21", "title": "Drain temperature low", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Strainer ST-2 blocked with scale", "Stuck steam trap", "Wet steam"],
+      "first_actions": ["Treat the aborted load as not sterile and tell QA", "Lock out and clean strainer ST-2", "Blow down the steam trap"],
+      "repair_minutes": 60, "page": 18
+    },
+    {
+      "code": "E-30", "title": "Chamber over-temperature", "severity": "error", "stops_machine": true,
+      "likely_causes": ["Faulty chamber temperature sensor", "Steam control valve stuck open"],
+      "first_actions": ["Do not open the door until 0 bar and below 80 °C", "Call maintenance to check the control valve and sensor"],
+      "repair_minutes": 60, "page": 5
+    },
+    {
+      "code": "W-05", "title": "Jacket pressure slow rise", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Low plant steam pressure", "Blocked jacket steam trap or strainer"],
+      "first_actions": ["Check plant steam supply pressure", "Check the jacket trap and strainer"],
+      "repair_minutes": 20, "page": 20
+    },
+    {
+      "code": "W-09", "title": "Feed water conductivity high", "severity": "warning", "stops_machine": false,
+      "likely_causes": ["Purified water quality drop", "Too little blowdown"],
+      "first_actions": ["Inform the water system owner", "Increase blowdown as per the maintenance plan"],
+      "repair_minutes": 10, "page": 21
+    }
+  ]
+}

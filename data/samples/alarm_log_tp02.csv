@@ -1,0 +1,53 @@
+# Alarm log export, machine TP-02 (Kestrel RTP-37), HMI-TP02. Synthetic sample.
+Date;Time;Number;Class;State;Text;Computer
+12.10.2026;06:00:00;9001;System;Came In;Operator login: shift A;HMI-TP02
+12.10.2026;06:02:00;9010;System;Came In;Batch PA-2610-14 started, Product A 500 mg;HMI-TP02
+12.10.2026;06:22:00;401;Warnings;Came In;W-401 Hopper level low;HMI-TP02
+12.10.2026;06:25:00;401;Warnings;Went Out;W-401 Hopper level low;HMI-TP02
+12.10.2026;06:37:20;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;06:38:00;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;06:48:00;305;Warnings;Came In;W-305 Lubrication pressure low;HMI-TP02
+12.10.2026;06:54:00;305;Warnings;Went Out;W-305 Lubrication pressure low;HMI-TP02
+12.10.2026;07:04:09;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;07:04:49;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;07:11:00;401;Warnings;Came In;W-401 Hopper level low;HMI-TP02
+12.10.2026;07:14:00;401;Warnings;Went Out;W-401 Hopper level low;HMI-TP02
+12.10.2026;07:38:25;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;07:39:05;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:11:41;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:12:21;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:13:00;401;Warnings;Came In;W-401 Hopper level low;HMI-TP02
+12.10.2026;08:16:00;401;Warnings;Went Out;W-401 Hopper level low;HMI-TP02
+12.10.2026;08:26:03;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:26:43;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:32:04;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:32:44;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:38:34;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:39:14;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:43:06;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:43:46;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:48:23;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:49:03;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:52:37;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:53:17;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:56:03;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:56:43;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;08:59:32;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:00:12;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:03:13;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:03:53;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:06:02;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:06:42;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:09:05;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:09:45;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:12:27;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:13:07;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:15:26;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:16:06;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:18:04;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:18:44;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:20:15;212;Warnings;Came In;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:20:55;212;Warnings;Went Out;W-212 Compression force deviation, main force +12% of set point;HMI-TP02
+12.10.2026;09:41:14;104;Errors;Came In;E-104 Upper punch tight, station 17, main drive torque high;HMI-TP02
+12.10.2026;09:41:15;9020;System;Came In;Press stopped by fault;HMI-TP02
+12.10.2026;09:43:14;104;Errors;Acknowledged;E-104 Upper punch tight, station 17, main drive torque high;HMI-TP02

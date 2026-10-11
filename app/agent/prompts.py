@@ -162,3 +162,207 @@ Glossary of plant abbreviations:
 """
 
 NO_GLOSSARY = "(none provided)"
+
+# --- Repair guides ---
+
+GUIDE_PROMPT = """\
+A machine in a pharmaceutical plant has broken down. Write a repair guide that the
+maintenance manager will check, QA will approve, and the workers will follow from a
+printed sheet. The workers may have little schooling, so write for them.
+
+BREAKDOWN REPORT:
+{incident}
+Machine: {asset}
+Alarm codes in the report: {codes}
+
+PAST INCIDENTS THAT ARE THE SAME PROBLEM (plant records, best match first):
+{history}
+
+REPEAT CHECK (computed from the records):
+{recurrence}
+
+EQUIPMENT MANUAL SECTIONS:
+{sections}
+
+FIGURES YOU MAY ATTACH (id: caption):
+{figures}
+
+SPARE PARTS IN THE PLANT STORE FOR THIS MACHINE (part_no: name, stock):
+{parts}
+
+Rules you must follow:
+- Sources: every safety point, step and restart check lists the ids of the manual
+  sections and past incidents it comes from in `citations`. You may only cite: {allowed}.
+  Do not write ids inside the text.
+- Never invent a number. Every value (torque, temperature, pressure, time, length,
+  quantity, setting) must come from a source you cite. If a value is needed but no
+  source gives it, write "as per the manual" and add an open question.
+- `safety`: start from the manual's lockout section. Short points.
+- `steps`: follow the manual's procedure for this alarm or symptom, in order. Add what
+  worked in past fixes. If a past fix did not hold (outcome "recurred"), include the
+  deeper check that fixed it later and say why in the step's `caution`.
+- One action per step. Short, plain sentences (at most 25 words), like "Remove the upper
+  punch with tool T-12." Name the part number and tool where one is used.
+- `figure_id`: only from the list above, only on the step the figure shows. Use each
+  figure at most once.
+- `parts`: only part numbers from the list above, with the quantity likely needed.
+  `why`: a few words.
+- `restart_checks`: from the manual's return-to-service section.
+- `escalate_if`: when the workers must stop and call the manager, the engineer or QA.
+- `summary`: 2 or 3 sentences for the manager: the likely cause and what the guide is
+  based on. Write "possible cause", never "the cause is".
+- `title`: the machine, the alarm or symptom, and the fix, e.g. "TP-02 E-104: free and
+  check the tight upper punch".
+- `open_questions`: what the manager still needs to find out.
+{no_source_rule}
+"""
+
+GUIDE_NO_MANUAL = """\
+- No manual section matched. Steps may only come from past incidents; anything else is
+  general practice: leave `citations` empty so it is marked as general.
+"""
+
+TRANSLATE_PROMPT = """\
+Translate this repair guide from English into {language_name} for factory workers with
+basic schooling. They will follow it from a printed sheet while repairing a machine.
+
+Rules:
+- Simple, everyday {language_name}. Short sentences. Keep the meaning exact.
+- Where workers would normally say the English word (punch, turret, gasket, bar, IPA,
+  QA), write it the way they say it, in {language_name} script.
+- Copy exactly, unchanged: part numbers (RTP-BS-07), alarm codes (E-104), machine tags
+  (TP-02), tool and gauge names (T-12, G-19), and every number. Write numbers with the
+  digits 0-9. Keep units as written (mm, bar, °C, Nm, min).
+- Return the same number of items in every list, in the same order. An empty string
+  stays an empty string.
+
+ENGLISH:
+{source}
+"""
+
+TRANSLATE_RETRY = """\
+
+Your previous answer did not have the same number of items as the English in: {lists}.
+Translate again, item for item.
+"""
+
+# --- Voice intake ---
+
+INTAKE_PROMPT = """\
+You are helping a maintenance manager in a pharmaceutical plant {purpose}. They speak
+by voice, in any Indian language or English, often mixed. Listen to their latest
+message (audio or text below) and update the report.
+
+Report so far (English):
+{fields}
+
+Conversation so far:
+{history}
+
+Still needed: {missing}
+Machines in this plant: {assets}
+
+Rules:
+- `transcript`: what the manager said in this message, word for word, in the language
+  and script they used.
+- `language`: the main language of this message as an ISO 639-1 code (te, hi, ta, kn,
+  mr, en...).
+- `fields`: fill only what the manager has said, in this or earlier messages. Write the
+  values in English. Copy machine tags, alarm codes and numbers exactly. Never guess:
+  leave a field null if it was not said.
+  {field_rules}
+- `question`: if something is still needed after this message, one short, friendly
+  question asking for it, in the manager's language. Ask about the most important
+  missing item first; you may ask two things in one question. Null if nothing is needed.
+"""
+
+INTAKE_BREAKDOWN = "report a machine breakdown, so a repair guide can be drafted"
+INTAKE_CLOSURE = "record how a breakdown was fixed, so the plant remembers it next time"
+
+INTAKE_FIELD_RULES = {
+    "breakdown": (
+        "`equipment`: the machine tag or name. `symptom`: what is wrong, in the "
+        "manager's words. `machine_stopped`: true if the machine has stopped, false if it "
+        "is still running. `error_code`: an alarm code shown on the machine. `started`: "
+        "when it started. `already_tried`: anything already done."
+    ),
+    "closure": (
+        "`action_taken`: what was done to fix it. `root_cause`: what caused it, if known. "
+        "`parts_used`: part numbers or names. `downtime_minutes`: total downtime in "
+        "minutes (convert hours). `outcome`: resolved if fixed, recurred if it came back, "
+        "unknown if not sure yet."
+    ),
+}
+
+# --- CMMS export ---
+
+CMMS_PROMPT = """\
+This is the start of a maintenance history exported from a plant's maintenance system
+(for example SAP PM, IBM Maximo or a spreadsheet). Map its columns to incident fields.
+
+Columns: {columns}
+
+First rows:
+{rows}
+
+Rules:
+- Use column names exactly as listed. Leave a field null or empty if no column fits.
+- `date_column`: when the problem started or was reported (e.g. "Malfunct. start",
+  "Notif. date", "Reported date").
+- `equipment_columns`: the machine or location (e.g. equipment number and description,
+  functional location).
+- `description_columns`: what went wrong (short text, long text, damage text).
+- `cause_columns`: cause or root cause text. `action_columns`: what was done (activity
+  text, work done, solution).
+- `downtime_column` and `downtime_unit`: breakdown duration and its unit.
+- `status_column` and `completed_values`: the status column and the values in it that
+  mean the work was completed (e.g. "NOCO", "TECO", "COMP", "CLOSE").
+- `system`: one short phrase naming what the export looks like.
+"""
+
+# --- Machine and instrument logs ---
+
+LOG_PROMPT = """\
+These lines come from a machine or instrument log in a pharmaceutical plant (an HMI
+alarm history, a controller event log, or a cycle printout). Turn every alarm, warning
+or event into one item.
+
+Rules:
+- `timestamp`: ISO 8601 if a date and time are readable, otherwise null.
+- `code`: the alarm or event code exactly as written (e.g. "E-104"), or null.
+- `message`: the alarm text as written.
+- `severity`: "error" for faults or alarms that stop the machine or abort a cycle,
+  "warning" for warnings the machine keeps running through, "info" for normal events
+  (cycle start, door opened, login).
+- `state`: came, went, acknowledged, or null.
+- `equipment`: the machine named in the log header, or null.
+
+LOG:
+{lines}
+"""
+
+# --- Manual PDF ---
+
+MANUAL_PROMPT = """\
+This PDF is an equipment manual used in a pharmaceutical plant. Read it so maintenance
+staff can search it and repair guides can cite it page by page.
+
+Rules:
+- `title` and `equipment_model` as printed in the manual.
+- `sections`: one item per useful section (safety, troubleshooting for an alarm or fault,
+  maintenance procedures, return to service, spare parts). Skip covers, contents and
+  legal pages.
+  - `page`: the PDF page number (first page is 1) where the section starts.
+  - `text`: the section's content in full sentences, keeping every step, number, part
+    number and tool name exactly as printed. At most about 1500 characters.
+  - `kind`: safety, troubleshooting, procedure, error_codes, maintenance or general.
+  - `error_codes`: alarm codes the section explains.
+  - `repair_minutes`: the typical repair time if the manual gives one, else null.
+  - `figures`: each drawing or photo on that page that a worker would find useful, with a
+    short caption and `box_2d` = [ymin, xmin, ymax, xmax] on a 0 to 1000 scale. Leave
+    out logos and decorations.
+- `error_codes`: every row of the manual's alarm or error table: code, title, severity
+  ("error" if it stops the machine, else "warning"), stops_machine, likely causes, first
+  actions, typical repair time, and the page that explains it.
+Never invent anything that is not in the manual.
+"""
