@@ -10,6 +10,7 @@ import { CitationChip, CitedText } from "@/components/cited-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, SectionLabel } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 import { api, ApiError, sampleFile, type Asset, type LogAnalysis, type LogCodeSummary } from "@/lib/api";
 import { useBreakdown } from "@/lib/stores/breakdown";
 import { useRecords } from "@/lib/stores/records";
@@ -82,19 +83,17 @@ function Picker({ assets }: { assets: Asset[] }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <select
-            aria-label="Machine"
-            value={asset}
-            onChange={(e) => setAsset(e.target.value)}
-            className="h-9 rounded-(--radius-control) bg-surface px-3 text-sm shadow-[inset_0_0_0_1px_var(--color-line-strong)]"
-          >
-            <option value="">Machine: detect from the log</option>
-            {assets.map((a) => (
-              <option key={a.tag} value={a.tag}>
-                {a.tag}
-              </option>
-            ))}
-          </select>
+          <Select
+            label="Machine"
+            prefix="Machine"
+            variant="control"
+            value={asset || null}
+            onChange={(v) => setAsset(v ?? "")}
+            options={[
+              { value: null, label: "Detect from the log" },
+              ...assets.map((a) => ({ value: a.tag, label: a.tag, detail: a.equipment_model })),
+            ]}
+          />
           <Button variant="primary" onClick={() => input.current?.click()}>
             Choose log file
           </Button>

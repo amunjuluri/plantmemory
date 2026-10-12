@@ -1,16 +1,19 @@
 "use client";
 
-import { ArrowRight, Camera, Mic, Siren, Square } from "lucide-react";
+import { ArrowRight, Camera, Siren, Square } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { AutoHeight } from "@/components/ui/auto-height";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/field";
 import { Kbd } from "@/components/ui/kbd";
 import { ModKey } from "@/components/ui/mod-key";
 import { ScanningLoader } from "@/components/ui/loaders";
+import { Select } from "@/components/ui/select";
+import { VoiceIcon } from "@/components/voice/icons";
 import { LiveVoice } from "@/components/voice/live-voice";
 import { api, type Asset } from "@/lib/api";
 import { prepareImage } from "@/lib/image";
@@ -25,9 +28,6 @@ const EXAMPLES = [
   { label: "Shallow blister pockets", text: "BL-3 blister pockets coming out shallow, then the machine stopped with a forming temperature alarm.", asset: "BL-3" },
   { label: "Something new", text: "The coating pan spray gun keeps dripping and the pan has stopped.", asset: null },
 ];
-
-const select =
-  "h-8 rounded-full bg-surface-2 pr-7 pl-3 text-[0.8125rem] text-fg shadow-[inset_0_0_0_1px_var(--color-line)] transition-[background-color] duration-150 ease-out hover:bg-surface-3 focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_1px_var(--color-accent),0_0_0_3px_var(--color-accent-soft)]";
 
 export function BreakdownForm({ onStart }: { onStart?: () => void }) {
   const { text, assetTag, status, setText, setAssetTag, run, cancel } = useBreakdown();
@@ -90,148 +90,152 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
     void useLiveVoice.getState().start("breakdown");
   };
 
-  if (voice && !running) {
-    return (
-      <Card className="p-4 sm:p-5">
-        <p className="mb-3 text-sm font-medium">What has broken down?</p>
-        <LiveVoice
-          mode="breakdown"
-          doneLabel="Draft repair guide"
-          onClose={() => setVoice(false)}
-          onDone={(result) => {
-            setText(result.summary);
-            const tag = matchAsset(result.state.fields.equipment);
-            if (tag) setAssetTag(tag);
-            setVoice(false);
-            onStart?.();
-            // Let the store pick up the new text before drafting.
-            setTimeout(() => void useBreakdown.getState().run(by), 0);
-          }}
-        />
-      </Card>
-    );
-  }
+  const voicePanel = (
+    <LiveVoice
+      mode="breakdown"
+      title="What has broken down?"
+      doneLabel="Draft repair guide"
+      onClose={() => setVoice(false)}
+      onDone={(result) => {
+        setText(result.summary);
+        const tag = matchAsset(result.state.fields.equipment);
+        if (tag) setAssetTag(tag);
+        setVoice(false);
+        onStart?.();
+        // Let the store pick up the new text before drafting.
+        setTimeout(() => void useBreakdown.getState().run(by), 0);
+      }}
+    />
+  );
 
   return (
-    <Card className="p-4 sm:p-5">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-        className="flex flex-col gap-4"
-      >
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <label htmlFor="breakdown" className="text-sm font-medium whitespace-nowrap">
-              What has broken down?
-            </label>
-            <select
-              aria-label="Machine"
-              value={assetTag ?? ""}
-              disabled={running}
-              onChange={(e) => setAssetTag(e.target.value || null)}
-              className={select}
-            >
-              <option value="">Machine: detect</option>
-              {assets.map((a) => (
-                <option key={a.tag} value={a.tag}>
-                  {a.tag}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Textarea
-            id="breakdown"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder="Machine, alarm on the screen, what the worker saw. Any language, short forms are fine."
-            disabled={running}
-            maxLength={8000}
-            className="indic min-h-32"
-            enterKeyHint="send"
-          />
-        </div>
+    <Card>
+      <AutoHeight>
+        <div className="p-4 sm:p-5">
+          {voice && !running ? (
+            voicePanel
+          ) : (
+            <div className="transition-opacity duration-300 ease-out starting:opacity-0">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submit();
+                }}
+                className="flex flex-col gap-4"
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="breakdown" className="text-sm font-medium whitespace-nowrap">
+                      What has broken down?
+                    </label>
+                    <Select
+                      label="Machine"
+                      prefix="Machine"
+                      align="end"
+                      value={assetTag}
+                      disabled={running}
+                      onChange={setAssetTag}
+                      options={[
+                        { value: null, label: "Auto-detect", detail: "From what you describe" },
+                        ...assets.map((a) => ({ value: a.tag, label: a.tag, detail: a.equipment_model })),
+                      ]}
+                    />
+                  </div>
+                  <Textarea
+                    id="breakdown"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        submit();
+                      }
+                    }}
+                    placeholder="Machine, alarm on the screen, what the worker saw. Any language, short forms are fine."
+                    disabled={running}
+                    maxLength={8000}
+                    className="indic min-h-32"
+                    enterKeyHint="send"
+                  />
+                </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button type="button" variant="secondary" size="sm" disabled={running} onClick={speak}>
-            <Mic />
-            Speak
-          </Button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && readPhoto(e.target.files[0])}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            loading={reading}
-            disabled={running}
-            onClick={() => fileInput.current?.click()}
-          >
-            <Camera />
-            Logbook photo
-          </Button>
-          <Link
-            href="/alarms/"
-            className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-(--radius-control) px-2.5 text-[0.8125rem] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg [&_svg]:size-3.5"
-          >
-            <Siren />
-            From an alarm log
-          </Link>
-        </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Button type="button" variant="secondary" size="sm" disabled={running} onClick={speak}>
+                    <VoiceIcon />
+                    Speak
+                  </Button>
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && readPhoto(e.target.files[0])}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    loading={reading}
+                    disabled={running}
+                    onClick={() => fileInput.current?.click()}
+                  >
+                    <Camera />
+                    Logbook photo
+                  </Button>
+                  <Link
+                    href="/alarms/"
+                    className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-(--radius-control) px-2.5 text-[0.8125rem] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg [&_svg]:size-3.5"
+                  >
+                    <Siren />
+                    From an alarm log
+                  </Link>
+                </div>
 
-        {running ? (
-          <Button type="button" size="lg" onClick={cancel}>
-            <Square className="fill-current" />
-            Stop
-          </Button>
-        ) : (
-          <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
-            Draft repair guide
-            <ArrowRight />
-            <span className="ml-1 hidden items-center gap-0.5 [@media(pointer:fine)]:inline-flex">
-              <Kbd>
-                <ModKey />
-              </Kbd>
-              <Kbd>↵</Kbd>
-            </span>
-          </Button>
-        )}
-      </form>
+                {running ? (
+                  <Button type="button" size="lg" onClick={cancel}>
+                    <Square className="fill-current" />
+                    Stop
+                  </Button>
+                ) : (
+                  <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
+                    Draft repair guide
+                    <ArrowRight />
+                    <span className="ml-1 hidden items-center gap-0.5 [@media(pointer:fine)]:inline-flex">
+                      <Kbd>
+                        <ModKey />
+                      </Kbd>
+                      <Kbd>↵</Kbd>
+                    </span>
+                  </Button>
+                )}
+              </form>
 
-      <div className="mt-5 border-t border-line pt-4">
-        <p className="mb-2 text-xs font-medium text-fg-subtle">Try an example</p>
-        <div className="flex flex-wrap gap-1.5">
-          {EXAMPLES.map((example) => (
-            <button
-              key={example.label}
-              type="button"
-              disabled={running}
-              onClick={() => {
-                setText(example.text);
-                setAssetTag(example.asset);
-              }}
-              className={cn(
-                "h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)]",
-                "transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-3 hover:text-fg active:scale-[0.97] disabled:opacity-50",
-              )}
-            >
-              {example.label}
-            </button>
-          ))}
+              <div className="mt-5 border-t border-line pt-4">
+                <p className="mb-2 text-xs font-medium text-fg-subtle">Try an example</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {EXAMPLES.map((example) => (
+                    <button
+                      key={example.label}
+                      type="button"
+                      disabled={running}
+                      onClick={() => {
+                        setText(example.text);
+                        setAssetTag(example.asset);
+                      }}
+                      className={cn(
+                        "h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)]",
+                        "transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-3 hover:text-fg active:scale-[0.97] disabled:opacity-50",
+                      )}
+                    >
+                      {example.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </AutoHeight>
     </Card>
   );
 }
