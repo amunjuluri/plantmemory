@@ -77,7 +77,8 @@ def structure_incident(
     prompt = prompts.STRUCTURE_PROMPT.format(
         today=(today or date.today()).isoformat(), industry_rule=rule, text=text
     )
-    incident = deps.llm.generate(prompt, StructuredIncident, thinking="low")
+    # Normally 2 to 3.6 s (docs/BENCHMARK.md); a second copy is sent after 5 s.
+    incident = deps.llm.generate(prompt, StructuredIncident, thinking="low", hedge_after_s=5.0)
     # The original wording is evidence; never let the model paraphrase it.
     update: dict = {"description": text}
     if industry:
@@ -124,7 +125,8 @@ def verify_matches(
         ),
         candidates=json.dumps([_candidate_for_prompt(m) for m in pool], indent=1),
     )
-    check = deps.llm.generate(prompt, MatchCheck, thinking="low")
+    # Normally 2 to 6 s, but one run took 14 s; a second copy is sent after 7 s.
+    check = deps.llm.generate(prompt, MatchCheck, thinking="low", hedge_after_s=7.0)
     same = {v.id: v.why for v in check.verdicts if v.same_problem}
     return [m.model_copy(update={"why": same[m.id]}) for m in pool if m.id in same]
 

@@ -237,7 +237,7 @@ def test_match_check_can_only_remove_candidates(use_deps) -> None:
     assert [m.id for m in kept] == candidate_ids[1:]
     assert kept[0].why == f"Same as {candidate_ids[1]}."
 
-    def invent(contents, schema, thinking="low"):
+    def invent(contents, schema, thinking="low", **_):
         return MatchCheck(verdicts=[MatchVerdict(id="PAP-0999", same_problem=True, why="x")])
 
     deps.llm.generate = invent

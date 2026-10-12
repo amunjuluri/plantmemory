@@ -213,8 +213,9 @@ def write_guide(request: GuideRequest, ev: Evidence, deps: AgentDeps) -> Guide:
         allowed=", ".join(sources) or "none",
         no_source_rule="" if ev.sections else prompts.GUIDE_NO_MANUAL,
     )
+    # Normally 8 to 16 s, but the same prompt has taken 35 s; a second copy is sent after 14 s.
     content = deps.llm.generate(
-        prompt, GuideContent, thinking=deps.settings.draft_thinking_level, hedge_after_s=20.0
+        prompt, GuideContent, thinking=deps.settings.draft_thinking_level, hedge_after_s=14.0
     )
 
     steps = guardrails.check_steps(content.steps, sources, figures)
