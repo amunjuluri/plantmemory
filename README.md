@@ -25,8 +25,26 @@ When the repair is done, the manager says what was done (a short "did what the g
 said" is enough; the app asks only what the guide can't tell it) and it is saved to plant
 memory. QA then does the line clearance and releases the machine to production.
 
-Voice is a live conversation on Gemini Live (`gemini-3.8-live`): it answers in the
-manager's language within about a second, and the manager can talk over it.
+Voice is a live conversation on Gemini Live (`gemini-3.8-live`): it starts answering in
+the manager's language about 2 seconds after they stop talking, and the manager can talk
+over it.
+
+## Measured, not claimed
+
+From [docs/BENCHMARK.md](docs/BENCHMARK.md) (`make benchmark`; synthetic data):
+
+- **19 s** median from a breakdown report to a cited, checked repair guide on Cloud Run
+  (24 of 24 completed), with the first progress on screen in 0.04 s; about **$0.024** of
+  Gemini per guide.
+- Asked for the same guides with no plant data, Gemini alone gave **0 of 35** part
+  numbers that exist in the store, and 19 of 113 settings that appear in the machine's
+  manual. PlantMemory's parts come from the store and its values from cited sources, by
+  code.
+- **393 of 393** planted faults caught by the code checks (invented citations, changed
+  torques, made-up parts, numbers dropped from a translation).
+- A report about a machine the plant has no manual for gets no manual (0 of 7 given
+  another machine's manual, against 7 of 7 by search score alone).
+- Lighthouse on a phone: performance 98, accessibility 100.
 
 Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
 Firestore vector search and Cloud Run.
@@ -63,6 +81,10 @@ Firestore vector search and Cloud Run.
 - Voice: code decides what is still missing and when the report is complete; the model
   only fills fields and talks. "Did what the guide said" doesn't count as an answer
   until it is expanded from the guide.
+- A report that names no machine gets a manual only when Gemini confirms the manual is
+  for that equipment; a coating pan never gets the tablet press's steps.
+- If Gemini is out of capacity after retries, the call is answered by a fallback model and
+  goes through the same checks.
 - Matches from plant memory are checked by Gemini before they count (0 false alarms on
   16 look-alike reports in the eval).
 
@@ -86,4 +108,5 @@ Printed-guide languages are a setting: `GUIDE_LANGUAGES='["te","hi"]'` (any ISO 
 codes; English is always printed).
 
 More: [docs/PROGRESS.md](docs/PROGRESS.md), [docs/DECISIONS.md](docs/DECISIONS.md),
-[docs/EVAL_RESULTS.md](docs/EVAL_RESULTS.md), [docs/DEPLOY.md](docs/DEPLOY.md).
+[docs/EVAL_RESULTS.md](docs/EVAL_RESULTS.md), [docs/BENCHMARK.md](docs/BENCHMARK.md),
+[docs/DEPLOY.md](docs/DEPLOY.md).

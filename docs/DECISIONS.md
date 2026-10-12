@@ -265,3 +265,34 @@ Short log of choices and why. Newest last.
     is synthetic. A plant that loads its own manuals and records sees no such label. It
     stays on the demo data, because an invented torque or temperature on a printed sheet
     must never be mistaken for a real manual's.
+63. **A report that names no machine gets a manual only if Gemini confirms the equipment.**
+    The benchmark found the UI's own "something new" sample (a coating pan spray gun)
+    drafted as a fully cited TP-01 E-104 tablet-press guide that the manager could approve
+    without QA. Unrelated equipment scores 0.65 to 0.73 against the manuals, as high as
+    some true matches, so no threshold separates them. When the report has no machine tag
+    and no alarm code, Gemini picks the manual for that equipment from those the search
+    found, or none; code ignores any other id. On 14 untagged reports: score alone gave 7
+    of 7 unknown machines another machine's manual, the check 0 of 7, keeping all 7 true
+    ones (see BENCHMARK.md). One extra short call, only on untagged reports.
+64. **A guide names a machine only if the manager did, or only one machine uses the
+    manual.** TP-01 and TP-02 share the RTP-37 manual; an untagged press report used to be
+    labelled TP-01. Parts then come from the equipment model.
+65. **A busy Gemini answers from a fallback model.** The benchmark's first run lost 2 of 8
+    guides to Vertex AI 429s after all retries. If `GEMINI_MODEL` is still out of capacity
+    (429/503), that one call goes to `GEMINI_FALLBACK_MODEL` (`gemini-3.5-flash`). Its
+    answer passes the same code checks, so the guarantees do not depend on the model.
+66. **Hedges follow the measured times.** Understanding the report is hedged after 5 s
+    (normally 2 to 3.6 s), checking memory matches after 7 s (2 to 6 s, once 14 s) and
+    writing the guide after 14 s instead of 20 s (8 to 16 s, but the same prompt has taken
+    35 s). A duplicate call costs about $0.004; a 35 s wait costs the manager's attention.
+67. **Gzip and year-long caching for the UI.** Lighthouse on a phone: 722 KB of
+    uncompressed scripts and styles, no caching of hashed files, and Telugu and Devanagari
+    fonts (240 KB) preloaded on English screens. Starlette's gzip skips server-sent
+    events, so progress still streams; `_next/static` files are content-hashed, so
+    `immutable` is safe; the Indic fonts load when their script appears.
+68. **Benchmarks are a script, not a slide.** `scripts/benchmark.py` measures speed per
+    step, tokens and cost per guide from the API's usage metadata, the same reports
+    answered by plain Gemini, planted faults against the code checks, the deployed app
+    under concurrent load, and voice reply latency; `make benchmark` regenerates
+    docs/BENCHMARK.md and its charts. Costs use the standard price from 1 Jan 2027, not
+    the introductory one.

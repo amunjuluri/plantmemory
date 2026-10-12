@@ -152,3 +152,26 @@ another shift, and warns you when last time's fix didn't work."
   - **Toasts and loaders.** Toasts sit above the action bar (measured as you scroll). New
     SVG loaders for drafting, logbook reading and translation.
   - **Tests.** 153 backend tests pass.
+- **12 Oct.** Prototype performance report (template slide 12), built as a script:
+  `make benchmark` writes [BENCHMARK.md](BENCHMARK.md) and four charts. What it found and
+  what was fixed the same day (DECISIONS 63 to 68):
+  - **Wrong-machine guides.** The UI's own "something new" sample (coating pan) came back
+    as a fully cited TP-01 tablet-press guide the manager could approve without QA.
+    Untagged reports now get a manual only if Gemini confirms the equipment: 7/7 unknown
+    machines given another machine's manual by score alone, 0/7 now, 7/7 true ones kept.
+  - **Gemini 429s.** 2 of 8 guides failed in the first run. A fallback model
+    (`gemini-3.5-flash`) answers when the main one is still busy; every guide since
+    completed (24 in process, 38 on Cloud Run).
+  - **Slow tail.** Hedges moved to the measured times (5 s, 7 s, 14 s).
+  - **Phone page load.** Lighthouse mobile 66 to 98 (gzip, caching, Indic fonts loaded
+    only when needed); 1,428 to 464 KiB.
+  - **Guide list read whole guides.** Now a Firestore projection: 7 to 25 req/s, p95
+    8.3 s to 1.3 s at 20 users.
+  - Voice WebSocket logged an ERROR on every normal hang-up; fixed.
+  Results: 19 s median to a guide on Cloud Run, first progress in 0.04 s, $0.024 per
+  guide, plain Gemini 0/35 real part numbers, 393/393 planted faults caught, voice reply
+  1.9 s after speech ends. 163 tests.
+  Also added: [MANAGER_FEEDBACK.md](MANAGER_FEEDBACK.md) (questions for managers and QA,
+  built to produce quotable numbers and a held-out test set) and
+  [SUBMISSION.md](SUBMISSION.md) (checklist; the repo is still private and Firebase is
+  not used yet).
