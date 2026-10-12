@@ -1,0 +1,679 @@
+{
+ "url": "https://plantmemory-4l5hbd2imq-el.a.run.app",
+ "first_health": {
+  "seconds": 0.14534229203127325,
+  "status": 200
+ },
+ "warmup": {
+  "case": "B1",
+  "first_event": 1.4946592920459807,
+  "steps": {
+   "understand": 3.7491623329697177,
+   "search_manuals": 0.68740162497852,
+   "search_history": 5.218091708025895,
+   "find_parts": 0.26959154196083546,
+   "write_guide": 12.612680666032247
+  },
+  "total": 23.37099216703791,
+  "guide_id": "GDE-FF70A96B",
+  "error": null
+ },
+ "sequential": [
+  {
+   "case": "B1",
+   "first_event": 0.03855266701430082,
+   "steps": {
+    "understand": 3.2702277910429984,
+    "search_manuals": 0.917922249995172,
+    "search_history": 4.4913904999848455,
+    "find_parts": 0.11148883402347565,
+    "write_guide": 12.474594249972142
+   },
+   "total": 20.416495291981846,
+   "guide_id": "GDE-6044C6EB",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B2",
+   "first_event": 0.04600483307149261,
+   "steps": {
+    "understand": 5.5220864589791745,
+    "search_manuals": 0.5265058330260217,
+    "search_history": 4.559385458007455,
+    "find_parts": 0.0711153750307858,
+    "write_guide": 13.275595209095627
+   },
+   "total": 23.502709166961722,
+   "guide_id": "GDE-4985282D",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B3",
+   "first_event": 0.04750058299396187,
+   "steps": {
+    "understand": 2.971360917086713,
+    "search_manuals": 0.8363832499599084,
+    "search_history": 3.471343290992081,
+    "find_parts": 0.13972199999261647,
+    "write_guide": 28.831336625036784
+   },
+   "total": 35.48589387501124,
+   "guide_id": "GDE-3822FFA4",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B4",
+   "first_event": 0.04172412503976375,
+   "steps": {
+    "understand": 2.883494667010382,
+    "search_manuals": 0.6434555420419201,
+    "search_history": 3.3777504159370437,
+    "find_parts": 0.07149175007361919,
+    "write_guide": 10.163707708008587
+   },
+   "total": 16.569133500102907,
+   "guide_id": "GDE-40612A32",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B5",
+   "first_event": 0.043876833049580455,
+   "steps": {
+    "understand": 3.0009054170222953,
+    "search_manuals": 0.5322519999463111,
+    "search_history": 4.39538895804435,
+    "find_parts": 0.09063745907042176,
+    "write_guide": 11.41331104200799
+   },
+   "total": 18.96987779205665,
+   "guide_id": "GDE-15C9FD48",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B6",
+   "first_event": 0.04026320797856897,
+   "steps": {
+    "understand": 3.430691250017844,
+    "search_manuals": 0.8487114169402048,
+    "search_history": 2.415748832980171,
+    "find_parts": 0.06274283304810524,
+    "write_guide": 9.856889125076123
+   },
+   "total": 15.844148832955398,
+   "guide_id": "GDE-CEBB5FD5",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B7",
+   "first_event": 0.041402542032301426,
+   "steps": {
+    "understand": 1.8847938750404865,
+    "search_manuals": 0.5199567079544067,
+    "search_history": 3.8036798340035602,
+    "find_parts": 0.06392558407969773,
+    "write_guide": 13.097132041933946
+   },
+   "total": 18.91621129203122,
+   "guide_id": "GDE-A8415A4F",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B8",
+   "first_event": 0.04083474993240088,
+   "steps": {
+    "understand": 2.052195959025994,
+    "search_manuals": 1.9568441250594333,
+    "search_history": 3.3528521249536425,
+    "find_parts": 6.5409112721681595e-06,
+    "write_guide": 7.608023707987741
+   },
+   "total": 13.080364499939606,
+   "guide_id": "GDE-3B189490",
+   "error": null,
+   "rep": 0
+  },
+  {
+   "case": "B1",
+   "first_event": 0.043839041027240455,
+   "steps": {
+    "understand": 2.2753551669884473,
+    "search_manuals": 0.9210392090026289,
+    "search_history": 3.5256230829982087,
+    "find_parts": 0.07604483398608863,
+    "write_guide": 11.925081041059457
+   },
+   "total": 17.876050333026797,
+   "guide_id": "GDE-55EABCA1",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B2",
+   "first_event": 0.042171417037025094,
+   "steps": {
+    "understand": 7.3273216659436,
+    "search_manuals": 0.821952375001274,
+    "search_history": 3.8635344159556553,
+    "find_parts": 0.04134883393999189,
+    "write_guide": 21.574890457908623
+   },
+   "total": 32.87769545800984,
+   "guide_id": "GDE-144CDC12",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B3",
+   "first_event": 0.04631341597996652,
+   "steps": {
+    "understand": 3.1641694590216503,
+    "search_manuals": 0.49911033292301,
+    "search_history": 3.8636635000584647,
+    "find_parts": 0.06417016591876745,
+    "write_guide": 61.207091749995016
+   },
+   "total": 68.3717068330152,
+   "guide_id": "GDE-E6144C17",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B4",
+   "first_event": 0.04599766596220434,
+   "steps": {
+    "understand": 2.427857084083371,
+    "search_manuals": 0.5794043749338016,
+    "search_history": 3.866212417022325,
+    "find_parts": 0.05017241695895791,
+    "write_guide": 9.016331250080839
+   },
+   "total": 15.456642791046761,
+   "guide_id": "GDE-388768B6",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B5",
+   "first_event": 0.038695583934895694,
+   "steps": {
+    "understand": 2.317881250055507,
+    "search_manuals": 0.8323716250015423,
+    "search_history": 3.7159482500283048,
+    "find_parts": 0.06575204199180007,
+    "write_guide": 8.987096333061345
+   },
+   "total": 15.151204708963633,
+   "guide_id": "GDE-045BDD42",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B6",
+   "first_event": 0.04401249997317791,
+   "steps": {
+    "understand": 2.2361051669577137,
+    "search_manuals": 0.5852585419779643,
+    "search_history": 5.5158138750121,
+    "find_parts": 0.06424504204187542,
+    "write_guide": 17.286286666058004
+   },
+   "total": 25.176990084000863,
+   "guide_id": "GDE-71F80D7A",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B7",
+   "first_event": 0.04184212489053607,
+   "steps": {
+    "understand": 2.659616958000697,
+    "search_manuals": 0.8272138340398669,
+    "search_history": 4.977829458890483,
+    "find_parts": 0.07087937497999519,
+    "write_guide": 15.67900337500032
+   },
+   "total": 23.48848483292386,
+   "guide_id": "GDE-764D1E0A",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B8",
+   "first_event": 0.04216787510085851,
+   "steps": {
+    "understand": 7.002084124949761,
+    "search_manuals": 2.450398499961011,
+    "search_history": 3.972622041008435,
+    "find_parts": 0.02523691696114838,
+    "write_guide": 10.452958416892216
+   },
+   "total": 21.497115959064104,
+   "guide_id": "GDE-03D45E19",
+   "error": null,
+   "rep": 1
+  },
+  {
+   "case": "B1",
+   "first_event": 0.0468507920159027,
+   "steps": {
+    "understand": 1.994150917045772,
+    "search_manuals": 0.8402174579678103,
+    "search_history": 3.927845374913886,
+    "find_parts": 0.08734283305238932,
+    "write_guide": 27.339675209019333
+   },
+   "total": 33.4264177500736,
+   "guide_id": "GDE-2C01486C",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B2",
+   "first_event": 0.04168437502812594,
+   "steps": {
+    "understand": 2.8418318330077454,
+    "search_manuals": 0.5541528749745339,
+    "search_history": 3.5225888330023736,
+    "find_parts": 0.026124667027033865,
+    "write_guide": 9.364868083037436
+   },
+   "total": 15.850247499998659,
+   "guide_id": "GDE-2809DD6F",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B3",
+   "first_event": 0.04460329108405858,
+   "steps": {
+    "understand": 2.582981541985646,
+    "search_manuals": 0.5091528330231085,
+    "search_history": 5.214748416910879,
+    "find_parts": 0.04964645893778652,
+    "write_guide": 12.761320916004479
+   },
+   "total": 20.68129541608505,
+   "guide_id": "GDE-8E276BB7",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B4",
+   "first_event": 0.044589290977455676,
+   "steps": {
+    "understand": 3.8654404999688268,
+    "search_manuals": 0.8422493329271674,
+    "search_history": 3.844586541992612,
+    "find_parts": 0.0514660410117358,
+    "write_guide": 11.49645283294376
+   },
+   "total": 19.327692791004665,
+   "guide_id": "GDE-744EE833",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B5",
+   "first_event": 0.04230866697616875,
+   "steps": {
+    "understand": 3.1554617079673335,
+    "search_manuals": 0.8530664580175653,
+    "search_history": 4.693917416967452,
+    "find_parts": 0.06620695907622576,
+    "write_guide": 12.606227084062994
+   },
+   "total": 20.612476332928054,
+   "guide_id": "GDE-ACA6203B",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B6",
+   "first_event": 0.03849245794117451,
+   "steps": {
+    "understand": 2.4364811250707135,
+    "search_manuals": 0.8063634999562055,
+    "search_history": 6.00914420792833,
+    "find_parts": 0.06984212505631149,
+    "write_guide": 10.74372383300215
+   },
+   "total": 19.322778917034157,
+   "guide_id": "GDE-C5A8A15F",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B7",
+   "first_event": 0.04148825001902878,
+   "steps": {
+    "understand": 2.115847249981016,
+    "search_manuals": 0.4756552919279784,
+    "search_history": 4.375962791033089,
+    "find_parts": 0.2326995839830488,
+    "write_guide": 11.591026999987662
+   },
+   "total": 18.382673457963392,
+   "guide_id": "GDE-27975745",
+   "error": null,
+   "rep": 2
+  },
+  {
+   "case": "B8",
+   "first_event": 0.036440249998122454,
+   "steps": {
+    "understand": 2.2680574579862878,
+    "search_manuals": 3.420640332973562,
+    "search_history": 3.4814010419650003,
+    "find_parts": 0.02522387506905943,
+    "write_guide": 7.29349995800294
+   },
+   "total": 13.130460540996864,
+   "guide_id": "GDE-689C6213",
+   "error": null,
+   "rep": 2
+  }
+ ],
+ "translate": [
+  {
+   "case": "B1",
+   "seconds": 11.206896082963794,
+   "ok": true,
+   "flags": 0,
+   "error": null
+  },
+  {
+   "case": "B2",
+   "seconds": 8.578504791948944,
+   "ok": true,
+   "flags": 0,
+   "error": null
+  },
+  {
+   "case": "B3",
+   "seconds": 11.052764290943742,
+   "ok": true,
+   "flags": 0,
+   "error": null
+  }
+ ],
+ "concurrent": [
+  {
+   "concurrent": 1,
+   "ok": 1,
+   "errors": [],
+   "wall": 20.436241499963216,
+   "latency": {
+    "n": 1,
+    "mean": 20.435662999982014,
+    "std": 0.0,
+    "min": 20.435662999982014,
+    "p50": 20.435662999982014,
+    "p90": 20.435662999982014,
+    "p95": 20.435662999982014,
+    "max": 20.435662999982014
+   },
+   "first_event": {
+    "n": 1,
+    "mean": 0.04043670906685293,
+    "std": 0.0,
+    "min": 0.04043670906685293,
+    "p50": 0.04043670906685293,
+    "p90": 0.04043670906685293,
+    "p95": 0.04043670906685293,
+    "max": 0.04043670906685293
+   }
+  },
+  {
+   "concurrent": 4,
+   "ok": 4,
+   "errors": [],
+   "wall": 65.0100154170068,
+   "latency": {
+    "n": 4,
+    "mean": 35.58535633323481,
+    "std": 23.04446730457687,
+    "min": 16.66266520798672,
+    "p50": 30.33494808297837,
+    "p90": 58.36686223368161,
+    "p95": 61.6878630963387,
+    "max": 65.00886395899579
+   },
+   "first_event": {
+    "n": 4,
+    "mean": 0.15905468724668026,
+    "std": 0.07120808365077287,
+    "min": 0.053170999977737665,
+    "p50": 0.18909060349687934,
+    "p90": 0.20222710421076046,
+    "p95": 0.20354682311299258,
+    "max": 0.2048665420152247
+   }
+  },
+  {
+   "concurrent": 8,
+   "ok": 8,
+   "errors": [],
+   "wall": 33.17987383296713,
+   "latency": {
+    "n": 8,
+    "mean": 25.31054729700554,
+    "std": 5.049844267869742,
+    "min": 18.274981082999147,
+    "p50": 23.428578625025693,
+    "p90": 30.998218512616585,
+    "p95": 32.08819946483127,
+    "max": 33.17818041704595
+   },
+   "first_event": {
+    "n": 8,
+    "mean": 0.1672909167391481,
+    "std": 0.04201738136178063,
+    "min": 0.0672224999871105,
+    "p50": 0.1753863954800181,
+    "p90": 0.19640430010622367,
+    "p95": 0.20062769201467745,
+    "max": 0.20485108392313123
+   }
+  }
+ ],
+ "features": {
+  "alarm_log": [
+   {
+    "seconds": 4.630850917077623,
+    "ok": true,
+    "error": null
+   },
+   {
+    "seconds": 3.935403750045225,
+    "ok": true,
+    "error": null
+   }
+  ],
+  "controller_log": [
+   {
+    "seconds": 10.358427040977404,
+    "ok": true,
+    "error": null
+   },
+   {
+    "seconds": 10.249993791920133,
+    "ok": true,
+    "error": null
+   }
+  ],
+  "logbook_photo": [
+   {
+    "seconds": 6.385034375009127,
+    "ok": true,
+    "error": null
+   },
+   {
+    "seconds": 15.953449749969877,
+    "ok": true,
+    "error": null
+   }
+  ],
+  "sap_export": [
+   {
+    "seconds": 2.9132217910373583,
+    "ok": true,
+    "error": null
+   },
+   {
+    "seconds": 3.1474854591069743,
+    "ok": true,
+    "error": null
+   }
+  ]
+ },
+ "light_load": {
+  "health": {
+   "requests": 300,
+   "concurrency": 30,
+   "errors": 0,
+   "rps": 421.2897116066098,
+   "latency": {
+    "n": 300,
+    "mean": 0.06722804864558081,
+    "std": 0.061217533558991066,
+    "min": 0.034774166997522116,
+    "p50": 0.046801312011666596,
+    "p90": 0.18234269139356912,
+    "p95": 0.21313913958147168,
+    "max": 0.5252912919968367
+   }
+  },
+  "guides_list": {
+   "requests": 200,
+   "concurrency": 20,
+   "errors": 0,
+   "rps": 24.564483730751714,
+   "latency": {
+    "n": 200,
+    "mean": 0.765358862785506,
+    "std": 0.23877287473330705,
+    "min": 0.28511070797685534,
+    "p50": 0.7377308330032974,
+    "p90": 1.104038133693393,
+    "p95": 1.2553954565839376,
+    "max": 1.444204333005473
+   }
+  },
+  "home_page": {
+   "requests": 200,
+   "concurrency": 20,
+   "errors": 0,
+   "rps": 197.54489564243013,
+   "latency": {
+    "n": 200,
+    "mean": 0.0827906116680242,
+    "std": 0.03012061503147998,
+    "min": 0.040059458930045366,
+    "p50": 0.076759603980463,
+    "p90": 0.09752166639082133,
+    "p95": 0.10602044787956402,
+    "max": 0.2629146249964833
+   }
+  }
+ },
+ "voice": [
+  {
+   "connect": 2.476609959034249,
+   "first_audio": 1.8879166250117123,
+   "mode": "audio"
+  },
+  {
+   "connect": 2.313553167041391,
+   "first_audio": 1.2333953749621287,
+   "mode": "text"
+  },
+  {
+   "connect": 2.2591882089618593,
+   "first_audio": 1.838009792030789,
+   "mode": "audio"
+  },
+  {
+   "connect": 2.2184710840228945,
+   "first_audio": 1.373738499940373,
+   "mode": "text"
+  },
+  {
+   "connect": 2.1976147079840302,
+   "first_audio": 1.8915485830511898,
+   "mode": "audio"
+  },
+  {
+   "connect": 2.2220877909567207,
+   "first_audio": 1.3297232909826562,
+   "mode": "text"
+  }
+ ],
+ "env": {
+  "at": "2026-10-12T15:56:13+00:00",
+  "commit": "75d0735 + the changes committed as ff602d0 to e785be8",
+  "gemini_model": "gemini-3.8-flash",
+  "embedding_model": "gemini-embedding-2",
+  "live_model": "gemini-3.8-live",
+  "thinking": "low",
+  "python": "3.13.16",
+  "machine": "Darwin arm64"
+ },
+ "light_load_before": {
+  "health": {
+   "requests": 300,
+   "concurrency": 30,
+   "errors": 0,
+   "rps": 402.77559379632334,
+   "latency": {
+    "n": 300,
+    "mean": 0.06524512191613516,
+    "std": 0.051736786092456966,
+    "min": 0.0338916250038892,
+    "p50": 0.04540341696701944,
+    "p90": 0.14815733809955423,
+    "p95": 0.18241127739893273,
+    "max": 0.4327843750361353
+   }
+  },
+  "guides_list": {
+   "requests": 200,
+   "concurrency": 20,
+   "errors": 0,
+   "rps": 6.5455747786713605,
+   "latency": {
+    "n": 200,
+    "mean": 2.76756701875187,
+    "std": 2.8097079112879713,
+    "min": 0.22636299999430776,
+    "p50": 2.8824118340271525,
+    "p90": 6.61951343786204,
+    "p95": 8.27812186042431,
+    "max": 13.979017875040881
+   }
+  },
+  "home_page": {
+   "requests": 200,
+   "concurrency": 20,
+   "errors": 0,
+   "rps": 240.36698016837326,
+   "latency": {
+    "n": 200,
+    "mean": 0.0790593291859841,
+    "std": 0.034119602625231234,
+    "min": 0.04387916694395244,
+    "p50": 0.07082958298269659,
+    "p90": 0.09422534964978695,
+    "p95": 0.13263327258173388,
+    "max": 0.30482545809354633
+   }
+  }
+ },
+ "light_load_guides": 52
+}

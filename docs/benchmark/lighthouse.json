@@ -1,0 +1,55 @@
+{
+ "tool": "Lighthouse 12, default mobile (simulated slow 4G, mid-tier phone) and desktop presets",
+ "before": {
+  "mobile": {
+   "scores": {
+    "performance": 66,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+   },
+   "lcp_s": 7.65,
+   "fcp_s": 1.5,
+   "ttfb_ms": 8531,
+   "bytes_kib": 1428
+  },
+  "desktop": {
+   "scores": {
+    "performance": 97,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+   },
+   "lcp_s": 1.23,
+   "fcp_s": 0.43,
+   "ttfb_ms": 50,
+   "bytes_kib": 1428
+  }
+ },
+ "after": {
+  "mobile": {
+   "scores": {
+    "performance": 98,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+   },
+   "lcp_s": 2.37,
+   "fcp_s": 1.02,
+   "ttfb_ms": 43,
+   "bytes_kib": 464
+  },
+  "desktop": {
+   "scores": {
+    "performance": 100,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+   },
+   "lcp_s": 0.71,
+   "fcp_s": 0.37,
+   "ttfb_ms": 40,
+   "bytes_kib": 464
+  }
+ }
+}
