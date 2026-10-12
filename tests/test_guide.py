@@ -267,6 +267,16 @@ def test_a_named_machine_skips_the_manual_check(env) -> None:
     assert "ManualPick" not in [name for name, _ in deps.llm.prompts]
 
 
+def test_guide_list_reads_only_summary_fields_and_matches_the_full_guide(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    [row] = workflow.list_guides(kb)
+    assert row == workflow.summarize(guide)
+    assert row.flags > 0 and row.steps == len(guide.steps) and row.author == "Ravi"
+    raw = kb.guides.fields(workflow._SUMMARY_FIELDS)[0]
+    assert "manual_sections" not in raw and "translations" not in raw
+
+
 # --- translation and workflow ---
 
 

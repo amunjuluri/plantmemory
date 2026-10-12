@@ -90,3 +90,19 @@ def test_firestore_search_falls_back_when_the_index_is_not_ready() -> None:
     store._nearest = missing_index
     store.all = lambda **_: [far, near]
     assert [d.id for d, _ in store.search([1.0, 0.1], k=1)] == ["MAN-M-1"]
+
+
+def test_firestore_fields_asks_only_for_those_fields() -> None:
+    from unittest.mock import MagicMock
+
+    from app.kb.store import FirestoreDocStore
+    from app.models import Guide
+
+    collection = MagicMock()
+    query = collection.where.return_value
+    snap = MagicMock()
+    snap.to_dict.return_value = {"id": "GDE-1", "status": "draft"}
+    query.select.return_value.stream.return_value = [snap]
+    store = FirestoreDocStore(Guide, MagicMock(collection=lambda _: collection), "guides")
+    assert store.fields(["id", "status"], status="draft") == [{"id": "GDE-1", "status": "draft"}]
+    query.select.assert_called_once_with(["id", "status"])
