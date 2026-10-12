@@ -95,29 +95,53 @@ def qa_reasons(guide: Guide, policy: str | None = None) -> list[str]:
     return reasons
 
 
-def summarize(guide: Guide) -> GuideSummary:
-    author = next((e.by for e in guide.events if e.action == "created"), None)
-    flags = len(guide.flags) + sum(
-        len(i.flags) for i in [*guide.safety, *guide.steps, *guide.restart_checks]
+# What a list row needs. The bulky parts of a guide (manual text, past incidents,
+# translations) are never read for a list.
+_SUMMARY_FIELDS = [
+    "id",
+    "status",
+    "version",
+    "title",
+    "asset_tag",
+    "events",
+    "flags",
+    "safety",
+    "steps",
+    "restart_checks",
+    "copies_printed",
+    "created_at",
+    "updated_at",
+]
+
+
+def summarize(guide: Guide | dict) -> GuideSummary:
+    """A list row, from a whole guide or from just its `_SUMMARY_FIELDS`."""
+    g = (
+        guide.model_dump(mode="json", include=set(_SUMMARY_FIELDS))
+        if isinstance(guide, Guide)
+        else guide
     )
+    items = [*g.get("safety", []), *g.get("steps", []), *g.get("restart_checks", [])]
+    author = next((e["by"] for e in g.get("events", []) if e["action"] == "created"), None)
     return GuideSummary(
-        id=guide.id,
-        status=guide.status,
-        version=guide.version,
-        title=guide.title,
-        asset_tag=guide.asset_tag,
+        id=g["id"],
+        status=g["status"],
+        version=g.get("version", 1),
+        title=g["title"],
+        asset_tag=g.get("asset_tag"),
         author=author,
-        steps=len(guide.steps),
-        copies_printed=guide.copies_printed,
-        flags=flags,
-        created_at=guide.created_at,
-        updated_at=guide.updated_at,
+        steps=len(g.get("steps", [])),
+        copies_printed=g.get("copies_printed", 0),
+        flags=len(g.get("flags", [])) + sum(len(i.get("flags", [])) for i in items),
+        created_at=g["created_at"],
+        updated_at=g["updated_at"],
     )
 
 
 def list_guides(kb: KnowledgeBase, status: str | None = None) -> list[GuideSummary]:
-    guides = kb.guides.all(status=status) if status else kb.guides.all()
-    return [summarize(g) for g in sorted(guides, key=lambda g: g.updated_at, reverse=True)]
+    rows = kb.guides.fields(_SUMMARY_FIELDS, **({"status": status} if status else {}))
+    summaries = [summarize(r) for r in rows]
+    return sorted(summaries, key=lambda g: g.updated_at, reverse=True)
 
 
 def edit(guide_id: str, body: GuideEdit, kb: KnowledgeBase) -> Guide:

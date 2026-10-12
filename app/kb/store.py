@@ -46,6 +46,13 @@ class DocStore[T: BaseModel](ABC):
         """Every document whose fields equal the given values (lists: contains the value)."""
 
     @abstractmethod
+    def fields(self, names: list[str], **equals: Any) -> list[dict]:
+        """Only the named top-level fields of every matching document, as JSON-style dicts.
+
+        For lists: reading whole documents makes a list slower with every guide added.
+        """
+
+    @abstractmethod
     def delete(self, doc_ids: Iterable[str]) -> None:
         """Delete documents by key. Missing keys are ignored."""
 
@@ -115,6 +122,9 @@ class LocalDocStore[T: BaseModel](DocStore[T]):
     def all(self, **equals: Any) -> list[T]:
         return [d for d in self._docs.values() if _matches(d, equals)]
 
+    def fields(self, names: list[str], **equals: Any) -> list[dict]:
+        return [d.model_dump(mode="json", include=set(names)) for d in self.all(**equals)]
+
     def delete(self, doc_ids: Iterable[str]) -> None:
         with self._lock:
             for doc_id in doc_ids:
@@ -161,7 +171,7 @@ class FirestoreDocStore[T: BaseModel](DocStore[T]):
         snapshot = self.collection.document(doc_id).get()
         return self._from_document(snapshot.to_dict()) if snapshot.exists else None
 
-    def all(self, **equals: Any) -> list[T]:
+    def _query(self, equals: dict[str, Any]):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         query = self.collection
@@ -169,7 +179,14 @@ class FirestoreDocStore[T: BaseModel](DocStore[T]):
             list_field = self.model.model_fields[field].annotation in (list[str], list[int])
             op = "array_contains" if list_field else "=="
             query = query.where(filter=FieldFilter(field, op, value))
-        return [self._from_document(s.to_dict()) for s in query.stream()]
+        return query
+
+    def all(self, **equals: Any) -> list[T]:
+        return [self._from_document(s.to_dict()) for s in self._query(equals).stream()]
+
+    def fields(self, names: list[str], **equals: Any) -> list[dict]:
+        # A projection: Firestore sends only these fields, not the whole document.
+        return [s.to_dict() for s in self._query(equals).select(names).stream()]
 
     def delete(self, doc_ids: Iterable[str]) -> None:
         doc_ids = list(doc_ids)
