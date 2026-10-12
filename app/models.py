@@ -318,6 +318,15 @@ class ErrorCode(Model):
     section_id: str | None = Field(default=None, description="Section with the full procedure.")
 
 
+class ManualPick(Model):
+    """The model's choice of manual for a report that names no machine. Code checks the id."""
+
+    manual_id: str | None = Field(
+        description="Id of the manual for this report's equipment, or null if none is."
+    )
+    why: str = Field(description="One sentence: the equipment both are about, or the difference.")
+
+
 class Part(Model):
     """A spare part with its stock in the plant store."""
 
