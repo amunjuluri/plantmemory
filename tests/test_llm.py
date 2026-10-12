@@ -54,3 +54,62 @@ def test_hedged_call_raises_only_when_every_copy_fails() -> None:
 
     with pytest.raises(ValueError):
         _hedged(fail, after_s=0.01)
+
+
+class _Models:
+    """Stands in for client.models: answers per model, or raises the queued error."""
+
+    def __init__(self, replies: dict):
+        self.replies = replies
+        self.asked: list[str] = []
+
+    def generate_content(self, model, contents, config):
+        from types import SimpleNamespace
+
+        self.asked.append(model)
+        reply = self.replies[model]
+        if isinstance(reply, Exception):
+            raise reply
+        return SimpleNamespace(text=reply, usage_metadata=None)
+
+
+def _llm(replies: dict, fallback: str = "fallback-model"):
+    from types import SimpleNamespace
+
+    from app.config import Settings
+    from app.llm import GeminiLLM
+
+    settings = Settings(gemini_model="main-model", gemini_fallback_model=fallback)
+    models = _Models(replies)
+    used = []
+    llm = GeminiLLM(
+        settings,
+        client=SimpleNamespace(models=models),
+        on_usage=lambda schema, model, usage, s: used.append(model),
+    )
+    return llm, models, used
+
+
+def test_busy_main_model_falls_back_once() -> None:
+    from app.models import ManualPick
+
+    reply = '{"manual_id": null, "why": "none"}'
+    llm, models, used = _llm({"main-model": overloaded_error(429), "fallback-model": reply})
+    assert llm.generate("q", ManualPick).manual_id is None
+    assert models.asked == ["main-model", "fallback-model"]
+    assert used == ["fallback-model"]
+
+
+def test_other_errors_and_disabled_fallback_still_raise() -> None:
+    import pytest
+
+    from app.models import ManualPick
+
+    llm, models, _ = _llm({"main-model": overloaded_error(400), "fallback-model": "{}"})
+    with pytest.raises(Exception, match="400"):
+        llm.generate("q", ManualPick)
+    assert models.asked == ["main-model"]
+
+    llm, models, _ = _llm({"main-model": overloaded_error(503)}, fallback="")
+    with pytest.raises(Exception, match="503"):
+        llm.generate("q", ManualPick)

@@ -33,6 +33,9 @@ class Settings(BaseSettings):
 
     # Models. Defaults follow current Google docs; override per environment.
     gemini_model: str = "gemini-3.8-flash"
+    # Answers a call when gemini_model is still out of capacity (429/503) after its retries,
+    # so a busy minute on Vertex AI does not fail the manager's guide. Empty disables it.
+    gemini_fallback_model: str = "gemini-3.5-flash"
     embedding_model: str = "gemini-embedding-2"
     # Spoken conversations (voice reports). On Vertex AI the Live models are served from
     # a few regions only, not "global"; us-central1 has gemini-3.8-live.

@@ -1,6 +1,9 @@
 """Gemini client and a small structured-output helper shared by the agent and ingest."""
 
+import logging
 import threading
+import time
+from collections.abc import Callable
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Literal, Protocol, TypeVar
 
@@ -10,6 +13,8 @@ from google.genai import errors, types
 from pydantic import BaseModel
 
 from app.config import Settings, get_settings
+
+log = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 ThinkingLevel = Literal["low", "medium", "high"]  # "minimal" is rejected by gemini-3.8-flash
@@ -115,12 +120,23 @@ class StructuredLLM(Protocol):
     ) -> T: ...
 
 
+# Called after every Gemini answer with the schema's name, the model that answered, the
+# token counts and the seconds the call took. scripts/benchmark.py uses it to cost a guide.
+UsageHook = Callable[[str, str, types.GenerateContentResponseUsageMetadata | None, float], None]
+
+
 class GeminiLLM:
     """Calls the configured Gemini model with a JSON schema and validates the reply."""
 
-    def __init__(self, settings: Settings | None = None, client: genai.Client | None = None):
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        client: genai.Client | None = None,
+        on_usage: UsageHook | None = None,
+    ):
         self.settings = settings or get_settings()
         self._client = client
+        self.on_usage = on_usage
 
     @property
     def client(self) -> genai.Client:
@@ -155,6 +171,24 @@ class GeminiLLM:
         thinking: ThinkingLevel,
         timeout_ms: int | None,
     ) -> T:
+        """Ask the main model; if it is still busy after its retries, ask the fallback once."""
+        primary, fallback = self.settings.gemini_model, self.settings.gemini_fallback_model
+        try:
+            return self._call(primary, contents, schema, thinking, timeout_ms)
+        except Exception as err:
+            if not fallback or fallback == primary or not is_overloaded(err):
+                raise
+            log.warning("%s busy after retries (%s); answering with %s", primary, err, fallback)
+            return self._call(fallback, contents, schema, thinking, timeout_ms)
+
+    def _call(
+        self,
+        model: str,
+        contents: types.ContentListUnion,
+        schema: type[T],
+        thinking: ThinkingLevel,
+        timeout_ms: int | None,
+    ) -> T:
         # Temperature is left at the default: Google advises against lowering it on
         # Gemini 3.x models (it can cause looping).
         config = types.GenerateContentConfig(
@@ -165,11 +199,16 @@ class GeminiLLM:
                 types.HttpOptions(timeout=timeout_ms, retry_options=RETRY) if timeout_ms else None
             ),
         )
+        start = time.perf_counter()
         response = self.client.models.generate_content(
-            model=self.settings.gemini_model, contents=contents, config=config
+            model=model, contents=contents, config=config
         )
+        if self.on_usage:
+            self.on_usage(
+                schema.__name__, model, response.usage_metadata, time.perf_counter() - start
+            )
         if not response.text:
-            raise RuntimeError(f"Empty response from {self.settings.gemini_model}")
+            raise RuntimeError(f"Empty response from {model}")
         return schema.model_validate_json(response.text)
 
 
