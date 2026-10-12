@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckCheck, ClipboardCheck, Factory, Lock, Mic, Pencil, Printer, Send, Undo2 } from "lucide-react";
+import { Check, CheckCheck, ClipboardCheck, Factory, Lock, Pencil, Printer, Send, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { TranslatingLoader } from "@/components/ui/loaders";
 import { Modal } from "@/components/ui/modal";
 import { Segmented } from "@/components/ui/segmented";
+import { VoiceIcon } from "@/components/voice/icons";
 import { LiveVoice } from "@/components/voice/live-voice";
 import { api, type Guide, type IntakeFields, type Outcome } from "@/lib/api";
 import { useLiveVoice } from "@/lib/stores/live-voice";
@@ -136,7 +137,7 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
       >
         <div className="flex flex-col gap-4">
           {voice ? (
-            <div className="rounded-xl bg-surface-2/60 p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
+            <div className="rounded-xl p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
               <LiveVoice
                 mode="closure"
                 guideId={guide.id}
@@ -165,7 +166,7 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
                 void useLiveVoice.getState().start("closure", guide.id);
               }}
             >
-              <Mic />
+              <VoiceIcon />
               Speak it instead
             </Button>
           )}

@@ -247,6 +247,47 @@
   }
 }
 
+/* The voice orb: two blurred colour swirls, one for listening (blue) and one for the
+   assistant speaking (teal), crossfaded by state. Loudness scales it from script. */
+.orb-swirl {
+  position: absolute;
+  inset: -30%;
+  filter: blur(14px);
+  animation: orbit 14s linear infinite;
+  transition: opacity 500ms var(--ease-out);
+}
+.orb-swirl-listen {
+  background: conic-gradient(
+    from 30deg,
+    var(--color-accent),
+    oklch(0.8 0.12 220),
+    oklch(0.55 0.21 280),
+    oklch(0.9 0.05 235),
+    var(--color-accent)
+  );
+}
+.orb-swirl-speak {
+  animation-direction: reverse;
+  background: conic-gradient(
+    from 200deg,
+    var(--color-success),
+    oklch(0.82 0.11 190),
+    oklch(0.6 0.13 215),
+    oklch(0.9 0.07 165),
+    var(--color-success)
+  );
+}
+.orb-swirl-idle {
+  background: conic-gradient(
+    from 90deg,
+    var(--color-fg-subtle),
+    var(--color-surface-3),
+    var(--color-fg-muted),
+    var(--color-surface-3),
+    var(--color-fg-subtle)
+  );
+}
+
 /* The band is a quarter of the photo's height, so 400% of itself crosses the photo. */
 @keyframes scan {
   from {
