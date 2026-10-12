@@ -64,24 +64,21 @@ function Idle() {
   );
 }
 
+/** While drafting, the live steps sit beside the form (not under it, below the fold). */
 function Loading() {
-  const steps = useBreakdown((s) => s.steps);
-  const active = GUIDE_STEPS.filter((step) => steps[step.id].status === "active").map((step) => step.label);
-  const line = active.length ? `${active.join(" · ")}…` : "Starting…";
+  const { steps, status, startedAt, finishedAt } = useBreakdown();
   return (
-    <div className="flex flex-col gap-4">
-      <Card className="flex flex-col items-center gap-3 px-6 py-8 text-center">
-        <DraftingLoader className="h-28" />
-        <div>
-          <p className="text-sm font-medium">Drafting the repair guide</p>
-          <p
-            key={line}
-            className="mt-0.5 text-[0.8125rem] text-fg-muted transition-[opacity,translate] duration-250 ease-out starting:translate-y-1 starting:opacity-0"
-          >
-            {line}
-          </p>
-        </div>
-      </Card>
+    <div className="flex flex-col gap-4 transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0">
+      <StepsCard
+        steps={GUIDE_STEPS}
+        state={steps}
+        status={status}
+        startedAt={startedAt}
+        finishedAt={finishedAt}
+        title="Drafting the repair guide"
+      >
+        <DraftingLoader className="mx-auto mb-4 h-24" />
+      </StepsCard>
       <div className="flex flex-col gap-4" aria-hidden>
         <Shimmer className="h-6 w-2/3" />
         <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -124,7 +121,7 @@ function Results() {
 }
 
 export function BreakdownView() {
-  const stepsRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const { steps, status, startedAt, finishedAt } = useBreakdown();
   useEffect(() => {
     // Once per page load: later visits to this tab already have live state (maybe a run).
@@ -134,7 +131,7 @@ export function BreakdownView() {
 
   const onStart = () => {
     if (stacked) {
-      requestAnimationFrame(() => stepsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     }
   };
 
@@ -150,7 +147,7 @@ export function BreakdownView() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
         <div className="flex flex-col gap-4 lg:sticky lg:top-20">
           <BreakdownForm onStart={onStart} />
-          <div ref={stepsRef} className="scroll-mt-20">
+          {status !== "running" && (
             <StepsCard
               steps={GUIDE_STEPS}
               state={steps}
@@ -158,9 +155,11 @@ export function BreakdownView() {
               startedAt={startedAt}
               finishedAt={finishedAt}
             />
-          </div>
+          )}
         </div>
-        <Results />
+        <div ref={resultsRef} className="min-w-0 scroll-mt-20">
+          <Results />
+        </div>
       </div>
     </div>
   );
