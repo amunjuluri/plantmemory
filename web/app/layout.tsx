@@ -10,11 +10,19 @@ import { RecordSheet } from "@/components/record-sheet";
 import "./globals.css";
 
 // Printed guides carry Telugu and Hindi text; these render them the same on every machine.
-const telugu = Noto_Sans_Telugu({ subsets: ["telugu"], variable: "--font-telugu", display: "swap" });
+// Not preloaded: each is 120 KB and the browser fetches it only when that script is on the
+// page (the font's unicode-range), so English screens load faster on a phone.
+const telugu = Noto_Sans_Telugu({
+  subsets: ["telugu"],
+  variable: "--font-telugu",
+  display: "swap",
+  preload: false,
+});
 const devanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari"],
   variable: "--font-devanagari",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

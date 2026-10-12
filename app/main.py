@@ -18,6 +18,7 @@ from fastapi import (
     WebSocket,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
@@ -74,6 +75,10 @@ VERSION = "0.2.0"
 
 settings = get_settings()
 app = FastAPI(title="PlantMemory", version=VERSION)
+# The UI's scripts, styles and pages are 4 to 5 times smaller gzipped (Lighthouse: 722 KB
+# saved on a phone's first visit). Starlette never compresses server-sent events, so guide
+# progress still streams.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 if settings.cors_origins:
     # Only for local UI development (Next.js dev server on another port).
     app.add_middleware(
@@ -470,7 +475,18 @@ async def ingest_cmms(
         raise HTTPException(status_code=415, detail=str(err)) from err
 
 
+class UIFiles(StaticFiles):
+    """The built UI. Next.js puts a content hash in every `_next/static` file name, so those
+    files never change and a phone may keep them for a year instead of fetching again."""
+
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        if path.startswith("_next/static/") and response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
 # Synthetic samples (logbook photos, logs, CMMS export, a manual) for the UI's "try a sample".
 app.mount("/samples", StaticFiles(directory=ROOT_DIR / "data" / "samples"), name="samples")
 # Mounted last so API routes take precedence.
-app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="ui")
+app.mount("/", UIFiles(directory=settings.static_dir, html=True), name="ui")
