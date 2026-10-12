@@ -16,6 +16,7 @@ from fastapi import (
     Request,
     UploadFile,
     WebSocket,
+    WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -421,7 +422,7 @@ async def intake_live(
     session = live.LiveSession(mode=mode, assets=list_assets(kb), guide=guide)
     codes = list(dict.fromkeys(c.code for c in kb.codes.all()))
     await live.run(ws, session, get_live_client(), settings, codes)
-    with contextlib.suppress(RuntimeError):  # already closed by the browser
+    with contextlib.suppress(RuntimeError, WebSocketDisconnect):  # the browser already left
         await ws.close()
 
 
