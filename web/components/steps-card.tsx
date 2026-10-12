@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Card } from "@/components/ui/card";
 import type { StepState, StepStatus } from "@/lib/stores/breakdown";
@@ -45,12 +45,18 @@ export function StepsCard<Id extends string>({
   status,
   startedAt,
   finishedAt,
+  title,
+  children,
 }: {
   steps: { id: Id; label: string }[];
   state: Record<Id, StepState>;
   status: "idle" | "running" | "done" | "error";
   startedAt: number | null;
   finishedAt: number | null;
+  /** Replaces "Working on it" while running. */
+  title?: string;
+  /** Shown between the heading and the steps, such as a loader. */
+  children?: ReactNode;
 }) {
   const elapsed = useElapsed(startedAt, finishedAt);
   if (status === "idle") return null;
@@ -59,12 +65,13 @@ export function StepsCard<Id extends string>({
     <Card className="p-4 sm:p-5" aria-live="polite">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-medium">
-          {status === "running" ? "Working on it" : status === "done" ? "Done" : "Stopped"}
+          {status === "running" ? (title ?? "Working on it") : status === "done" ? "Done" : "Stopped"}
         </h2>
         {elapsed !== null && (
           <span className="tabular text-xs text-fg-subtle">{elapsed.toFixed(1)}s</span>
         )}
       </div>
+      {children}
       <ol className="flex flex-col">
         {list.map((step, i) => {
           const state = steps[step.id];
