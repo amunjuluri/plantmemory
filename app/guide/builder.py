@@ -30,6 +30,7 @@ from app.models import (
     GuideEvent,
     GuideProgress,
     GuideRequest,
+    ManualPick,
     ManualSection,
     ManualSectionPublic,
     Part,
@@ -106,7 +107,7 @@ def find_sections(
     if manual_id is None and matched_codes:
         manual_id = matched_codes[0].manual_id
     if manual_id is None and hits:
-        manual_id = hits[0][0].manual_id
+        manual_id = confirm_manual(incident, hits, deps)
     if manual_id is None:
         return [], matched_codes
     matched_codes = [c for c in matched_codes if c.manual_id == manual_id]
@@ -123,6 +124,32 @@ def find_sections(
         if section.kind == "safety" or returning:
             chosen.setdefault(section.id, section)
     return [_public(s) for s in chosen.values()], matched_codes
+
+
+def confirm_manual(
+    incident: StructuredIncident, hits: list[tuple[ManualSection, float]], deps: AgentDeps
+) -> str | None:
+    """For a report naming no machine and no alarm: the manual Gemini confirms is for this
+    equipment, or None.
+
+    Scores alone cannot tell: a coating-pan report scores 0.70 against the tablet press
+    manual, as high as some true matches. Gemini can only pick a manual the search found.
+    """
+    offered: dict[str, ManualSection] = {}
+    for section, _ in hits:
+        offered.setdefault(section.manual_id, section)
+    manuals = [
+        {"manual_id": m, "equipment": s.equipment_model, "title": s.manual_title}
+        for m, s in offered.items()
+    ]
+    prompt = prompts.MANUAL_CHECK_PROMPT.format(
+        incident=incident.model_dump_json(
+            indent=1, include={"area_or_equipment", "description", "suspected_cause"}
+        ),
+        manuals=json.dumps(manuals, indent=1),
+    )
+    pick = deps.llm.generate(prompt, ManualPick, thinking="low", hedge_after_s=8.0)
+    return pick.manual_id if pick.manual_id in offered else None
 
 
 def find_parts(
@@ -319,7 +346,10 @@ async def build_guide_events(
 
         yield started("find_parts")
         if ev.asset is None and ev.sections:
-            ev.asset = next((a for a in assets if a.manual_id == ev.sections[0].manual_id), None)
+            # Only when one machine uses this manual; otherwise parts go by equipment model
+            # rather than naming a machine the manager never mentioned.
+            same = [a for a in assets if a.manual_id == ev.sections[0].manual_id]
+            ev.asset = same[0] if len(same) == 1 else None
         ev.parts = await asyncio.to_thread(find_parts, ev.asset, ev.sections, kb)
         figure_ids = list(dict.fromkeys(f for s in ev.sections for f in s.figure_ids))
         for fid in figure_ids:

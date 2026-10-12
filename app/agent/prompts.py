@@ -222,6 +222,22 @@ GUIDE_NO_MANUAL = """\
   general practice: leave `citations` empty so it is marked as general.
 """
 
+MANUAL_CHECK_PROMPT = """\
+A maintenance manager reported a breakdown but named no machine tag and no alarm code. A
+search of the plant's equipment manuals found the manuals below. Decide which one is the
+manual for the equipment in this report: the same kind of machine, not just similar
+words ("pan", "motor", "seal" and "temperature" appear in many machines).
+
+Answer `manual_id: null` when none is for this equipment. A wrong manual is worse than
+none: the manager would get steps for a different machine.
+
+REPORT:
+{incident}
+
+MANUALS:
+{manuals}
+"""
+
 TRANSLATE_PROMPT = """\
 Translate this repair guide from English into {language_name} for factory workers with
 basic schooling. They will follow it from a printed sheet while repairing a machine.

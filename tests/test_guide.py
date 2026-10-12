@@ -28,6 +28,7 @@ from app.models import (
     GuideReview,
     GuideStep,
     GuideStepOut,
+    ManualPick,
     TranslationOut,
 )
 from tests.fakes import MATCHING, PNG_BYTES, FakeLLM, make_deps, make_kb
@@ -226,6 +227,44 @@ def test_guide_without_a_manual_is_flagged(env) -> None:
     assert guide.manual_sections == []
     assert any("No manual section" in f for f in guide.flags)
     assert "No manual section matched" in deps.llm.prompts[-1][1]
+
+
+UNTAGGED = "The upper punch is sticking and the press stopped."
+
+
+def no_machine_named(deps, equipment: str) -> None:
+    deps.llm.incident = deps.llm.incident.model_copy(update={"area_or_equipment": equipment})
+
+
+def test_report_without_a_machine_uses_the_manual_gemini_confirms(env) -> None:
+    deps, kb = env
+    no_machine_named(deps, "tablet press")
+    deps.llm.responses[ManualPick] = ManualPick(manual_id="RTP37", why="Both are tablet presses.")
+    _, guide = draft(deps, kb, UNTAGGED)
+    assert {s.manual_id for s in guide.manual_sections} == {"RTP37"}
+    assert "ManualPick" in [name for name, _ in deps.llm.prompts]
+    # TP-01 and TP-02 share the manual, so the guide must not name one of them.
+    assert guide.asset_tag is None
+    assert guide.equipment_model == "Kestrel RTP-37 rotary tablet press"
+
+
+@pytest.mark.parametrize("pick", [None, "MADE-UP"])
+def test_report_for_other_equipment_gets_no_manual(env, pick) -> None:
+    """A coating pan scores close to the tablet press manual; a wrong manual is worse than none."""
+    deps, kb = env
+    no_machine_named(deps, "coating pan")
+    deps.llm.responses[ManualPick] = ManualPick(manual_id=pick, why="A coating pan, not a press.")
+    _, guide = draft(deps, kb, "The coating pan spray gun keeps dripping.")
+    assert guide.manual_sections == []
+    assert guide.asset_tag is None
+    assert any("No manual section" in f for f in guide.flags)
+    assert guide.qa_reasons
+
+
+def test_a_named_machine_skips_the_manual_check(env) -> None:
+    deps, kb = env
+    draft(deps, kb)
+    assert "ManualPick" not in [name for name, _ in deps.llm.prompts]
 
 
 # --- translation and workflow ---
