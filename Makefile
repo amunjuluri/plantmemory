@@ -1,4 +1,4 @@
-.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval web web-check api-types deploy docker-run
+.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval benchmark web web-check api-types deploy docker-run
 
 PORT ?= 8473
 # HOST=0.0.0.0 to open it from a phone on the same Wi-Fi.
@@ -39,6 +39,15 @@ sample-manual:  ## Rewrite data/samples/manual_fbd120.pdf (the upload demo)
 
 eval:  ## Retrieval hit rates: semantic vs keyword baseline
 	uv run python -m scripts.eval_retrieval
+
+# URL of the deployed app for the remote benchmark (override on the command line).
+URL ?= https://plantmemory-4l5hbd2imq-el.a.run.app
+
+benchmark:  ## Speed, cost, trust and load benchmarks -> docs/BENCHMARK.md (about $2 of Gemini)
+	uv run python -m scripts.benchmark local --reps 3
+	uv run python -m scripts.benchmark guardrails
+	uv run python -m scripts.benchmark remote --url $(URL)
+	uv run python -m scripts.benchmark report
 
 web/out/index.html:
 	cd web && pnpm build

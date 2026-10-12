@@ -1,0 +1,168 @@
+{
+  "description": "Breakdown reports for scripts/benchmark.py. Synthetic. They cover the inputs a manager actually gives: an alarm code, no code, Telugu, Hindi, Telugu typed in English letters, a two-word report, and a machine the plant has no manual for. `expect` is checked in code: the machine and alarm the guide must identify, and whether a manual section must be cited.",
+  "cases": [
+    {
+      "id": "B1",
+      "label": "TP-02 punch tight (alarm, repeat)",
+      "language": "en",
+      "text": "TP-02 stopped in the middle of the batch. Screen shows E-104 punch tight.",
+      "asset": "TP-02",
+      "expect": {
+        "asset": "TP-02",
+        "codes": [
+          "E-104"
+        ],
+        "manual": true
+      }
+    },
+    {
+      "id": "B2",
+      "label": "AC-2 door seal (Telugu)",
+      "language": "te",
+      "text": "ఆటోక్లేవ్ AC-2 సైకిల్ మొదలవ్వట్లేదు, door seal fault అని చూపిస్తోంది",
+      "asset": "AC-2",
+      "expect": {
+        "asset": "AC-2",
+        "codes": [],
+        "manual": true
+      }
+    },
+    {
+      "id": "B3",
+      "label": "BL-3 shallow pockets (no code)",
+      "language": "en",
+      "text": "BL-3 blister pockets coming out shallow, then the machine stopped with a forming temperature alarm.",
+      "asset": "BL-3",
+      "expect": {
+        "asset": "BL-3",
+        "codes": [],
+        "manual": true
+      }
+    },
+    {
+      "id": "B4",
+      "label": "BL-3 film break (Hindi)",
+      "language": "hi",
+      "text": "BL-3 मशीन बीच में रुक गई, फिल्म टूट गई है, स्क्रीन पर E-52 दिख रहा है",
+      "asset": null,
+      "expect": {
+        "asset": "BL-3",
+        "codes": [
+          "E-52"
+        ],
+        "manual": true
+      }
+    },
+    {
+      "id": "B5",
+      "label": "TP-01 lube pressure (Telugu in English letters)",
+      "language": "te-Latn",
+      "text": "TP-01 lo lubrication pressure low ani W-305 vastundi, machine aagipoyindi",
+      "asset": null,
+      "expect": {
+        "asset": "TP-01",
+        "codes": [
+          "W-305"
+        ],
+        "manual": true
+      }
+    },
+    {
+      "id": "B6",
+      "label": "AC-2 E-12 (two words)",
+      "language": "en",
+      "text": "AC-2 E-12",
+      "asset": null,
+      "expect": {
+        "asset": "AC-2",
+        "codes": [
+          "E-12"
+        ],
+        "manual": true
+      }
+    },
+    {
+      "id": "B7",
+      "label": "TP-01 weight variation (vague)",
+      "language": "en",
+      "text": "Tablet press TP-01 making a knocking noise and tablet weights are varying, operator stopped it.",
+      "asset": null,
+      "expect": {
+        "asset": "TP-01",
+        "codes": [],
+        "manual": true
+      }
+    },
+    {
+      "id": "B8",
+      "label": "Coating pan (no manual, new problem)",
+      "language": "en",
+      "text": "The coating pan spray gun keeps dripping and the pan has stopped.",
+      "asset": null,
+      "expect": {
+        "asset": null,
+        "codes": [],
+        "manual": false
+      }
+    }
+  ],
+  "manual_routing_description": "Reports that name no machine tag and no alarm code. The guide must use the manual for that kind of equipment, or none when the plant has no manual for it (a wrong manual gives steps for a different machine).",
+  "manual_routing": [
+    {
+      "text": "Upper punch is tight on the tablet press and it stopped.",
+      "manual": "RTP37"
+    },
+    {
+      "text": "press lo tablets weight vary avtunnayi",
+      "manual": "RTP37"
+    },
+    {
+      "text": "Autoclave door won't seal, cycle not starting",
+      "manual": "SA600"
+    },
+    {
+      "text": "Steriliser chamber not reaching vacuum",
+      "manual": "SA600"
+    },
+    {
+      "text": "ఆటోక్లేవ్ డోర్ సీల్ పని చేయట్లేదు",
+      "manual": "SA600"
+    },
+    {
+      "text": "Blister machine pockets not forming properly, heater seems weak",
+      "manual": "BPM250"
+    },
+    {
+      "text": "Blister foil not sealing, leak test failing on the packing line",
+      "manual": "BPM250"
+    },
+    {
+      "text": "The coating pan spray gun keeps dripping and the pan has stopped.",
+      "manual": null
+    },
+    {
+      "text": "Fluid bed dryer filter bags clogged, low airflow",
+      "manual": null
+    },
+    {
+      "text": "Conveyor belt motor tripped in packing hall",
+      "manual": null
+    },
+    {
+      "text": "Compressor making noise in utility room",
+      "manual": null
+    },
+    {
+      "text": "HVAC AHU-3 differential pressure alarm in the dispensing booth",
+      "manual": null
+    },
+    {
+      "text": "Granulator chopper blade not turning, RMG stopped mid batch",
+      "manual": null
+    },
+    {
+      "text": "Purified water loop conductivity high at the return",
+      "manual": null
+    }
+  ]
+}
