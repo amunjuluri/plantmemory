@@ -24,13 +24,13 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
 from google.genai import errors as genai_errors
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from app.agent import agent
 from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
-from app.guide import workflow
+from app.guide import revise, workflow
 from app.guide.builder import build_guide_events
 from app.guide.translate import language_name
 from app.ingest import logbook_ocr
@@ -54,6 +54,7 @@ from app.models import (
     GuideRelease,
     GuideRequest,
     GuideReview,
+    GuideRevision,
     GuideStatus,
     GuideSummary,
     IncidentPage,
@@ -339,6 +340,50 @@ def guide(guide_id: str) -> Guide:
 def edit_guide(guide_id: str, body: GuideEdit) -> Guide:
     """Save the manager's edits. Sources, values, figures and parts are re-checked."""
     return workflow.edit(guide_id, body, get_kb())
+
+
+@app.post("/api/guides/{guide_id}/revise", dependencies=[Depends(limit_ai_calls)])
+async def revise_guide(
+    guide_id: str,
+    by: Annotated[str, Form(min_length=1, max_length=80)],
+    audio: Annotated[UploadFile | None, File(description="Voice recording")] = None,
+    text: Annotated[str | None, Form(max_length=2000)] = None,
+    base: Annotated[
+        str | None, Form(description="A proposal not kept yet (GuideEdit JSON), to build on")
+    ] = None,
+    history: Annotated[
+        str | None, Form(description="Earlier requests in this session, as a JSON list")
+    ] = None,
+    asked: Annotated[
+        str | None, Form(max_length=2000, description="A request that got a question back")
+    ] = None,
+    question: Annotated[
+        str | None, Form(max_length=1000, description="The question; this message answers it")
+    ] = None,
+) -> GuideRevision:
+    """Propose a change the manager asked for by voice or typed. Nothing is saved."""
+    try:
+        current = GuideEdit.model_validate_json(base) if base else None
+        earlier = TypeAdapter(list[str]).validate_json(history) if history else []
+    except ValidationError as err:
+        raise HTTPException(status_code=422, detail="Invalid proposal or history.") from err
+    data = await audio.read(voice.MAX_AUDIO_BYTES + 1) if audio else None
+    try:
+        return await asyncio.to_thread(
+            revise.revise,
+            guide_id,
+            get_deps(),
+            get_kb(),
+            by=by,
+            audio=data or None,
+            text=text,
+            base=current,
+            history=earlier,
+            asked=asked,
+            question=question,
+        )
+    except voice.InvalidAudioError as err:
+        raise HTTPException(status_code=415, detail=str(err)) from err
 
 
 @app.post("/api/guides/{guide_id}/submit", dependencies=[Depends(limit_ai_calls)])

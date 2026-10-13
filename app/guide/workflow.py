@@ -148,6 +148,27 @@ def edit(guide_id: str, body: GuideEdit, kb: KnowledgeBase) -> Guide:
     """Apply the manager's edits, re-checking sources, values, figures and parts."""
     guide = load(guide_id, kb)
     _require(guide, "draft", "rejected", doing="edited")
+    if body.base_updated_at and body.base_updated_at != guide.updated_at:
+        raise GuideError(
+            "Someone changed this guide since you opened it. Reload to see their changes."
+        )
+    apply_content(guide, body, kb)
+    if guide.status == "rejected":
+        guide.status = "draft"
+        guide.version += 1
+    note = body.note.strip() if body.note else None
+    return _save(guide, kb, GuideEvent(by=body.by, action="edited", comment=note or None))
+
+
+def preview(guide: Guide, body: GuideEdit, kb: KnowledgeBase) -> Guide:
+    """The guide as it would be after this edit, checked the same way. Not saved."""
+    proposal = guide.model_copy(deep=True)
+    apply_content(proposal, body, kb)
+    return proposal
+
+
+def apply_content(guide: Guide, body: GuideEdit, kb: KnowledgeBase) -> None:
+    """Put edited content into `guide`, re-checking it against the guide's evidence."""
     sources = guardrails.source_texts(guide.similar_incidents, guide.manual_sections)
     figures = {f for s in guide.manual_sections for f in s.figure_ids}
     stock = {p.part_no: p for p in kb.parts.all()}
@@ -169,12 +190,8 @@ def edit(guide_id: str, body: GuideEdit, kb: KnowledgeBase) -> Guide:
     guide.downtime = guardrails.estimate_downtime(
         cited, guide.manual_sections, guide.similar_incidents, guide.error_codes
     )
-    if guide.status == "rejected":
-        guide.status = "draft"
-        guide.version += 1
     guide.translations = []
     guide.qa_reasons = qa_reasons(guide)
-    return _save(guide, kb, GuideEvent(by=body.by, action="edited"))
 
 
 def submit(guide_id: str, body: GuideAction, deps: AgentDeps, kb: KnowledgeBase) -> Guide:

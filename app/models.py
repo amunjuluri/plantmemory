@@ -614,6 +614,44 @@ class GuideEdit(Model):
     restart_checks: list[GuideItem] = Field(default_factory=list)
     escalate_if: list[str] = Field(default_factory=list)
     open_questions: list[str] = Field(default_factory=list)
+    note: str | None = Field(
+        default=None, max_length=2000, description="Shown in the audit trail with the edit."
+    )
+    base_updated_at: datetime | None = Field(
+        default=None,
+        description="The guide's `updated_at` when editing began. If the guide has changed "
+        "since, the edit is refused rather than overwriting someone else's changes.",
+    )
+
+
+class GuideRevisionOut(Model):
+    """The model's answer to a change the manager asked for, by voice or typed."""
+
+    transcript: str
+    language: str | None
+    understood: bool
+    reply: str | None
+    changes: list[str]
+    content: GuideContent
+
+
+class GuideRevision(Model):
+    """A proposed change to a guide. Nothing is saved: the manager keeps or discards it."""
+
+    transcript: str = Field(description="What the manager asked, in their own words.")
+    language: str | None = None
+    reply: str | None = Field(
+        default=None,
+        description="Set when nothing was changed: a question or the reason, in the "
+        "manager's language.",
+    )
+    changes: list[str] = Field(default_factory=list, description="One line per change.")
+    warnings: list[str] = Field(
+        default_factory=list, description="What the change means for checks, worked out in code."
+    )
+    proposal: Guide | None = Field(
+        default=None, description="The guide with the change, re-checked like an edit."
+    )
 
 
 class GuideAction(Model):

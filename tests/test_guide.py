@@ -9,9 +9,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agent import tools
-from app.guide import guardrails, workflow
+from app.guide import guardrails, revise, workflow
 from app.guide.builder import build_guide_events, find_asset, find_codes
 from app.guide.translate import missing_tokens
+from app.intake.voice import InvalidAudioError
 from app.kb import set_kb
 from app.main import app
 from app.models import (
@@ -26,6 +27,7 @@ from app.models import (
     GuideRelease,
     GuideRequest,
     GuideReview,
+    GuideRevisionOut,
     GuideStep,
     GuideStepOut,
     ManualPick,
@@ -462,6 +464,183 @@ def test_qa_releases_the_machine_after_the_repair(env) -> None:
 
 
 # --- API ---
+
+
+# --- changing a draft by voice or chat ---
+
+
+def revision(content: GuideContent, changes: list[str], **fields) -> GuideRevisionOut:
+    return GuideRevisionOut(
+        transcript=fields.pop("transcript", "Step 2: gap 99 mm, and drop the lockout."),
+        language=fields.pop("language", "en"),
+        understood=fields.pop("understood", True),
+        reply=fields.pop("reply", None),
+        changes=changes,
+        content=content,
+    )
+
+
+def as_content(guide) -> GuideContent:
+    """The saved guide written back the way the model returns it."""
+    return GuideContent(
+        title=guide.title,
+        summary=guide.summary,
+        safety=[GuideItemOut(text=i.text, citations=i.citations) for i in guide.safety],
+        steps=[
+            GuideStepOut(
+                text=s.text, citations=s.citations, caution=s.caution, figure_id=s.figure_id
+            )
+            for s in guide.steps
+        ],
+        parts=[GuidePartPick(part_no=p.part_no, qty=p.qty, why=p.why) for p in guide.parts],
+        restart_checks=[
+            GuideItemOut(text=i.text, citations=i.citations) for i in guide.restart_checks
+        ],
+        escalate_if=guide.escalate_if,
+        open_questions=guide.open_questions,
+    )
+
+
+def test_revise_proposes_a_checked_change_without_saving(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    changed = as_content(guide)
+    changed.safety = []
+    changed.steps[1] = GuideStepOut(
+        text="Set the punch gap to 99 mm [MAN-RTP37-16].",
+        citations=["MAN-RTP37-16", "MADE-UP"],
+        caution=None,
+        figure_id="FIG-404",
+    )
+    changed.parts.append(GuidePartPick(part_no="XX-9", qty=1, why="invented"))
+    deps.llm.responses[GuideRevisionOut] = revision(changed, ["Step 2 now says 99 mm."])
+
+    result = revise.revise(guide.id, deps, kb, by="Ravi", text="Step 2: gap 99 mm, no lockout")
+
+    proposal = result.proposal
+    assert result.changes == ["Step 2 now says 99 mm."]
+    assert proposal.steps[1].text == "Set the punch gap to 99 mm."
+    assert proposal.steps[1].citations == ["MAN-RTP37-16"]
+    assert any("99 mm" in f for f in proposal.steps[1].flags)
+    assert proposal.steps[1].figure_id is None
+    assert "XX-9" not in [p.part_no for p in proposal.parts]
+    assert any(w.startswith("Safety point removed") for w in result.warnings)
+    assert any(w.startswith("QA must now check it") for w in result.warnings)
+    saved = workflow.load(guide.id, kb)
+    assert saved.safety == guide.safety and saved.events == guide.events
+
+
+def test_revise_builds_on_an_unsaved_proposal_and_earlier_requests(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    first = clean_edit(guide)
+    second = as_content(workflow.preview(guide, first, kb))
+    second.escalate_if = ["The punch is cracked."]
+    deps.llm.responses[GuideRevisionOut] = revision(second, ["Call for help if cracked."])
+
+    result = revise.revise(
+        guide.id,
+        deps,
+        kb,
+        by="Ravi",
+        text="Also call me if the punch is cracked",
+        base=first,
+        history=["Remove the flagged lines"],
+    )
+
+    prompt = deps.llm.prompts[-1][1][0]
+    assert "Remove the flagged lines" in prompt
+    assert "Clean the bore." in prompt
+    assert result.proposal.escalate_if == ["The punch is cracked."]
+    assert [s.text for s in result.proposal.steps] == [s.text for s in first.steps]
+
+
+def test_revise_that_is_unclear_or_changes_nothing_asks_back(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    deps.llm.responses[GuideRevisionOut] = [
+        revision(as_content(guide), [], understood=False, reply="ఏ స్టెప్?", language="te"),
+        revision(as_content(guide), ["Nothing really."]),
+    ]
+
+    unclear = revise.revise(guide.id, deps, kb, by="Ravi", audio=b"OggS" + b"0" * 40)
+    same = revise.revise(guide.id, deps, kb, by="Ravi", text="Make it better")
+
+    assert unclear.proposal is None and unclear.reply == "ఏ స్టెప్?"
+    assert unclear.language == "te"
+    assert same.proposal is None and same.reply == revise.NOTHING_CHANGED
+    with pytest.raises(InvalidAudioError):
+        revise.revise(guide.id, deps, kb, by="Ravi", text="  ")
+
+
+def test_an_answer_to_a_question_back_is_read_with_the_request(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    changed = as_content(guide)
+    changed.steps[0] = GuideStepOut(
+        text="Only the engineer replaces the bushing.", citations=[], caution=None, figure_id=None
+    )
+    deps.llm.responses[GuideRevisionOut] = revision(changed, ["Step 1 now says the engineer."])
+
+    result = revise.revise(
+        guide.id,
+        deps,
+        kb,
+        by="Ravi",
+        text="తొమ్మిదో స్టెప్ లో",
+        asked="Step 6: only the engineer replaces the bushing",
+        question="Step 6 is about the punch. Which step has the bushing?",
+    )
+    plain = revise.revise(guide.id, deps, kb, by="Ravi", text="Step 1", asked="x")
+
+    prompt = deps.llm.prompts[-2][1][0]
+    assert "The manager asked: Step 6: only the engineer replaces the bushing" in prompt
+    assert "You asked back: Step 6 is about the punch." in prompt
+    assert result.proposal is not None
+    assert "You asked back" not in deps.llm.prompts[-1][1][0] and plain.proposal is not None
+
+
+def test_keeping_a_change_records_it_and_refuses_stale_edits(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    opened = guide.updated_at
+    body = clean_edit(guide).model_copy(
+        update={"note": "By voice: “remove the flagged lines”", "base_updated_at": opened}
+    )
+    kept = workflow.edit(guide.id, body, kb)
+    assert kept.events[-1].action == "edited"
+    assert kept.events[-1].comment == "By voice: “remove the flagged lines”"
+
+    stale = body.model_copy(update={"base_updated_at": opened})
+    with pytest.raises(workflow.GuideError, match="Someone changed this guide"):
+        workflow.edit(guide.id, stale, kb)
+
+
+def test_revise_api(env) -> None:
+    deps, kb = env
+    client = TestClient(app)
+    _, guide = draft(deps, kb)
+    changed = as_content(guide)
+    changed.open_questions = ["Is the cam track worn?"]
+    deps.llm.responses[GuideRevisionOut] = revision(changed, ["Added a question."])
+    url = f"/api/guides/{guide.id}/revise"
+
+    ok = client.post(url, data={"by": "Ravi", "text": "Ask if the cam track is worn"})
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["proposal"]["open_questions"] == ["Is the cam track worn?"]
+    assert client.get(f"/api/guides/{guide.id}").json()["open_questions"] == guide.open_questions
+
+    bad_audio = client.post(url, data={"by": "Ravi"}, files={"audio": ("a.txt", b"hello")})
+    assert bad_audio.status_code == 415
+    bad_base = client.post(url, data={"by": "Ravi", "text": "x", "base": "{}"})
+    assert bad_base.status_code == 422
+    assert (
+        client.post("/api/guides/GDE-NOPE/revise", data={"by": "R", "text": "x"}).status_code == 404
+    )
+
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    locked = client.post(url, data={"by": "Ravi", "text": "Change step 1"})
+    assert locked.status_code == 409
 
 
 def test_guide_api_flow(env) -> None:

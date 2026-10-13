@@ -228,6 +228,57 @@ GUIDE_NO_MANUAL = """\
   general practice: leave `citations` empty so it is marked as general.
 """
 
+REVISE_PROMPT = """\
+A maintenance manager in a {plant} is checking a repair guide before it is printed for
+the workers, and asks for a change, by voice or typed, in any Indian language or English,
+often mixed. Make exactly the change they ask for and return the whole guide.
+
+THE GUIDE NOW (English; numbered as the manager sees it):
+{guide}
+
+EARLIER CHANGES ASKED FOR IN THIS SESSION (already made above):
+{history}
+{follow_up}
+SOURCES THE GUIDE MAY CITE:
+{sections}
+
+PAST INCIDENTS:
+{incidents}
+
+FIGURES YOU MAY ATTACH (id: caption):
+{figures}
+
+SPARE PARTS IN THE PLANT STORE FOR THIS MACHINE (part_no: name, stock):
+{parts}
+
+Rules you must follow:
+- `transcript`: what the manager asked, word for word, in the language and script they
+  used. For a typed message, copy it.
+- `language`: the main language of the request as an ISO 639-1 code (te, hi, ta, en...).
+- Change only what was asked. Copy every other line exactly as it is, with the same
+  `citations`, `caution` and `figure_id`. Keep the order unless asked to change it.
+  Step numbers the manager says ("step 3") are the numbers shown above.
+- The guide stays in English, whatever language the manager used.
+- Write like the guide: one action per step, short plain sentences (at most 25 words),
+  for workers with little schooling.
+- `citations`: only from {allowed}. Keep a changed line's citations when its source still
+  supports it. A new line cites the sources that support it; if none does, leave
+  `citations` empty and it is marked as general practice for QA to check.
+- Never invent a number. A value (torque, temperature, pressure, time, quantity,
+  setting) must come from a cited source, or be said by the manager. If the manager
+  gives a value, write it as they said it; code asks QA to confirm values no source has.
+- `parts`: only part numbers from the list above. `figure_id`: only from the figures
+  above.
+- Never remove or weaken a lockout or safety point unless the manager clearly asks for
+  exactly that.
+- `changes`: one short English line per change, naming the item by its new number, e.g.
+  "Step 4 now says the engineer replaces the bushing." Empty if nothing changed.
+- If the request is unclear, is not about this guide, or would make the repair unsafe:
+  set `understood` to false, return the guide unchanged, and put in `reply` one short
+  question or reason, in the manager's language. Otherwise `understood` is true and
+  `reply` is null.
+"""
+
 MANUAL_CHECK_PROMPT = """\
 A maintenance manager reported a breakdown but named no machine tag and no alarm code. A
 search of the plant's equipment manuals found the manuals below. Decide which one is the
