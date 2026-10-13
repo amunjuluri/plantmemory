@@ -48,7 +48,7 @@ This creates (if missing):
   - Workload Identity pool "$POOL" and provider "$PROVIDER", trusting only
     $REPO on refs/heads/main
   - service account $DEPLOY_SA, allowed to deploy new revisions
-    of Cloud Run in $PROJECT_ID (run.developer, cloudbuild.builds.editor; acts as the
+    of Cloud Run in $PROJECT_ID (run.developer, cloudbuild.builds.editor, storage.bucketViewer; acts as the
     run and build service accounts; writes to the source bucket)
   - GitHub environment "production" (deploys from main only) with the variables the
     workflow reads
@@ -78,8 +78,10 @@ echo "ok"
 step "Deployer service account"
 gc iam service-accounts describe "$DEPLOY_SA" >/dev/null 2>&1 \
   || gc iam service-accounts create plantmemory-deploy --display-name="PlantMemory GitHub deployer"
+# storage.bucketViewer: gcloud run deploy --source lists the project's buckets to find
+# the source bucket, which bucket-level access alone does not allow.
 for role in roles/run.developer roles/cloudbuild.builds.editor \
-    roles/serviceusage.serviceUsageConsumer; do
+    roles/serviceusage.serviceUsageConsumer roles/storage.bucketViewer; do
   gc projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$DEPLOY_SA" \
     --role="$role" --condition=None --format=none
   echo "  $DEPLOY_SA -> $role"
