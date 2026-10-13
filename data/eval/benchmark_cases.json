@@ -3,7 +3,7 @@
   "cases": [
     {
       "id": "B1",
-      "label": "TP-02 punch tight (alarm, repeat)",
+      "label": "TP-02 punch tight (alarm)",
       "language": "en",
       "text": "TP-02 stopped in the middle of the batch. Screen shows E-104 punch tight.",
       "asset": "TP-02",

@@ -30,3 +30,12 @@ web/next-env.d.ts
 .DS_Store
 .idea/
 .vscode/
+
+# Internal notes, measurements and raw results: kept locally, not published
+docs/PROGRESS.md
+docs/DECISIONS.md
+docs/SUBMISSION.md
+docs/MANAGER_FEEDBACK.md
+docs/BENCHMARK.md
+docs/EVAL_RESULTS.md
+docs/benchmark/*.json

@@ -4,7 +4,7 @@ PlantMemory runs as one Cloud Run service (API + UI) backed by Firestore vector 
 and Gemini on Vertex AI. One command sets it up and can be re-run safely:
 
 ```bash
-make deploy PROJECT_ID=your-project-id SEED=1   # SEED=1 loads the synthetic incidents
+make deploy PROJECT_ID=your-project-id SEED=1   # SEED=1 loads the seed repair records
 ```
 
 It prints the account, project and everything it will create, then asks before doing

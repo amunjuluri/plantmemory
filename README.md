@@ -29,28 +29,36 @@ Voice is a live conversation on Gemini Live (`gemini-3.8-live`): it starts answe
 the manager's language about 2 seconds after they stop talking, and the manager can talk
 over it.
 
-## Measured, not claimed
+## How it performs
 
-From [docs/BENCHMARK.md](docs/BENCHMARK.md) (`make benchmark`; synthetic data):
+![Where the time goes](docs/benchmark/latency_steps.png)
 
-- **19 s** median from a breakdown report to a cited, checked repair guide on Cloud Run
-  (24 of 24 completed), with the first progress on screen in 0.04 s; about **$0.024** of
-  Gemini per guide.
-- Asked for the same guides with no plant data, Gemini alone gave **0 of 35** part
-  numbers that exist in the store, and 19 of 113 settings that appear in the machine's
-  manual. PlantMemory's parts come from the store and its values from cited sources, by
-  code.
-- **393 of 393** planted faults caught by the code checks (invented citations, changed
-  torques, made-up parts, numbers dropped from a translation).
-- A report about a machine the plant has no manual for gets no manual (0 of 7 given
-  another machine's manual, against 7 of 7 by search score alone).
-- Lighthouse on a phone: performance 98, accessibility 100.
+Where the time goes in one guide: understanding the report, searching plant memory and
+the manuals side by side, then writing the guide and checking every line in code.
+
+![Time by kind of report](docs/benchmark/latency_cases.png)
+
+Time to a finished, checked guide on Cloud Run for the kinds of reports a manager gives:
+an alarm code, Telugu, Hindi, a two-word report, and a machine with no manual.
+
+![Gemini alone vs PlantMemory](docs/benchmark/plain_vs_plantmemory.png)
+
+The same breakdowns, the same model: Gemini on its own invents part numbers and
+settings; PlantMemory's parts come from the store and its values from cited sources.
+
+![Managers drafting at the same time](docs/benchmark/load.png)
+
+Several managers drafting at once: Cloud Run scales out and guides still arrive in
+about the same time.
 
 Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
 Firestore vector search and Cloud Run.
 
-> **All data in this repository is synthetic.** Incidents, manuals, parts, figures and logs
-> are invented for this demo. No real company data is used.
+> **Past repairs are real; plant-private data is invented.** Plant memory starts with 17
+> real steam sterilizer repairs from FDA device reports (public domain), each linked to its
+> source and used as "at another site", never as this plant's history. Manuals, parts,
+> stock, SAP rows, machine logs and logbook photos are invented stand-ins, because no plant
+> publishes them. See [data/SOURCES.md](data/SOURCES.md).
 
 ## What's in it
 
@@ -85,8 +93,9 @@ Firestore vector search and Cloud Run.
   for that equipment; a coating pan never gets the tablet press's steps.
 - If Gemini is out of capacity after retries, the call is answered by a fallback model and
   goes through the same checks.
-- Matches from plant memory are checked by Gemini before they count (0 false alarms on
-  16 look-alike reports in the eval).
+- Matches from plant memory are checked by Gemini before they count.
+- Repairs from other sites (public records) show what fixed a problem elsewhere; they never
+  count as repeats on this plant's machines.
 
 ## Quick start
 
@@ -95,7 +104,7 @@ Requires [uv](https://docs.astral.sh/uv/) and pnpm.
 ```bash
 cp .env.example .env   # add a Gemini API key or Vertex AI settings
 make install
-make seed seed-kb      # synthetic incidents, then manuals, alarm codes, parts, figures
+make seed seed-kb      # real past repairs, then (stand-in) manuals, alarm codes, parts, figures
 make run               # http://localhost:8473, API docs at /docs
 make test
 ```
@@ -104,9 +113,10 @@ Sample files to try are in `data/samples/`: an HMI alarm log and a controller lo
 IW29 export, a fluid bed dryer manual PDF and two logbook photos. Each screen has
 "try a sample" buttons.
 
+The plant type in the prompts is a setting: `PLANT_TYPE="paper mill"` (default
+"pharmaceutical plant"). Nothing else is industry-specific.
+
 Printed-guide languages are a setting: `GUIDE_LANGUAGES='["te","hi"]'` (any ISO 639-1
 codes; English is always printed).
 
-More: [docs/PROGRESS.md](docs/PROGRESS.md), [docs/DECISIONS.md](docs/DECISIONS.md),
-[docs/EVAL_RESULTS.md](docs/EVAL_RESULTS.md), [docs/BENCHMARK.md](docs/BENCHMARK.md),
-[docs/DEPLOY.md](docs/DEPLOY.md).
+More: [docs/DEPLOY.md](docs/DEPLOY.md).

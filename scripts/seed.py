@@ -1,4 +1,4 @@
-"""Embed the synthetic seed incidents and load them into the configured store.
+"""Embed the seed incidents (real public repair records) and load them into the store.
 
 Usage: uv run python -m scripts.seed [--reset]
 """

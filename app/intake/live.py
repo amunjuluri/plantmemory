@@ -26,7 +26,7 @@ from google.genai import types
 from pydantic import ValidationError
 
 from app.agent.guardrails import format_minutes
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.guide.builder import find_asset
 from app.intake.voice import FIELD_LABEL, missing_fields, summary
 from app.models import (
@@ -55,7 +55,7 @@ PURPOSE = {
 
 SYSTEM = """\
 You are the voice assistant of PlantMemory, used by maintenance managers in a
-pharmaceutical plant in India. {purpose}
+{plant} in India. {purpose}
 
 Speak like a helpful colleague on the shop floor: short, natural, spoken sentences, one or
 two at a time. Always reply in the language the manager last used (Telugu, Hindi, English
@@ -296,7 +296,9 @@ def instructions(live: LiveSession) -> str:
     else:
         assets = ", ".join(f"{a.tag} ({a.equipment_model})" for a in live.assets) or "unknown"
         context = BREAKDOWN_CONTEXT.format(assets=assets)
-    return SYSTEM.format(purpose=PURPOSE[live.mode], context=context)
+    return SYSTEM.format(
+        plant=get_settings().plant_type, purpose=PURPOSE[live.mode], context=context
+    )
 
 
 def vocabulary(live: LiveSession, codes: list[str]) -> list[str]:

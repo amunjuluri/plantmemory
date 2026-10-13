@@ -149,7 +149,10 @@ def ingest_manual(
     check_pdf(data)
     pdf = types.Part.from_bytes(data=data, mime_type="application/pdf")
     extraction = deps.llm.generate(
-        [pdf, prompts.MANUAL_PROMPT], ManualExtraction, thinking="low", timeout_ms=READ_TIMEOUT_MS
+        [pdf, prompts.MANUAL_PROMPT.format(plant=deps.settings.plant_type)],
+        ManualExtraction,
+        thinking="low",
+        timeout_ms=READ_TIMEOUT_MS,
     )
     if not extraction.sections:
         raise InvalidManualError("No usable sections were found in that PDF.")

@@ -20,13 +20,14 @@ const SEED_MANUALS = new Set(["RTP37", "BPM250", "SA600"]);
 const PAGE = 25;
 const FILTERS: { value: "all" | Industry; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "paper", label: "Paper" },
   { value: "pharma", label: "Pharma" },
+  { value: "healthcare", label: "Healthcare" },
+  { value: "paper", label: "Paper" },
   { value: "generic", label: "General" },
 ];
 
 function SourceBadge({ source }: { source: Incident["source"] }) {
-  return <Badge tone={source === "seed" ? "neutral" : "accent"}>{SOURCE_LABEL[source]}</Badge>;
+  return <Badge tone={source === "seed" || source === "public_record" ? "neutral" : "accent"}>{SOURCE_LABEL[source]}</Badge>;
 }
 
 function Row({ record }: { record: Incident }) {

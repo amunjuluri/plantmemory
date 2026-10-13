@@ -22,7 +22,8 @@ Usage:
   uv run python -m scripts.benchmark remote --url https://... [--reps 3]
   uv run python -m scripts.benchmark report
 
-All data is synthetic. `local` uses the local store (`make seed seed-kb` first) and saves
+Manuals, parts and test reports are synthetic; past incidents are real public records
+(data/SOURCES.md). `local` uses the local store (`make seed seed-kb` first) and saves
 its guides to a temporary copy of the knowledge base, never to the real one.
 """
 

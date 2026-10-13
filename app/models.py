@@ -6,11 +6,20 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Industry = Literal["paper", "pharma", "generic"]
+Industry = Literal["paper", "pharma", "healthcare", "generic"]
 Outcome = Literal["resolved", "recurred", "unknown"]
 Source = Literal[
-    "seed", "logbook_photo", "voice_note", "approved_draft", "cmms_import", "guide_closure"
+    "seed",
+    "logbook_photo",
+    "voice_note",
+    "approved_draft",
+    "cmms_import",
+    "guide_closure",
+    "public_record",
 ]
+# A public record (an FDA report from another company or hospital) shows what fixed a
+# problem elsewhere. It is never counted as this plant's own history: repeat warnings
+# come only from the plant's own records.
 
 
 class Model(BaseModel):

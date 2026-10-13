@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     ocr_media_resolution: str = "MEDIA_RESOLUTION_HIGH"
     recurrence_window_months: int = 12
     # Manual sections scoring at least this against a breakdown report are offered to
-    # the guide writer (see scripts/eval_retrieval.py and DECISIONS.md).
+    # the guide writer (see scripts/eval_retrieval.py).
     manual_threshold: float = 0.62
     # Languages the printed repair guide is translated into, as ISO 639-1 codes. English
     # is always printed too. Change here (or GUIDE_LANGUAGES='["ta"]') with no code change.
@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     # that may not match, an earlier rejection). "always": QA approves every guide.
     qa_approval: Literal["when_needed", "always"] = "when_needed"
     default_industry: Literal["paper", "pharma", "generic"] = "generic"
+    # What kind of plant the prompts describe ("a machine in a {plant_type} has broken
+    # down"). Nothing else is industry-specific, so PLANT_TYPE="paper mill" or "food plant"
+    # needs no code change.
+    plant_type: str = "pharmaceutical plant"
 
     # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.
     ai_requests_per_hour: int = 40
