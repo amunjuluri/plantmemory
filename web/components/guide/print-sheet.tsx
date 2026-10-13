@@ -3,7 +3,7 @@
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
 
@@ -90,7 +90,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
-    <article className="relative mx-auto w-full max-w-[210mm] bg-white p-[10mm] text-black shadow-raised print:max-w-none print:p-0 print:shadow-none">
+    <article className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
       {!approved && (
         <div
           aria-hidden
@@ -120,7 +120,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             </p>
           </div>
         </div>
-        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[8.5pt] sm:grid-cols-4 print:grid-cols-4">
+        <dl className="mt-3 grid grid-cols-4 gap-x-6 gap-y-1 text-[8.5pt]">
           <div>
             <dt className="text-neutral-500">Guide</dt>
             <dd className="font-mono font-semibold">
@@ -273,6 +273,32 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   );
 }
 
+/**
+ * Shows the sheet exactly as it prints: an A4 page, laid out at A4 width on every screen
+ * and scaled down to fit a narrow one, like a PDF viewer. Pinch to zoom in.
+ */
+function FitToWidth({ children }: { children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const a4 = (210 / 25.4) * 96; // 210 mm in CSS pixels
+    const fit = () => setScale(Math.min(1, el.clientWidth / a4));
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={box} className="flex w-full justify-center print:block">
+      <div style={{ "--fit": scale } as React.CSSProperties} className="[zoom:var(--fit)] print:[zoom:1]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function PrintView() {
   const id = useSearchParams().get("id");
   const by = useActorName();
@@ -348,7 +374,9 @@ export function PrintView() {
             : "Only approved guides can be printed. This is a preview."}
         </p>
       )}
-      <Sheet guide={guide} languages={languages} />
+      <FitToWidth>
+        <Sheet guide={guide} languages={languages} />
+      </FitToWidth>
     </div>
   );
 }
