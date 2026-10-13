@@ -18,3 +18,4 @@ docs
 *.pem
 *service-account*.json
 application_default_credentials.json
+gha-creds-*.json
