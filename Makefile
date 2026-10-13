@@ -25,10 +25,10 @@ fmt:  ## Auto-fix lint and format
 
 check: lint test web-check  ## Everything CI would run
 
-seed:  ## Embed and load the synthetic seed data (resets the store)
+seed:  ## Embed and load the real past repairs (resets the store)
 	uv run python -m scripts.seed --reset
 
-seed-kb:  ## Load the synthetic manuals, alarm codes, parts and figures (resets them, keeps guides)
+seed-kb:  ## Load the stand-in manuals, alarm codes, parts and figures (resets them, keeps guides)
 	uv run python -m scripts.seed_kb --reset
 
 figures:  ## Draw any missing manual figures and part photos with Gemini

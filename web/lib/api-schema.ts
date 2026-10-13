@@ -583,7 +583,7 @@ export interface components {
              * Industry
              * @description Restrict search to one industry. Omit to search all.
              */
-            industry?: ("paper" | "pharma" | "generic") | null;
+            industry?: ("paper" | "pharma" | "healthcare" | "generic") | null;
         };
         /**
          * AppConfig
@@ -648,7 +648,7 @@ export interface components {
              */
             file: string;
             /** Industry */
-            industry?: ("paper" | "pharma" | "generic") | null;
+            industry?: ("paper" | "pharma" | "healthcare" | "generic") | null;
         };
         /** Body_ingest_logbook_api_ingest_logbook_post */
         Body_ingest_logbook_api_ingest_logbook_post: {
@@ -658,7 +658,7 @@ export interface components {
              */
             file: string;
             /** Industry */
-            industry?: ("paper" | "pharma" | "generic") | null;
+            industry?: ("paper" | "pharma" | "healthcare" | "generic") | null;
         };
         /** Body_intake_turn_api_intake_turn_post */
         Body_intake_turn_api_intake_turn_post: {
@@ -1458,7 +1458,7 @@ export interface components {
              * @default generic
              * @enum {string}
              */
-            industry: "paper" | "pharma" | "generic";
+            industry: "paper" | "pharma" | "healthcare" | "generic";
             /**
              * Date
              * Format: date
@@ -1492,7 +1492,7 @@ export interface components {
              * @default seed
              * @enum {string}
              */
-            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft" | "cmms_import" | "guide_closure";
+            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft" | "cmms_import" | "guide_closure" | "public_record";
             /** Source Ref */
             source_ref?: string | null;
             /**
@@ -1516,7 +1516,7 @@ export interface components {
              * @default generic
              * @enum {string}
              */
-            industry: "paper" | "pharma" | "generic";
+            industry: "paper" | "pharma" | "healthcare" | "generic";
             /**
              * Date
              * Format: date
@@ -1550,7 +1550,7 @@ export interface components {
              * @default seed
              * @enum {string}
              */
-            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft" | "cmms_import" | "guide_closure";
+            source: "seed" | "logbook_photo" | "voice_note" | "approved_draft" | "cmms_import" | "guide_closure" | "public_record";
             /** Source Ref */
             source_ref: string | null;
             /**
@@ -2019,7 +2019,7 @@ export interface components {
              * @default generic
              * @enum {string}
              */
-            industry: "paper" | "pharma" | "generic";
+            industry: "paper" | "pharma" | "healthcare" | "generic";
             /**
              * Date
              * Format: date
@@ -2051,7 +2051,7 @@ export interface components {
              * @default generic
              * @enum {string}
              */
-            industry: "paper" | "pharma" | "generic";
+            industry: "paper" | "pharma" | "healthcare" | "generic";
             /**
              * Date
              * Format: date
@@ -2287,7 +2287,7 @@ export interface operations {
             query?: {
                 offset?: number;
                 limit?: number;
-                industry?: ("paper" | "pharma" | "generic") | null;
+                industry?: ("paper" | "pharma" | "healthcare" | "generic") | null;
             };
             header?: never;
             path?: never;

@@ -169,7 +169,8 @@ def compute_recurrence(
     """Count similar records in the window before this incident, what they cost in
     downtime, and past fixes that failed."""
     start = incident.date - timedelta(days=round(window_months * 30.44))
-    dated = [m for m in matches if m.record is not None]
+    # Records from other sites show what fixed a problem elsewhere; they are not repeats.
+    dated = [m for m in matches if m.record is not None and m.record.source != "public_record"]
     in_window = [m for m in dated if start <= m.record.date <= incident.date]
     recurred = [m for m in dated if m.record.outcome == "recurred"]
     downtimes = [m.record.downtime_minutes for m in in_window if m.record.downtime_minutes]

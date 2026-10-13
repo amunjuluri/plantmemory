@@ -227,7 +227,9 @@ def parse_table(lines: list[str]) -> list[Event] | None:
 
 def parse_with_ai(lines: list[str], deps: AgentDeps) -> tuple[list[Event], str | None]:
     """Let Gemini read a log format code does not know."""
-    prompt = prompts.LOG_PROMPT.format(lines="\n".join(lines[-MAX_AI_LINES:]))
+    prompt = prompts.LOG_PROMPT.format(
+        plant=deps.settings.plant_type, lines="\n".join(lines[-MAX_AI_LINES:])
+    )
     extraction = deps.llm.generate(prompt, LogExtraction, thinking="low")
     events = [
         Event(

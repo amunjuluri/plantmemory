@@ -73,7 +73,14 @@ function RecordBody({ record }: { record: Incident }) {
       </dl>
       {record.source_ref && (
         <p className="mt-4 text-xs text-fg-subtle">
-          Source: <span className="font-mono">{record.source_ref}</span>
+          Source:{" "}
+          {/^https?:\/\//.test(record.source_ref) ? (
+            <a href={record.source_ref} target="_blank" rel="noreferrer" className="break-all underline underline-offset-2">
+              {record.source_ref}
+            </a>
+          ) : (
+            <span className="font-mono">{record.source_ref}</span>
+          )}
         </p>
       )}
     </>

@@ -1,4 +1,4 @@
-"""Load the synthetic manuals, alarm codes, spare parts and figures into the knowledge base.
+"""Load the stand-in manuals, alarm codes, spare parts and figures into the knowledge base.
 
 Usage: uv run python -m scripts.seed_kb [--reset]
 

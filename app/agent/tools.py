@@ -77,7 +77,7 @@ def structure_incident(
     prompt = prompts.STRUCTURE_PROMPT.format(
         today=(today or date.today()).isoformat(), industry_rule=rule, text=text
     )
-    # Normally 2 to 3.6 s (docs/BENCHMARK.md); a second copy is sent after 5 s.
+    # If no answer arrives in 5 s, a second copy is sent (see scripts/benchmark.py).
     incident = deps.llm.generate(prompt, StructuredIncident, thinking="low", hedge_after_s=5.0)
     # The original wording is evidence; never let the model paraphrase it.
     update: dict = {"description": text}
@@ -164,7 +164,12 @@ def _match_for_prompt(m: SimilarIncident) -> dict:
             "downtime_minutes",
         },
     )
-    return {"id": m.id, "similarity": m.score, **fields}
+    where = (
+        f"another site (public record: {r.source_ref})"
+        if r.source == "public_record"
+        else "this plant"
+    )
+    return {"id": m.id, "similarity": m.score, "where": where, **fields}
 
 
 def draft_report(

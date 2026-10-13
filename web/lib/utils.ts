@@ -34,6 +34,7 @@ export const SOURCE_LABEL = {
   approved_draft: "Approved draft",
   cmms_import: "SAP / CMMS import",
   guide_closure: "Closed repair guide",
+  public_record: "Public record, another site",
 } as const;
 
 export const SECTION_KIND_LABEL = {
@@ -69,4 +70,9 @@ export function logTime(iso: string | null | undefined): string {
   return match ? match[1] : iso;
 }
 
-export const INDUSTRY_LABEL = { paper: "Paper", pharma: "Pharma", generic: "General" } as const;
+export const INDUSTRY_LABEL = {
+  paper: "Paper",
+  pharma: "Pharma",
+  healthcare: "Healthcare",
+  generic: "General",
+} as const;

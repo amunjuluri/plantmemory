@@ -153,6 +153,7 @@ def take_turn(
         raise InvalidAudioError("Say or type something first.")
     missing = missing_fields(state)
     prompt = prompts.INTAKE_PROMPT.format(
+        plant=deps.settings.plant_type,
         purpose=prompts.INTAKE_BREAKDOWN if state.mode == "breakdown" else prompts.INTAKE_CLOSURE,
         fields=state.fields.model_dump_json(exclude_none=True) or "{}",
         history=_history_text(state.history),

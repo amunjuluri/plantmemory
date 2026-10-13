@@ -129,6 +129,17 @@ def test_recurrence_without_downtime_says_nothing_about_cost() -> None:
     assert "downtime" not in rec.note
 
 
+def test_public_records_from_other_sites_are_not_repeats() -> None:
+    matches = [
+        match("MDR-1", date(2026, 6, 1), source="public_record", source_ref="https://x"),
+        match("MDR-2", date(2026, 5, 1), "recurred", source="public_record"),
+        match("A-1", date(2026, 3, 1), source="guide_closure"),
+    ]
+    rec = compute_recurrence(INCIDENT, matches, window_months=12)
+    assert rec.in_window == ["A-1"] and rec.recurred == [] and rec.occurrence == 2
+    assert "MDR" not in rec.note
+
+
 @pytest.mark.parametrize(
     ("n", "text"), [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"), (11, "11th"), (22, "22nd")]
 )

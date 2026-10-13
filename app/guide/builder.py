@@ -199,6 +199,7 @@ def write_guide(request: GuideRequest, ev: Evidence, deps: AgentDeps) -> Guide:
     sources = guardrails.source_texts(ev.matches, ev.sections)
     figures = set(ev.figure_captions)
     prompt = prompts.GUIDE_PROMPT.format(
+        plant=deps.settings.plant_type,
         incident=ev.incident.model_dump_json(
             indent=1, include={"date", "area_or_equipment", "description", "suspected_cause"}
         ),

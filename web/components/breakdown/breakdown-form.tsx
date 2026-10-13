@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 const EXAMPLES = [
   { label: "TP-02 punch tight", text: "TP-02 stopped in the middle of the batch. Screen shows E-104 punch tight.", asset: "TP-02" },
   { label: "Autoclave door seal (Telugu)", text: "ఆటోక్లేవ్ AC-2 సైకిల్ మొదలవ్వట్లేదు, door seal fault అని చూపిస్తోంది", asset: "AC-2" },
-  { label: "Shallow blister pockets", text: "BL-3 blister pockets coming out shallow, then the machine stopped with a forming temperature alarm.", asset: "BL-3" },
+  { label: "Blisters not sealing", text: "BL-3 blisters not sealing properly, tablets falling out of the strips. Screen shows E-44 sealing temperature.", asset: "BL-3" },
   { label: "Something new", text: "The coating pan spray gun keeps dripping and the pan has stopped.", asset: null },
 ];
 

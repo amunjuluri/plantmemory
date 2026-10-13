@@ -89,6 +89,8 @@ Rules you must follow:
   `citations` empty and set `general` to true.
 - If a past fix has outcome "recurred", say that fix did not hold, and suggest going
   deeper than it did.
+- A past incident whose `where` is another site happened elsewhere: say "at another
+  site" when you use it, never "here" or "last time".
 - If a recorded or suspected cause is shallow, such as "operator error", "human error"
   or "operator retrained", say so and suggest asking why the error was possible
   (procedure, equipment design, alarms, workload) before closing the investigation.
@@ -98,7 +100,8 @@ Rules you must follow:
 """
 
 EVIDENCE_MATCHES = """\
-SIMILAR PAST INCIDENTS (from plant records, best match first):
+SIMILAR PAST INCIDENTS (this plant's records and public records from other sites, best
+match first; `where` says which):
 {matches}
 
 RECURRENCE (computed from the records):
@@ -166,7 +169,7 @@ NO_GLOSSARY = "(none provided)"
 # --- Repair guides ---
 
 GUIDE_PROMPT = """\
-A machine in a pharmaceutical plant has broken down. Write a repair guide that the
+A machine in a {plant} has broken down. Write a repair guide that the
 maintenance manager will check, QA will approve, and the workers will follow from a
 printed sheet. The workers may have little schooling, so write for them.
 
@@ -175,7 +178,8 @@ BREAKDOWN REPORT:
 Machine: {asset}
 Alarm codes in the report: {codes}
 
-PAST INCIDENTS THAT ARE THE SAME PROBLEM (plant records, best match first):
+PAST INCIDENTS THAT ARE THE SAME PROBLEM (this plant's records and public records from
+other sites, best match first; `where` says which):
 {history}
 
 REPEAT CHECK (computed from the records):
@@ -199,8 +203,10 @@ Rules you must follow:
   source gives it, write "as per the manual" and add an open question.
 - `safety`: start from the manual's lockout section. Short points.
 - `steps`: follow the manual's procedure for this alarm or symptom, in order. Add what
-  worked in past fixes. If a past fix did not hold (outcome "recurred"), include the
-  deeper check that fixed it later and say why in the step's `caution`.
+  worked in past fixes. A past incident from another site shows what fixed the same
+  problem elsewhere: say "at another site" when you use it. If a past fix did not hold
+  (outcome "recurred"), include the deeper check that fixed it later and say why in the
+  step's `caution`.
 - One action per step. Short, plain sentences (at most 25 words), like "Remove the upper
   punch with tool T-12." Name the part number and tool where one is used.
 - `figure_id`: only from the list above, only on the step the figure shows. Use each
@@ -265,7 +271,7 @@ Translate again, item for item.
 # --- Voice intake ---
 
 INTAKE_PROMPT = """\
-You are helping a maintenance manager in a pharmaceutical plant {purpose}. They speak
+You are helping a maintenance manager in a {plant} {purpose}. They speak
 by voice, in any Indian language or English, often mixed. Listen to their latest
 message (audio or text below) and update the report.
 
@@ -341,7 +347,7 @@ Rules:
 # --- Machine and instrument logs ---
 
 LOG_PROMPT = """\
-These lines come from a machine or instrument log in a pharmaceutical plant (an HMI
+These lines come from a machine or instrument log in a {plant} (an HMI
 alarm history, a controller event log, or a cycle printout). Turn every alarm, warning
 or event into one item.
 
@@ -362,7 +368,7 @@ LOG:
 # --- Manual PDF ---
 
 MANUAL_PROMPT = """\
-This PDF is an equipment manual used in a pharmaceutical plant. Read it so maintenance
+This PDF is an equipment manual used in a {plant}. Read it so maintenance
 staff can search it and repair guides can cite it page by page.
 
 Rules:
