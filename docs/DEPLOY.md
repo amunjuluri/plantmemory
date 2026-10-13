@@ -24,6 +24,24 @@ anything. Default region: `asia-south1` (Mumbai). Override with `REGION=...`.
 No keys or secrets exist anywhere. The service authenticates as its service account,
 and the image contains no credentials (see `.dockerignore`).
 
+## Deploying from GitHub
+
+After the first deploy, merges to `main` deploy themselves: `.github/workflows/ci.yml`
+runs lint and tests on every pull request, and on `main` it then runs
+`scripts/deploy.sh --deploy-only`. Each deploy shows under **Deployments** on GitHub
+(environment `production`) with the service URL. Seeding stays a manual step, because it
+replaces the data in Firestore.
+
+Set it up once:
+
+```bash
+scripts/setup_github_deploy.sh --project your-project-id
+```
+
+No keys are created. GitHub signs in through Workload Identity Federation, and only
+workflows on this repo's `main` branch can use the `plantmemory-deploy` service account.
+That account can deploy new revisions but can't change IAM or who may call the service.
+
 ## Vector index setup (done by the script)
 
 Firestore needs a vector index before `find_nearest` works. The script runs the
