@@ -270,6 +270,10 @@ def add_language(guide_id: str, body: GuideTranslate, deps: AgentDeps, kb: Knowl
         raise GuideError(f"“{body.language}” is not a language guides can be printed in.", 422)
     translation = translate_one(guide, code, deps)
     translation.added_by = body.by
+    # Translating takes seconds: save onto the guide as it is now, not as it was loaded, so
+    # two languages added at the same time both stay.
+    guide = load(guide_id, kb)
+    _require(guide, "approved", doing="translated")
     guide.translations = [t for t in guide.translations if t.language != code] + [translation]
     flags = len(translation.flags)
     note = language_name(code) + (
