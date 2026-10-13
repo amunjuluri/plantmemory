@@ -228,8 +228,10 @@ export const api = {
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/submit`, json({ by })),
   reviewGuide: (id: string, by: string, decision: "approve" | "reject", comment?: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/review`, json({ by, decision, comment })),
-  printGuide: (id: string, by: string) =>
-    request<Guide>(`/api/guides/${encodeURIComponent(id)}/print`, json({ by })),
+  printGuide: (id: string, by: string, languages: string[]) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/print`, json({ by, languages })),
+  addGuideLanguage: (id: string, by: string, language: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/translations`, json({ by, language })),
   closeGuide: (
     id: string,
     body: {

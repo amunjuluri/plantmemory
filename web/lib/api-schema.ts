@@ -479,9 +479,29 @@ export interface paths {
         put?: never;
         /**
          * Print Guide
-         * @description Count a printed copy of an approved guide.
+         * @description Count a printed copy of an approved guide, and the languages on it.
          */
         post: operations["print_guide_api_guides__guide_id__print_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Guide Language
+         * @description Translate an approved guide into one more language for printing.
+         */
+        post: operations["add_guide_language_api_guides__guide_id__translations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -610,8 +630,16 @@ export interface components {
          * @description What the UI needs to know about this deployment.
          */
         AppConfig: {
-            /** Guide Languages */
+            /**
+             * Guide Languages
+             * @description Translated when a guide is approved or sent to QA.
+             */
             guide_languages: components["schemas"]["LanguageOption"][];
+            /**
+             * Print Languages
+             * @description Every language a guide can be printed in; others are added on demand.
+             */
+            print_languages: components["schemas"]["LanguageOption"][];
             /** Store Backend */
             store_backend: string;
             /** Qa Approval */
@@ -1199,7 +1227,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "printed" | "closed" | "released";
+            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "translated" | "printed" | "closed" | "released";
             /** Comment */
             comment: string | null;
         };
@@ -1306,6 +1334,21 @@ export interface components {
              * @default
              */
             why: string;
+        };
+        /**
+         * GuidePrint
+         * @description A printed copy, and the languages on it besides English.
+         */
+        GuidePrint: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Comment */
+            comment?: string | null;
+            /** Languages */
+            languages?: string[];
         };
         /**
          * GuideProgress
@@ -1493,6 +1536,22 @@ export interface components {
             updated_at: string;
         };
         /**
+         * GuideTranslate
+         * @description Add one more shop-floor language to an approved guide.
+         */
+        GuideTranslate: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /**
+             * Language
+             * @description ISO 639-1 code, e.g. ta.
+             */
+            language: string;
+        };
+        /**
          * GuideTranslation
          * @description The guide's text in one shop-floor language, item for item.
          */
@@ -1520,6 +1579,11 @@ export interface components {
              * @description Lines QA should check against the English.
              */
             flags: string[];
+            /**
+             * Added By
+             * @description Who added this language after approval. Such a translation was not seen by QA, so it prints only if code found no flags.
+             */
+            added_by: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2969,7 +3033,42 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GuideAction"];
+                "application/json": components["schemas"]["GuidePrint"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_guide_language_api_guides__guide_id__translations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideTranslate"];
             };
         };
         responses: {

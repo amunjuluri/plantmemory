@@ -1,7 +1,18 @@
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_Devanagari, Noto_Sans_Telugu } from "next/font/google";
+import {
+  Noto_Nastaliq_Urdu,
+  Noto_Sans_Bengali,
+  Noto_Sans_Devanagari,
+  Noto_Sans_Gujarati,
+  Noto_Sans_Gurmukhi,
+  Noto_Sans_Kannada,
+  Noto_Sans_Malayalam,
+  Noto_Sans_Oriya,
+  Noto_Sans_Tamil,
+  Noto_Sans_Telugu,
+} from "next/font/google";
 
 import { AppHeader, MobileTabBar } from "@/components/shell/app-header";
 import { Providers } from "@/components/shell/providers";
@@ -9,9 +20,9 @@ import { RecordSheet } from "@/components/record-sheet";
 
 import "./globals.css";
 
-// Printed guides carry Telugu and Hindi text; these render them the same on every machine.
-// Not preloaded: each is 120 KB and the browser fetches it only when that script is on the
-// page (the font's unicode-range), so English screens load faster on a phone.
+// Printed guides carry text in Indian scripts; these render it the same on every machine.
+// Not preloaded: each is about 120 KB and the browser fetches one only when its script is
+// on the page (the font's unicode-range), so English screens load faster on a phone.
 const telugu = Noto_Sans_Telugu({
   subsets: ["telugu"],
   variable: "--font-telugu",
@@ -24,6 +35,31 @@ const devanagari = Noto_Sans_Devanagari({
   display: "swap",
   preload: false,
 });
+const tamil = Noto_Sans_Tamil({ subsets: ["tamil"], variable: "--font-tamil", display: "swap", preload: false });
+const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], variable: "--font-kannada", display: "swap", preload: false });
+const malayalam = Noto_Sans_Malayalam({
+  subsets: ["malayalam"],
+  variable: "--font-malayalam",
+  display: "swap",
+  preload: false,
+});
+// Bengali script also covers Assamese.
+const bengali = Noto_Sans_Bengali({ subsets: ["bengali"], variable: "--font-bengali", display: "swap", preload: false });
+const gujarati = Noto_Sans_Gujarati({
+  subsets: ["gujarati"],
+  variable: "--font-gujarati",
+  display: "swap",
+  preload: false,
+});
+const gurmukhi = Noto_Sans_Gurmukhi({
+  subsets: ["gurmukhi"],
+  variable: "--font-gurmukhi",
+  display: "swap",
+  preload: false,
+});
+const oriya = Noto_Sans_Oriya({ subsets: ["oriya"], variable: "--font-oriya", display: "swap", preload: false });
+const urdu = Noto_Nastaliq_Urdu({ subsets: ["arabic"], variable: "--font-urdu", display: "swap", preload: false });
+const scripts = [telugu, devanagari, tamil, kannada, malayalam, bengali, gujarati, gurmukhi, oriya, urdu];
 
 export const metadata: Metadata = {
   title: { default: "PlantMemory", template: "%s · PlantMemory" },
@@ -47,7 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${telugu.variable} ${devanagari.variable}`}
+      className={[GeistSans.variable, GeistMono.variable, ...scripts.map((f) => f.variable)].join(" ")}
       suppressHydrationWarning
     >
       <body className="min-h-dvh">

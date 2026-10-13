@@ -591,6 +591,7 @@ const ACTION_LABEL = {
   submitted: "Sent to QA",
   approved: "Approved",
   rejected: "Sent back",
+  translated: "Language added",
   printed: "Printed",
   closed: "Closed",
   released: "Released to production",
