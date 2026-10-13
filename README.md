@@ -17,10 +17,13 @@ it drafts a **repair guide**:
   when a part is short;
 - a time estimate from the manual and past downtime.
 
-The manager checks the AI's draft and approves it; QA must approve first only when code
-finds a reason (a value not in the manual, a step with no source, a translation that may
-not match, an earlier rejection). The manager then prints it for the workers as an A4
-controlled copy in English, Telugu and Hindi, with the manual's figures and tick boxes.
+The manager checks the AI's draft, changes anything by saying or typing it ("step 6 is
+for the engineer, not the operator", in any language), and approves it; QA must approve
+first only when code finds a reason (a value not in the manual, a step with no source, a
+translation that may not match, an earlier rejection). The manager then prints it for the
+workers as an A4 controlled copy in English plus the languages the crew reads (Telugu and
+Hindi by default; any of 12 Indian languages can be added), with the manual's figures and
+tick boxes.
 When the repair is done, the manager says what was done (a short "did what the guide
 said" is enough; the app asks only what the guide can't tell it) and it is saved to plant
 memory. QA then does the line clearance and releases the machine to production.
@@ -66,7 +69,7 @@ Firestore vector search and Cloud Run.
 |---|---|
 | Breakdown | Type, or talk it through by voice (it asks for what's missing and reads the report back), or read a logbook photo. Get a cited repair guide. |
 | Alarm logs | Upload an HMI alarm export or controller log. Errors that stopped the machine come first with the manual's first actions and time; rising warnings are flagged. One click drafts the guide. |
-| Guides | Every guide from draft to approval, printing, closure and QA release, with an audit trail. QA reviews and releases here. |
+| Guides | Every guide from draft to approval, printing, closure and QA release, with an audit trail. Change a draft by voice or typed, in any language; every change is marked and checked before it is kept. QA reviews and releases here. |
 | Memory | Past incidents, equipment manuals by page, spare parts and stock. |
 | Add records | Logbook photos, SAP PM / CMMS exports (CSV or Excel), equipment manual PDFs. |
 
@@ -79,7 +82,8 @@ Firestore vector search and Cloud Run.
 - Parts must exist in the store; stock, bin and lead time come from the store.
 - Times come from the manual and past downtime, never from the model.
 - Each translation is checked: every number, part number, alarm code and machine tag in
-  the English must appear in the Telugu and Hindi, or QA sees a flag.
+  the English must appear in every translation, or the line is flagged. A language
+  added after approval with a flagged line is not printed.
 - The manager may approve a guide only when every line cites a source, no value is
   flagged and every translation kept its numbers and codes; otherwise it goes to QA with
   the reasons. `QA_APPROVAL=always` makes QA approve every guide.
@@ -116,7 +120,9 @@ IW29 export, a fluid bed dryer manual PDF and two logbook photos. Each screen ha
 The plant type in the prompts is a setting: `PLANT_TYPE="paper mill"` (default
 "pharmaceutical plant"). Nothing else is industry-specific.
 
-Printed-guide languages are a setting: `GUIDE_LANGUAGES='["te","hi"]'` (any ISO 639-1
-codes; English is always printed).
+The languages translated on approval are a setting: `GUIDE_LANGUAGES='["te","hi"]'`.
+English is always printed. On the print page the manager can add Assamese, Bengali,
+Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu or Urdu.
 
-More: [docs/DEPLOY.md](docs/DEPLOY.md).
+**Test every feature step by step:** [docs/TESTING.md](docs/TESTING.md) (what to do, what
+you should see, and why it matters on the floor). Deploying: [docs/DEPLOY.md](docs/DEPLOY.md).
