@@ -235,7 +235,7 @@ function ReleaseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => 
 
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button data-primary variant="primary" onClick={() => setOpen(true)}>
         <Factory />
         Release to production
       </Button>
@@ -295,6 +295,10 @@ function ReleaseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => 
     </>
   );
 }
+
+/** Ghost buttons read as loose text on a phone, where they share a row with the primary's
+ * width: there they look like the other secondary buttons. */
+const PHONE_SECONDARY = "max-sm:bg-surface max-sm:text-fg max-sm:shadow-card";
 
 /** Keeps toasts above the action bar: publishes how far its top is from the bottom of the
  * screen. It is sticky, so that distance changes as the page scrolls to its end. */
@@ -441,29 +445,46 @@ export function GuideActions({
       );
       actions = (
         <>
-          <Button onClick={onEdit} aria-label="Edit by hand" data-icon-only className="max-sm:w-9 max-sm:px-0">
+          <Button onClick={onEdit} aria-label="Edit by hand">
             <Pencil />
-            <span className="max-sm:hidden">Edit</span>
+            Edit
           </Button>
-          <Button variant="primary" onClick={submit} loading={busy === "submit"}>
+          <Button data-primary variant="primary" onClick={submit} loading={busy === "submit"}>
             <Send />
             Send to QA
           </Button>
         </>
       );
     } else {
-      hint = "Every line cites the manual or a past fix. Check the steps, then approve and print.";
+      hint = (
+        <>
+          <span className="max-sm:hidden">Every line cites the manual or a past fix. </span>Check the steps, then approve
+          and print.
+        </>
+      );
       actions = (
         <>
-          <Button onClick={onEdit} aria-label="Edit by hand" data-icon-only className="max-sm:w-9 max-sm:px-0">
+          <Button onClick={onEdit} aria-label="Edit by hand">
             <Pencil />
-            <span className="max-sm:hidden">Edit</span>
+            Edit
           </Button>
-          <Button variant="ghost" onClick={submit} loading={busy === "submit"} disabled={busy === "approve"}>
+          <Button
+            variant="ghost"
+            onClick={submit}
+            loading={busy === "submit"}
+            disabled={busy === "approve"}
+            className={PHONE_SECONDARY}
+          >
             <span className="max-sm:hidden">Ask QA to check</span>
             <span className="sm:hidden">Ask QA</span>
           </Button>
-          <Button variant="primary" onClick={approveAsManager} loading={busy === "approve"} disabled={busy === "submit"}>
+          <Button
+            data-primary
+            variant="primary"
+            onClick={approveAsManager}
+            loading={busy === "approve"}
+            disabled={busy === "submit"}
+          >
             <CheckCheck />
             Approve and print
           </Button>
@@ -477,7 +498,7 @@ export function GuideActions({
       actions = (
         <>
           <RejectDialog guide={guide} onDone={onChange} />
-          <Button variant="primary" onClick={approveAsQa} loading={busy === "approve"}>
+          <Button data-primary variant="primary" onClick={approveAsQa} loading={busy === "approve"}>
             <CheckCheck />
             Approve for printing
           </Button>
@@ -496,7 +517,11 @@ export function GuideActions({
     actions = (
       <>
         <CloseDialog guide={guide} onDone={onChange} />
-        <Link href={`/guides/print/?id=${encodeURIComponent(guide.id)}`} className={buttonVariants({ variant: "primary" })}>
+        <Link
+          data-primary
+          href={`/guides/print/?id=${encodeURIComponent(guide.id)}`}
+          className={buttonVariants({ variant: "primary" })}
+        >
           <Printer />
           Print
         </Link>
@@ -524,10 +549,10 @@ export function GuideActions({
     );
     actions = (
       <>
-        <Button variant="ghost" onClick={review.onDiscard} disabled={review.keeping}>
+        <Button variant="ghost" onClick={review.onDiscard} disabled={review.keeping} className={PHONE_SECONDARY}>
           Discard
         </Button>
-        <Button variant="primary" onClick={review.onKeep} loading={review.keeping}>
+        <Button data-primary variant="primary" onClick={review.onKeep} loading={review.keeping}>
           <Check />
           Keep changes
         </Button>
@@ -548,9 +573,9 @@ export function GuideActions({
             </span>
           </p>
           {actions && (
-            // On a phone the buttons fill the row and wrap rather than overflow: the primary
-            // action (always last) drops to its own full-width row, under the thumb.
-            <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*:not([data-icon-only])]:grow">
+            // On a phone the next step gets a full-width row at the bottom, under the thumb,
+            // and the other actions share the row above in equal widths.
+            <div className="ml-auto flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*]:flex-1 max-sm:[&>[data-primary]]:basis-full">
               {actions}
             </div>
           )}
