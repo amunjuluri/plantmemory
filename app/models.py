@@ -470,6 +470,11 @@ class GuideTranslation(Model):
     flags: list[str] = Field(
         default_factory=list, description="Lines QA should check against the English."
     )
+    added_by: str | None = Field(
+        default=None,
+        description="Who added this language after approval. Such a translation was not "
+        "seen by QA, so it prints only if code found no flags.",
+    )
 
 
 class GuideEvent(Model):
@@ -478,7 +483,15 @@ class GuideEvent(Model):
     at: datetime = Field(default_factory=_now)
     by: str
     action: Literal[
-        "created", "edited", "submitted", "approved", "rejected", "printed", "closed", "released"
+        "created",
+        "edited",
+        "submitted",
+        "approved",
+        "rejected",
+        "translated",
+        "printed",
+        "closed",
+        "released",
     ]
     comment: str | None = None
 
@@ -659,6 +672,19 @@ class GuideAction(Model):
 
     by: SignerName
     comment: str | None = Field(default=None, max_length=2000)
+
+
+class GuidePrint(GuideAction):
+    """A printed copy, and the languages on it besides English."""
+
+    languages: list[str] = Field(default_factory=list, max_length=20)
+
+
+class GuideTranslate(Model):
+    """Add one more shop-floor language to an approved guide."""
+
+    by: SignerName
+    language: str = Field(min_length=2, max_length=3, description="ISO 639-1 code, e.g. ta.")
 
 
 class GuideReview(Model):

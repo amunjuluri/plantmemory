@@ -17,7 +17,7 @@ from app.approval import new_record_id
 from app.config import get_settings
 from app.embeddings import incident_text
 from app.guide import guardrails
-from app.guide.translate import translate_guide
+from app.guide.translate import LANGUAGE_NAMES, language_name, translate_guide, translate_one
 from app.kb import KnowledgeBase
 from app.models import (
     RELEASE_CHECKS,
@@ -26,9 +26,11 @@ from app.models import (
     GuideClose,
     GuideEdit,
     GuideEvent,
+    GuidePrint,
     GuideRelease,
     GuideReview,
     GuideSummary,
+    GuideTranslate,
     IncidentRecord,
 )
 
@@ -258,15 +260,44 @@ def review(guide_id: str, body: GuideReview, kb: KnowledgeBase) -> Guide:
     return _save(guide, kb, GuideEvent(by=body.by, action="approved", comment=comment))
 
 
-def record_print(guide_id: str, body: GuideAction, kb: KnowledgeBase) -> Guide:
-    """Count a printed copy. Only approved guides may be printed."""
+def add_language(guide_id: str, body: GuideTranslate, deps: AgentDeps, kb: KnowledgeBase) -> Guide:
+    """Translate an approved guide into one more language for printing, checked like the
+    others. Asking again for a language translates it again (e.g. after a flag)."""
+    guide = load(guide_id, kb)
+    _require(guide, "approved", doing="translated")
+    code = body.language.strip().lower()
+    if code == "en" or code not in LANGUAGE_NAMES:
+        raise GuideError(f"“{body.language}” is not a language guides can be printed in.", 422)
+    translation = translate_one(guide, code, deps)
+    translation.added_by = body.by
+    guide.translations = [t for t in guide.translations if t.language != code] + [translation]
+    flags = len(translation.flags)
+    note = language_name(code) + (
+        f": {flags} line{'s' if flags > 1 else ''} flagged, not printable" if flags else ""
+    )
+    return _save(guide, kb, GuideEvent(by=body.by, action="translated", comment=note))
+
+
+def printable(guide: Guide, language: str) -> bool:
+    """A language added after approval prints only if code found nothing to check."""
+    t = next((t for t in guide.translations if t.language == language), None)
+    return t is not None and not (t.added_by and t.flags)
+
+
+def record_print(guide_id: str, body: GuidePrint, kb: KnowledgeBase) -> Guide:
+    """Count a printed copy and the languages on it. Only approved guides may be printed."""
     guide = load(guide_id, kb)
     _require(guide, "approved", doing="printed")
+    wanted = list(dict.fromkeys(body.languages))
+    blocked = [language_name(code) for code in wanted if not printable(guide, code)]
+    if blocked:
+        raise GuideError(f"Can't print in {', '.join(blocked)}: translate it again first.", 422)
     guide.copies_printed += 1
+    names = ", ".join(["English", *(language_name(code) for code in wanted)])
     return _save(
         guide,
         kb,
-        GuideEvent(by=body.by, action="printed", comment=f"Copy {guide.copies_printed}"),
+        GuideEvent(by=body.by, action="printed", comment=f"Copy {guide.copies_printed} in {names}"),
     )
 
 

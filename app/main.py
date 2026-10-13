@@ -24,7 +24,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
 from google.genai import errors as genai_errors
-from pydantic import TypeAdapter, ValidationError
+from pydantic import Field, TypeAdapter, ValidationError
 
 from app.agent import agent
 from app.agent.tools import get_deps
@@ -32,7 +32,7 @@ from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
 from app.guide import revise, workflow
 from app.guide.builder import build_guide_events
-from app.guide.translate import language_name
+from app.guide.translate import LANGUAGE_NAMES, language_name
 from app.ingest import logbook_ocr
 from app.intake import cmms, live, machine_logs, voice
 from app.kb import get_kb, manual_ingest
@@ -50,6 +50,7 @@ from app.models import (
     GuideAction,
     GuideClose,
     GuideEdit,
+    GuidePrint,
     GuideProgress,
     GuideRelease,
     GuideRequest,
@@ -57,6 +58,7 @@ from app.models import (
     GuideRevision,
     GuideStatus,
     GuideSummary,
+    GuideTranslate,
     IncidentPage,
     IncidentPublic,
     Industry,
@@ -214,7 +216,12 @@ class LanguageOption(Model):
 class AppConfig(Model):
     """What the UI needs to know about this deployment."""
 
-    guide_languages: list[LanguageOption]
+    guide_languages: list[LanguageOption] = Field(
+        description="Translated when a guide is approved or sent to QA."
+    )
+    print_languages: list[LanguageOption] = Field(
+        description="Every language a guide can be printed in; others are added on demand."
+    )
     store_backend: str
     qa_approval: str
     release_checks: list[str]
@@ -226,6 +233,10 @@ def app_config() -> AppConfig:
         guide_languages=[
             LanguageOption(code=c, name=language_name(c)) for c in settings.guide_languages
         ],
+        print_languages=sorted(
+            (LanguageOption(code=c, name=n) for c, n in LANGUAGE_NAMES.items() if c != "en"),
+            key=lambda o: o.name,
+        ),
         store_backend=settings.store_backend,
         qa_approval=settings.qa_approval,
         release_checks=list(RELEASE_CHECKS),
@@ -406,9 +417,15 @@ def review_guide(guide_id: str, body: GuideReview) -> Guide:
 
 
 @app.post("/api/guides/{guide_id}/print")
-def print_guide(guide_id: str, body: GuideAction) -> Guide:
-    """Count a printed copy of an approved guide."""
+def print_guide(guide_id: str, body: GuidePrint) -> Guide:
+    """Count a printed copy of an approved guide, and the languages on it."""
     return workflow.record_print(guide_id, body, get_kb())
+
+
+@app.post("/api/guides/{guide_id}/translations", dependencies=[Depends(limit_ai_calls)])
+async def add_guide_language(guide_id: str, body: GuideTranslate) -> Guide:
+    """Translate an approved guide into one more language for printing."""
+    return await asyncio.to_thread(workflow.add_language, guide_id, body, get_deps(), get_kb())
 
 
 @app.post("/api/guides/{guide_id}/close")

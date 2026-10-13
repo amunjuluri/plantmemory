@@ -24,12 +24,14 @@ from app.models import (
     GuideEdit,
     GuideItemOut,
     GuidePartPick,
+    GuidePrint,
     GuideRelease,
     GuideRequest,
     GuideReview,
     GuideRevisionOut,
     GuideStep,
     GuideStepOut,
+    GuideTranslate,
     ManualPick,
     TranslationOut,
 )
@@ -345,15 +347,15 @@ def test_only_approved_guides_print_and_close_saves_to_memory(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
     with pytest.raises(workflow.GuideError):
-        workflow.record_print(guide.id, GuideAction(by="Ravi"), kb)
+        workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb)
     workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     with pytest.raises(workflow.GuideError):
         workflow.edit(
             guide.id, GuideEdit(by="Ravi", title="x", summary="", safety=[], steps=guide.steps), kb
         )
-    assert workflow.record_print(guide.id, GuideAction(by="Ravi"), kb).copies_printed == 1
-    assert workflow.record_print(guide.id, GuideAction(by="Ravi"), kb).copies_printed == 2
+    assert workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb).copies_printed == 1
+    assert workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb).copies_printed == 2
 
     closed = workflow.close(
         guide.id,
@@ -382,6 +384,45 @@ def test_only_approved_guides_print_and_close_saves_to_memory(env) -> None:
         "printed",
         "closed",
     ]
+
+
+def test_more_languages_are_added_for_printing_and_checked(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    tamil = GuideTranslate(by="Ravi", language="ta")
+    with pytest.raises(workflow.GuideError):
+        workflow.add_language(guide.id, tamil, deps, kb)
+    assert workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb).status == "approved"
+
+    added = workflow.add_language(guide.id, tamil, deps, kb)
+    again = workflow.add_language(guide.id, tamil, deps, kb)
+
+    ta = next(t for t in added.translations if t.language == "ta")
+    assert ta.language_name == "Tamil" and ta.added_by == "Ravi" and not ta.flags
+    assert [t.language for t in again.translations].count("ta") == 1
+    assert again.events[-1].action == "translated" and again.events[-1].comment == "Tamil"
+    for code in ("en", "xx"):
+        with pytest.raises(workflow.GuideError):
+            workflow.add_language(guide.id, GuideTranslate(by="Ravi", language=code), deps, kb)
+    printed = workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["te", "ta"]), kb)
+    assert printed.events[-1].comment == "Copy 1 in English, Telugu, Tamil"
+
+
+def test_a_flagged_language_added_after_approval_does_not_print(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
+
+    added = workflow.add_language(guide.id, GuideTranslate(by="Ravi", language="kn"), deps, kb)
+
+    assert any("T-12" in f for f in added.translations[-1].flags)
+    assert added.events[-1].comment.startswith("Kannada: ")
+    with pytest.raises(workflow.GuideError, match="Kannada"):
+        workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["kn"]), kb)
+    # Telugu has the same flag, but QA saw it before approving.
+    assert workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["te"]), kb)
 
 
 def clean_edit(guide, keep_t12: bool = True) -> GuideEdit:
@@ -685,3 +726,22 @@ def test_knowledge_base_api(env) -> None:
         {"code": "te", "name": "Telugu"},
         {"code": "hi", "name": "Hindi"},
     ]
+
+
+def test_print_languages_api(env) -> None:
+    deps, kb = env
+    client = TestClient(app)
+    _, guide = draft(deps, kb)
+    url = f"/api/guides/{guide.id}/translations"
+
+    names = [o["name"] for o in client.get("/api/config").json()["print_languages"]]
+    assert "Tamil" in names and "English" not in names and names == sorted(names)
+    assert client.post(url, json={"by": "Ravi", "language": "ta"}).status_code == 409
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
+    ok = client.post(url, json={"by": "Ravi", "language": "ta"})
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["translations"][-1]["language_name"] == "Tamil"
+    assert client.post(url, json={"by": "Ravi", "language": "xx"}).status_code == 422
+    bad = client.post(f"/api/guides/{guide.id}/print", json={"by": "Ravi", "languages": ["ta"]})
+    assert bad.status_code == 422  # the fake Tamil lost "T-12"
