@@ -24,6 +24,7 @@ export type GuideProgress = Schemas["GuideProgress"];
 export type GuideEdit = Schemas["GuideEdit"];
 export type GuideTranslation = Schemas["GuideTranslation"];
 export type GuideEvent = Schemas["GuideEvent"];
+export type GuideRevision = Schemas["GuideRevision"];
 export type SourceRef = Schemas["SourceRef"];
 export type DowntimeEstimate = Schemas["DowntimeEstimate"];
 export type ManualSection = Schemas["ManualSectionPublic"];
@@ -189,6 +190,36 @@ export const api = {
     request<GuideSummary[]>(`/api/guides${status ? `?status=${status}` : ""}`),
   guide: (id: string) => request<Guide>(`/api/guides/${encodeURIComponent(id)}`),
   editGuide: (id: string, body: GuideEdit) => request<Guide>(`/api/guides/${encodeURIComponent(id)}`, put(body)),
+  /** Propose a change asked for by voice or typed. Nothing is saved. */
+  reviseGuide: (
+    id: string,
+    body: {
+      by: string;
+      text?: string;
+      audio?: Blob;
+      filename?: string;
+      base?: GuideEdit;
+      history?: string[];
+      /** A request that got a question back, and the question this message answers. */
+      followUp?: { asked: string; question: string };
+    },
+    signal?: AbortSignal,
+  ) =>
+    request<GuideRevision>(`/api/guides/${encodeURIComponent(id)}/revise`, {
+      ...upload(
+        {
+          by: body.by,
+          text: body.text,
+          audio: body.audio,
+          base: body.base ? JSON.stringify(body.base) : null,
+          history: body.history?.length ? JSON.stringify(body.history) : null,
+          asked: body.followUp?.asked,
+          question: body.followUp?.question,
+        },
+        body.filename,
+      ),
+      signal,
+    }),
   approveGuide: (id: string, by: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/approve`, json({ by })),
   releaseGuide: (id: string, by: string, checks: string[], comment?: string) =>

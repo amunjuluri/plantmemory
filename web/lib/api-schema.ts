@@ -387,6 +387,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/guides/{guide_id}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revise Guide
+         * @description Propose a change the manager asked for by voice or typed. Nothing is saved.
+         */
+        post: operations["revise_guide_api_guides__guide_id__revise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/guides/{guide_id}/submit": {
         parameters: {
             query?: never;
@@ -674,6 +694,38 @@ export interface components {
             audio?: string | null;
             /** Text */
             text?: string | null;
+        };
+        /** Body_revise_guide_api_guides__guide_id__revise_post */
+        Body_revise_guide_api_guides__guide_id__revise_post: {
+            /** By */
+            by: string;
+            /**
+             * Audio
+             * @description Voice recording
+             */
+            audio?: string | null;
+            /** Text */
+            text?: string | null;
+            /**
+             * Base
+             * @description A proposal not kept yet (GuideEdit JSON), to build on
+             */
+            base?: string | null;
+            /**
+             * History
+             * @description Earlier requests in this session, as a JSON list
+             */
+            history?: string | null;
+            /**
+             * Asked
+             * @description A request that got a question back
+             */
+            asked?: string | null;
+            /**
+             * Question
+             * @description The question; this message answers it
+             */
+            question?: string | null;
         };
         /** Body_upload_manual_api_manuals_upload_post */
         Body_upload_manual_api_manuals_upload_post: {
@@ -1120,6 +1172,16 @@ export interface components {
             escalate_if?: string[];
             /** Open Questions */
             open_questions?: string[];
+            /**
+             * Note
+             * @description Shown in the audit trail with the edit.
+             */
+            note?: string | null;
+            /**
+             * Base Updated At
+             * @description The guide's `updated_at` when editing began. If the guide has changed since, the edit is refused rather than overwriting someone else's changes.
+             */
+            base_updated_at?: string | null;
         };
         /**
          * GuideEvent
@@ -1312,6 +1374,36 @@ export interface components {
             decision: "approve" | "reject";
             /** Comment */
             comment?: string | null;
+        };
+        /**
+         * GuideRevision
+         * @description A proposed change to a guide. Nothing is saved: the manager keeps or discards it.
+         */
+        GuideRevision: {
+            /**
+             * Transcript
+             * @description What the manager asked, in their own words.
+             */
+            transcript: string;
+            /** Language */
+            language: string | null;
+            /**
+             * Reply
+             * @description Set when nothing was changed: a question or the reason, in the manager's language.
+             */
+            reply: string | null;
+            /**
+             * Changes
+             * @description One line per change.
+             */
+            changes: string[];
+            /**
+             * Warnings
+             * @description What the change means for checks, worked out in code.
+             */
+            warnings: string[];
+            /** @description The guide with the change, re-checked like an edit. */
+            proposal: components["schemas"]["Guide"] | null;
         };
         /**
          * GuideStep
@@ -2713,6 +2805,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revise_guide_api_guides__guide_id__revise_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_revise_guide_api_guides__guide_id__revise_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuideRevision"];
                 };
             };
             /** @description Validation Error */

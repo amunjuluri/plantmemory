@@ -329,16 +329,24 @@ function useActionBarSpace(shown: boolean) {
 }
 
 /** The next action for this guide, depending on its state and who is acting. */
+/** A proposed change on screen: the bar offers keep or discard instead of the next step. */
+type Review = { count: number; keeping: boolean; onKeep: () => void; onDiscard: () => void };
+
 export function GuideActions({
   guide,
   onChange,
   onEdit,
   editing,
+  composer,
+  review,
 }: {
   guide: Guide;
   onChange: (g: Guide) => void;
   onEdit: () => void;
   editing: boolean;
+  /** Asking for a change by voice or typed, shown above the next step. */
+  composer?: React.ReactNode;
+  review?: Review;
 }) {
   const router = useRouter();
   const role = useSession((s) => s.role);
@@ -433,9 +441,9 @@ export function GuideActions({
       );
       actions = (
         <>
-          <Button onClick={onEdit}>
+          <Button onClick={onEdit} aria-label="Edit by hand" data-icon-only className="max-sm:w-9 max-sm:px-0">
             <Pencil />
-            Edit
+            <span className="max-sm:hidden">Edit</span>
           </Button>
           <Button variant="primary" onClick={submit} loading={busy === "submit"}>
             <Send />
@@ -447,12 +455,13 @@ export function GuideActions({
       hint = "Every line cites the manual or a past fix. Check the steps, then approve and print.";
       actions = (
         <>
-          <Button onClick={onEdit}>
+          <Button onClick={onEdit} aria-label="Edit by hand" data-icon-only className="max-sm:w-9 max-sm:px-0">
             <Pencil />
-            Edit
+            <span className="max-sm:hidden">Edit</span>
           </Button>
           <Button variant="ghost" onClick={submit} loading={busy === "submit"} disabled={busy === "approve"}>
-            Ask QA to check
+            <span className="max-sm:hidden">Ask QA to check</span>
+            <span className="sm:hidden">Ask QA</span>
           </Button>
           <Button variant="primary" onClick={approveAsManager} loading={busy === "approve"} disabled={busy === "submit"}>
             <CheckCheck />
@@ -503,17 +512,49 @@ export function GuideActions({
   } else if (s === "released") {
     hint = `Released to production by ${lastBy("released") ?? "QA"}.`;
   }
+  if (review) {
+    const changes = review.count === 1 ? "1 change" : `${review.count} changes`;
+    hint = (
+      <>
+        <span className="sm:hidden">{changes} · not saved yet</span>
+        <span className="max-sm:hidden">
+          {changes} proposed. Nothing is saved until you keep {review.count === 1 ? "it" : "them"}.
+        </span>
+      </>
+    );
+    actions = (
+      <>
+        <Button variant="ghost" onClick={review.onDiscard} disabled={review.keeping}>
+          Discard
+        </Button>
+        <Button variant="primary" onClick={review.onKeep} loading={review.keeping}>
+          <Check />
+          Keep changes
+        </Button>
+      </>
+    );
+  }
 
   return (
     <div ref={bar} className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 md:bottom-4 print:hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-(--radius-card) bg-surface/90 p-3 pl-4 shadow-raised backdrop-blur-xl">
-        <p className="flex min-w-0 items-center gap-2 text-[0.8125rem] text-fg-muted">
-          <ClipboardCheck className="size-4 shrink-0" />
-          <span>
-            <span className="font-medium text-fg">{STATUS_LABEL[s]}.</span> {hint}
-          </span>
-        </p>
-        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      <div className="flex flex-col gap-3 rounded-(--radius-card) bg-surface/90 p-3 shadow-raised backdrop-blur-xl">
+        {composer}
+        <div className="flex flex-wrap items-center justify-between gap-3 pl-1">
+          <p className="flex min-w-0 items-center gap-2 text-[0.8125rem] text-fg-muted">
+            <ClipboardCheck className="size-4 shrink-0" />
+            <span>
+              {!review && <span className="font-medium text-fg">{STATUS_LABEL[s]}. </span>}
+              {hint}
+            </span>
+          </p>
+          {actions && (
+            // On a phone the buttons fill the row and wrap rather than overflow: the primary
+            // action (always last) drops to its own full-width row, under the thumb.
+            <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*:not([data-icon-only])]:grow">
+              {actions}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
