@@ -437,6 +437,31 @@ function FitToWidth({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Opens the print dialog for a copy already recorded. Phones open it only from a tap, and
+ * by the time the copy is recorded the tap has expired: iOS ignores the call silently. If
+ * no dialog opened, a toast offers the same copy behind a fresh tap (and says how to get a
+ * PDF), instead of the button quietly moving on to the next copy number.
+ */
+function openPrint(copy: number) {
+  let opened = false;
+  const mark = () => {
+    opened = true;
+  };
+  window.addEventListener("beforeprint", mark, { once: true });
+  window.print();
+  window.setTimeout(() => {
+    window.removeEventListener("beforeprint", mark);
+    if (opened) return;
+    toast(`Copy ${copy} is recorded and ready`, {
+      id: "print",
+      duration: Infinity,
+      description: "Tap Print to open the print sheet, then pick a printer or Save as PDF.",
+      action: { label: "Print", onClick: () => window.print() },
+    });
+  }, 1000);
+}
+
 type LanguageOption = AppConfig["print_languages"][number];
 
 /** A language added after approval was not seen by QA: it prints only if code found nothing
@@ -553,7 +578,7 @@ export function PrintView() {
       const printed = await api.printGuide(guide.id, by, languages.map((t) => t.language));
       // Render the new copy number before the print dialog snapshots the page.
       flushSync(() => setGuide(printed));
-      window.print();
+      openPrint(printed.copies_printed);
     } catch (err) {
       toast.error("Couldn’t record the printed copy", { description: err instanceof Error ? err.message : undefined });
     } finally {
@@ -619,6 +644,11 @@ export function PrintView() {
             <Printer />
             {approved ? `Print copy ${guide.copies_printed + 1}` : "Needs approval"}
           </Button>
+          {approved && (
+            <p className="hidden w-full text-center text-xs text-fg-subtle sm:text-right [@media(pointer:coarse)]:block">
+              Opens your phone’s print sheet. Pick a printer, or Save as PDF.
+            </p>
+          )}
         </div>
       </div>
       {stuck.map((t) => (
