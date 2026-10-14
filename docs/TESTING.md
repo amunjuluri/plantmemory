@@ -332,5 +332,6 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
 | 15 | Tour | Starts on the first visit; opens without a grey flash; popups point at the real controls; voice branch gives lines to say; waits while the guide drafts; follows approve to the print page; asks before each tab; **Guided tour** offers full, this page or any page |
 
-If an AI step fails with a "too many requests" message, wait a minute: the app limits AI
-calls per hour (`AI_REQUESTS_PER_HOUR`).
+The app allows 300 AI actions per hour from one network address (`AI_REQUESTS_PER_HOUR`),
+far more than a full test needs; past that it answers "too many requests" until the hour
+rolls on.

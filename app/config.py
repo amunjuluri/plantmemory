@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     plant_type: str = "pharmaceutical plant"
 
     # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.
-    ai_requests_per_hour: int = 40
+    ai_requests_per_hour: int = 300
 
     # Origins allowed to call the API from another port (local UI dev only), e.g.
     # CORS_ORIGINS='["http://localhost:3473"]'. Empty in production: same origin.

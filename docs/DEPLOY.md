@@ -73,11 +73,13 @@ For a demo this sits within Google Cloud's free tiers, apart from Gemini calls:
 - **Firestore** uses the free daily quota on the `(default)` database.
 - **Cloud Build** is a few build-minutes per deploy.
 - **Artifact Registry** costs cents per month for stored images.
-- **Gemini** is paid per call: one analysis is about 7 small calls, a fraction of a
-  cent.
+- **Gemini** is paid per call: a repair guide with its translation is about $0.008
+  (gemini-3.1-flash-lite), and a spoken report about $0.01 (gemini-3.8-live).
 
-Each visitor gets at most 40 AI requests per hour (`AI_REQUESTS_PER_HOUR`), and at
-most 3 instances run at once, so the public link can't run up a large bill.
+Each visitor (IP address) gets at most 300 AI actions per hour (`AI_REQUESTS_PER_HOUR`):
+a draft, a voice conversation, an approval and so on each count once. That is room for
+a team sharing one office network, and at about a cent an action it caps the cost at
+about $3 an hour per address. At most 3 instances run at once.
 
 ## Run the production image locally
 
