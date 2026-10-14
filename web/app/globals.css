@@ -384,7 +384,9 @@
     scale 200ms var(--ease-out);
 }
 .tour-arrow {
-  transition: left 420ms var(--ease-in-out);
+  transition:
+    left 420ms var(--ease-in-out),
+    top 420ms var(--ease-in-out);
 }
 @media (prefers-reduced-motion: reduce) {
   .tour-spot,

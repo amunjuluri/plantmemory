@@ -8,6 +8,7 @@ import { create } from "zustand";
 import { LogoMark } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
 import { useBreakdown } from "@/lib/stores/breakdown";
+import { useLiveVoice } from "@/lib/stores/live-voice";
 import { cn } from "@/lib/utils";
 
 /** Set once the tour is finished or skipped, so it starts on the first visit only. */
@@ -23,15 +24,23 @@ type Step = {
   child?: string;
   /** The page the element is on; the tour goes there. */
   page?: string;
-  side?: "top" | "bottom";
+  /** Where the popup goes. "right" falls back to `narrow` (default below) on phones. */
+  side?: "top" | "bottom" | "right";
+  narrow?: "top" | "bottom";
   title: string;
   body: ReactNode;
   /** The manager does this step: clicking the element moves the tour on. */
-  doIt?: string;
+  doIt?: ReactNode;
   /** Shown only if this holds when the tour reaches it (e.g. a guide was drafted). */
   when?: () => boolean;
-  /** Moves on by itself once this holds (the guide has arrived). */
+  /** Moves on by itself once this holds (the guide has arrived, the change is ready). */
   until?: () => boolean;
+  /** A branch (the voice conversation): when `until` fires, the next step is the first
+   * one in the branch that applies, so the tour follows the conversation wherever it
+   * goes, and leaves the branch when none does. */
+  group?: string;
+  /** Label of the Next button, and what it does first (e.g. end the conversation). */
+  next?: { label: string; before?: () => void };
   /** Offers to open another tab: yes goes there, "Not now" skips that tab's steps. */
   visit?: { label: string; path: string };
 };
@@ -42,9 +51,59 @@ const STATS = [
   { value: "12", label: "languages to print" },
 ];
 
+const has = (id: string) => Boolean(document.querySelector(`[data-tour="${id}"]`));
 const drafting = () => useBreakdown.getState().status === "running";
 const drafted = () => Boolean(useBreakdown.getState().guide);
-const onPage = (id: string) => () => drafted() && Boolean(document.querySelector(`[data-tour="${id}"]`));
+const onPage = (id: string) => () => drafted() && has(id);
+const path = () => window.location.pathname;
+
+// The breakdown voice conversation, as the tour sees it.
+const voice = () => useLiveVoice.getState();
+const voicePanel = () => has("voice") && voice().mode === "breakdown";
+const talking = () => voicePanel() && ["connecting", "live", "confirmed"].includes(voice().phase);
+const heardAll = () => Boolean(voice().result?.done);
+const voiceButton = (name: string) =>
+  [...document.querySelectorAll<HTMLButtonElement>('[data-tour="voice"] button')].find(
+    (b) => b.getAttribute("aria-label") === name || b.textContent?.trim() === name,
+  );
+const endVoice = () => voiceButton("End")?.click();
+const closeVoice = () => voiceButton("Close")?.click();
+let volumeShown = false;
+
+/** A line to say, in English: the manager may say it in any language. */
+function Say({ children }: { children: ReactNode }) {
+  return (
+    <p className="mt-2 rounded-lg bg-accent-soft px-3 py-2 text-[0.8125rem] leading-5 font-medium text-accent-text">
+      “{children}”
+    </p>
+  );
+}
+
+// What to say next, for whatever the conversation still needs.
+const NEXT_LINE: Record<string, string> = {
+  equipment: "It’s TP-02.",
+  symptom: "The upper punch is tight. E-104 is on the screen.",
+  machine_stopped: "Yes, it stopped in the middle of the batch.",
+};
+
+/** The script for the voice branch: the first line, then an answer to each question,
+ * following what the conversation is still missing. */
+function VoiceScript() {
+  const result = useLiveVoice((s) => s.result);
+  const missing = result?.missing ?? [];
+  const line = !result ? "TP-02 has stopped. The screen shows E-104, punch tight." : NEXT_LINE[missing[0]];
+  return (
+    <>
+      <p>
+        {!result
+          ? "Speak in the language you’re most comfortable with: Telugu, Hindi, English or mixed. Not sure what to say? Try this:"
+          : "It asks only for what’s still missing. Answer in your language, for example:"}
+      </p>
+      {line && <Say>{line}</Say>}
+      <p className="mt-2 text-xs text-fg-subtle">No microphone? Tap the keyboard button to type.</p>
+    </>
+  );
+}
 
 const STEPS: Step[] = [
   {
@@ -83,8 +142,75 @@ const STEPS: Step[] = [
     target: "speak",
     page: "/",
     title: "Or just say it",
-    body: "Speak Telugu, Hindi or English. It asks only for what’s missing and answers in your language. A logbook photo or alarm log works too.",
+    body: "Talk it through in your language. It asks for what’s missing and answers out loud. A logbook photo or the machine’s alarm log works too.",
+    doIt: "Tap Speak to try it",
+    next: { label: "Type instead" },
   },
+
+  // --- Voice branch: follows the conversation, then joins the draft. ---
+  {
+    id: "voice-volume",
+    group: "voice",
+    chapter: "Speaking",
+    target: "voice",
+    page: "/",
+    side: "right",
+    narrow: "top",
+    title: "Turn your volume up",
+    body: "It answers out loud, so you can keep your eyes on the machine. Allow the microphone if your browser asks.",
+    when: () => talking() && !volumeShown,
+    until: () => !talking(),
+    next: { label: "Volume’s up" },
+  },
+  {
+    id: "voice-trouble",
+    group: "voice",
+    chapter: "Speaking",
+    target: "voice",
+    page: "/",
+    side: "right",
+    narrow: "top",
+    title: "Voice didn’t start",
+    body: "Check that the browser may use the microphone, then tap Start again. Or tap Close and type the report instead.",
+    when: () => voicePanel() && !talking(),
+    until: () => !voicePanel() || talking(),
+    next: { label: "Close and type", before: closeVoice },
+  },
+  {
+    id: "voice-say",
+    group: "voice",
+    chapter: "Speaking",
+    target: "voice",
+    page: "/",
+    side: "right",
+    narrow: "top",
+    title: "Say what broke, your way",
+    body: <VoiceScript />,
+    when: () => talking() && !heardAll(),
+    until: () => !talking() || heardAll(),
+    next: { label: "Stop and type", before: endVoice },
+  },
+  {
+    id: "voice-confirm",
+    group: "voice",
+    chapter: "Speaking",
+    target: "voice",
+    page: "/",
+    side: "right",
+    narrow: "top",
+    title: "Check it, then confirm",
+    body: (
+      <>
+        <p>It reads the report back. If the chips are right, say:</p>
+        <Say>Yes, that’s right.</Say>
+        <p className="mt-2">Or tap Draft repair guide. Say what’s wrong to change it.</p>
+      </>
+    ),
+    when: () => talking() && heardAll(),
+    until: () => drafting() || !talking(),
+    next: { label: "Stop and type", before: endVoice },
+  },
+
   {
     id: "examples",
     chapter: "Breakdown",
@@ -94,6 +220,7 @@ const STEPS: Step[] = [
     title: "Try one now",
     body: "Tap “TP-02 punch tight” to fill in a sample report.",
     doIt: "Tap an example to continue",
+    when: () => !drafting(),
   },
   {
     id: "draft",
@@ -103,6 +230,7 @@ const STEPS: Step[] = [
     title: "Draft the repair guide",
     body: "Past fixes, the manual, the parts store and the time, put together and checked. Tap it and watch.",
     doIt: "Tap Draft to see it work, or press Next",
+    when: () => !drafting(),
   },
   {
     id: "drafting",
@@ -114,7 +242,10 @@ const STEPS: Step[] = [
     doIt: "The tour goes on when the guide is ready",
     when: drafting,
     until: () => !drafting(),
+    next: { label: "Skip waiting" },
   },
+
+  // --- The guide. ---
   {
     id: "guide",
     chapter: "Your guide",
@@ -161,16 +292,111 @@ const STEPS: Step[] = [
     body: "With stock and bin location. A short part is flagged before anyone walks to the store.",
     when: onPage("guide-parts"),
   },
+
+  // --- Change it by voice or chat. ---
   {
-    id: "actions",
-    chapter: "Your guide",
+    id: "revise",
+    chapter: "Change it",
+    target: "revise",
+    page: "/",
+    side: "top",
+    title: "Ask for a change",
+    body: (
+      <>
+        <p>Type it, or tap the mic and say it, in any language. Try:</p>
+        <Say>Add a safety step: wear a dust mask before opening the guard.</Say>
+      </>
+    ),
+    doIt: "Send it and give it about 10 seconds. If it asks a question, answer it.",
+    when: onPage("revise"),
+    until: () => has("revision"),
+  },
+  {
+    id: "revision",
+    chapter: "Change it",
+    target: "revision",
+    page: "/",
+    title: "Every change is marked",
+    body: "New, changed and removed lines are highlighted in the guide, and checked against the sources like a hand edit.",
+    when: () => has("revision"),
+  },
+  {
+    id: "keep",
+    chapter: "Change it",
     target: "guide-actions",
     page: "/",
     side: "top",
-    title: "Change it, then approve",
-    body: "Ask for a change by voice or typing, in any language. Then Approve and print; QA steps in only when code flags something.",
-    when: onPage("guide-actions"),
+    title: "Keep it or discard it",
+    body: "Nothing is saved until you keep it. The guide’s history records what you asked for.",
+    doIt: "Tap Keep changes or Discard",
+    when: () => has("revision"),
+    until: () => !has("revision"),
   },
+
+  // --- Approve and print. ---
+  {
+    id: "approve",
+    chapter: "Approve",
+    target: "guide-actions",
+    page: "/",
+    side: "top",
+    title: "Approve and print",
+    body: "When it’s right, approve it. It’s translated for the floor in 10 to 20 seconds, then the print page opens. If code flags something, it goes to QA first.",
+    doIt: "Tap Approve and print to see the sheet, or press Next",
+    when: onPage("guide-actions"),
+    until: () => path().startsWith("/guides/print") && has("print-sheet"),
+  },
+  {
+    id: "print-languages",
+    chapter: "Print",
+    target: "print-languages",
+    title: "Languages on the sheet",
+    body: "The crew’s languages are added on approval. Tap one to leave it off this copy. After the tour, + Language adds any of 12 Indian languages.",
+    when: () => path().startsWith("/guides/print") && has("print-languages"),
+  },
+  {
+    id: "print-sheet",
+    chapter: "Print",
+    target: "print-sheet",
+    child: "header",
+    title: "The A4 sheet",
+    body: "Every line in English with each language under it, the manual’s figures, a tick box per step and sign-off lines. Pinch to zoom on a phone.",
+    when: () => path().startsWith("/guides/print"),
+  },
+  {
+    id: "print-button",
+    chapter: "Print",
+    target: "print-button",
+    title: "Print a numbered copy",
+    body: "Each print is a controlled copy with its own number, recorded in the history. On a phone, pick a printer or Save as PDF.",
+    when: () => path().startsWith("/guides/print"),
+  },
+  {
+    id: "print-back",
+    chapter: "After the repair",
+    target: "print-back",
+    title: "When the repair is done",
+    body: "Go back to the guide to record what was actually done.",
+    doIt: "Tap Back to guide, or press Next",
+    when: () => path().startsWith("/guides/print"),
+    until: () => path().startsWith("/guides/view") && has("guide-header"),
+  },
+  {
+    id: "close",
+    chapter: "After the repair",
+    target: "close-breakdown",
+    title: "Close the breakdown",
+    body: (
+      <>
+        <p>After the repair, tap it and say what was done. A short answer is enough:</p>
+        <Say>Did what the guide said. Took about an hour. It’s fixed.</Say>
+        <p className="mt-2">It fills in the steps and parts from the guide, and saves the fix to plant memory.</p>
+      </>
+    ),
+    when: () => path().startsWith("/guides/view") && has("close-breakdown"),
+  },
+
+  // --- The other tabs, each offered first. ---
   {
     id: "to-guides",
     chapter: "Guides",
@@ -186,7 +412,7 @@ const STEPS: Step[] = [
     child: "[role=group]",
     page: "/guides/",
     title: "Every guide, by stage",
-    body: "QA works from “Waiting for QA”. Approved guides are printed from here as numbered A4 copies in English plus any of 12 Indian languages. Closed ones wait for QA to release the machine.",
+    body: "QA works from “Waiting for QA”. Approved guides are printed from here; closed ones wait for QA to check the line and release the machine.",
   },
   {
     id: "to-alarms",
@@ -218,7 +444,7 @@ const STEPS: Step[] = [
     target: "memory-tabs",
     page: "/memory/",
     title: "What every guide draws on",
-    body: "Past incidents, manuals by page and the parts store. When you close a breakdown and say what was done, it’s added here, so no fix is lost between shifts.",
+    body: "Past incidents, manuals by page and the parts store. Every closed breakdown is added here, so no fix is lost between shifts.",
   },
   {
     id: "to-add",
@@ -241,8 +467,8 @@ const STEPS: Step[] = [
     id: "actor",
     chapter: "Last one",
     target: "actor",
-    title: "You’re the manager",
-    body: "No sign-in in this demo. Switch to QA here to review a guide and release the machine.",
+    title: "Manager or QA",
+    body: "No sign-in in this demo. Switch to QA here to review guides that need a check, and to release the machine after a repair.",
   },
 ];
 
@@ -253,6 +479,20 @@ function nextStep(from: number, dir: 1 | -1): number | null {
     if (!s.when || s.when()) return i;
   }
   return null;
+}
+
+/** After a branch step's condition fires: the first step of the branch that applies now
+ * (other than this one), or the first step after the branch. */
+function branchStep(from: number): number | null {
+  const group = STEPS[from].group;
+  if (!group) return nextStep(from, 1);
+  let last = from;
+  for (let i = 0; i < STEPS.length; i++) {
+    if (STEPS[i].group !== group) continue;
+    last = i;
+    if (i !== from && (!STEPS[i].when || STEPS[i].when!())) return i;
+  }
+  return nextStep(last, 1);
 }
 
 type TourState = { step: number | null; start: () => void; go: (step: number) => void; end: () => void };
@@ -346,10 +586,15 @@ export function Tour() {
     return () => clearTimeout(timer);
   }, [start]);
 
-  // A step on another page takes the manager there.
+  // A step on another page takes the manager there, once, when the step starts: a step
+  // may itself lead somewhere else (Approve opens the print page).
+  const pathRef = useRef(pathname);
   useEffect(() => {
-    if (current?.page && !samePage(pathname, current.page)) router.push(current.page);
-  }, [current, pathname, router]);
+    pathRef.current = pathname;
+  });
+  useEffect(() => {
+    if (current?.page && !samePage(pathRef.current, current.page)) router.push(current.page);
+  }, [current, router]);
 
   const finish = () => {
     setLeaving(true);
@@ -359,10 +604,16 @@ export function Tour() {
       setSettled(false);
     }, 160);
   };
-  const forward = () => {
-    const to = step === null ? null : nextStep(step, 1);
-    if (to === null) finish();
-    else go(to);
+  const goOrFinish = (to: number | null) => (to === null ? finish() : go(to));
+  const forward = () => goOrFinish(step === null ? null : nextStep(step, 1));
+  // Next, with whatever the step does first (ending the conversation, say). The page
+  // needs a moment to react before the tour picks where to go.
+  const onNext = () => {
+    const before = current?.next?.before;
+    if (!before || step === null) return forward();
+    before();
+    const from = step;
+    setTimeout(() => goOrFinish(branchStep(from)), 150);
   };
   const back = () => {
     const to = step === null ? null : nextStep(step, -1);
@@ -384,9 +635,15 @@ export function Tour() {
   // appear late (after navigating, or when the guide arrives), and the spotlight should
   // stay glued to it. A step that waits for something moves on when it happens.
   const forwardRef = useRef(forward);
+  const branchRef = useRef(() => goOrFinish(step === null ? null : branchStep(step)));
   useEffect(() => {
     forwardRef.current = forward;
+    branchRef.current = () => goOrFinish(step === null ? null : branchStep(step));
   });
+
+  useEffect(() => {
+    if (current?.id === "voice-volume") volumeShown = true;
+  }, [current]);
   useEffect(() => {
     if (!current) return;
     let frame = 0;
@@ -413,7 +670,7 @@ export function Tour() {
       if (!moved && current.until?.()) {
         moved = true;
         // Let the new content render before pointing at it.
-        setTimeout(() => forwardRef.current(), 400);
+        setTimeout(() => branchRef.current(), 400);
       }
       frame = requestAnimationFrame(tick);
     };
@@ -453,7 +710,7 @@ export function Tour() {
     const onKey = (e: KeyboardEvent) => {
       const typing = e.target instanceof HTMLElement && e.target.closest("input, textarea, [contenteditable]");
       if (e.key === "Escape") finish();
-      else if (!typing && e.key === "ArrowRight" && !current?.visit) forward();
+      else if (!typing && e.key === "ArrowRight" && !current?.visit) onNext();
       else if (!typing && e.key === "ArrowLeft") back();
     };
     window.addEventListener("keydown", onKey);
@@ -469,17 +726,25 @@ export function Tour() {
 
   if (!current || step === null) return null;
 
-  // Place the popup under the element, or above when there's no room (the tab bar).
-  let side: "top" | "bottom" | "center" = "center";
+  // Place the popup beside the element on a wide screen when asked, otherwise under it, or
+  // above when there's no room (the tab bar).
+  let side: "top" | "bottom" | "right" | "center" = "center";
   let left = (screen.w - size.w) / 2;
   let top = (screen.h - size.h) / 2;
   let arrow = size.w / 2;
-  if (hole) {
+  if (hole && current.side === "right" && screen.w - (hole.x + hole.w) - GAP - EDGE >= size.w) {
+    side = "right";
+    left = hole.x + hole.w + GAP;
+    const middle = hole.y + hole.h / 2;
+    top = Math.max(EDGE, Math.min(middle - size.h / 2, screen.h - size.h - EDGE));
+    arrow = Math.max(20, Math.min(middle - top, size.h - 20));
+  } else if (hole) {
     const below = screen.h - (hole.y + hole.h) - GAP - EDGE;
     const above = hole.y - GAP - EDGE;
-    side = current.side ?? "bottom";
-    if (side === "bottom" && below < size.h && above > below) side = "top";
-    if (side === "top" && above < size.h && below > above) side = "bottom";
+    side = (current.side === "right" ? current.narrow : current.side) === "top" ? "top" : "bottom";
+    // Switch sides only to one where it fits; otherwise keep the side asked for.
+    if (side === "bottom" && below < size.h && above >= size.h) side = "top";
+    else if (side === "top" && above < size.h && below >= size.h) side = "bottom";
     top = side === "bottom" ? hole.y + hole.h + GAP : hole.y - GAP - size.h;
     top = Math.max(EDGE, Math.min(top, screen.h - size.h - EDGE));
     const centre = hole.x + hole.w / 2;
@@ -499,7 +764,12 @@ export function Tour() {
       ]
     : [{ inset: 0 }];
   const progress = step / (STEPS.length - 1);
-  const waiting = Boolean(current.until);
+  // On a short screen the popup may have to sit over the element; then an arrow would
+  // point at nothing.
+  const overlaps =
+    hole !== null &&
+    ((side === "top" && top + size.h > hole.y + 4) || (side === "bottom" && top < hole.y + hole.h - 4));
+  const label = current.next?.label ?? (step === 0 ? "Show me around" : last ? "Finish" : "Next");
 
   return (
     <div
@@ -530,25 +800,33 @@ export function Tour() {
         aria-describedby="tour-body"
         data-settled={settled ? "" : undefined}
         className={cn(
-          "tour-pop fixed top-0 left-0 z-[71] w-[min(21rem,calc(100vw-1.5rem))] overflow-visible rounded-2xl bg-surface text-fg shadow-raised outline-none",
+          // Above toasts too (Sonner's layer), so a toast never hides the popup.
+          "tour-pop fixed top-0 left-0 z-[1000000000] w-[min(21rem,calc(100vw-1.5rem))] overflow-visible rounded-2xl bg-surface text-fg shadow-raised outline-none",
           !measured && "scale-[0.96] opacity-0",
         )}
         style={{
           transform: `translate(${Math.round(left)}px, ${Math.round(top)}px)`,
           // Grows out of the arrow, toward the element it points at.
-          transformOrigin: side === "bottom" ? `${arrow}px 0` : side === "top" ? `${arrow}px 100%` : "center",
+          transformOrigin:
+            side === "bottom"
+              ? `${arrow}px 0`
+              : side === "top"
+                ? `${arrow}px 100%`
+                : side === "right"
+                  ? `0 ${arrow}px`
+                  : "center",
         }}
       >
-        {side !== "center" && (
+        {side !== "center" && !overlaps && (
           <span
             aria-hidden
             className={cn(
               "tour-arrow absolute size-3 rotate-45 bg-surface",
-              side === "bottom"
-                ? "-top-1.5 shadow-[-1px_-1px_0_var(--color-line-strong)]"
-                : "-bottom-1.5 shadow-[1px_1px_0_var(--color-line-strong)]",
+              side === "bottom" && "-top-1.5 shadow-[-1px_-1px_0_var(--color-line-strong)]",
+              side === "top" && "-bottom-1.5 shadow-[1px_1px_0_var(--color-line-strong)]",
+              side === "right" && "-left-1.5 shadow-[-1px_1px_0_var(--color-line-strong)]",
             )}
-            style={{ left: arrow - 6 }}
+            style={side === "right" ? { top: arrow - 6 } : { left: arrow - 6 }}
           />
         )}
 
@@ -622,14 +900,19 @@ export function Tour() {
                 </>
               ) : (
                 <>
-                  {step > 1 && !waiting && (
+                  {step > 1 && !current.until && !current.group && (
                     <Button variant="secondary" size="sm" aria-label="Back" onClick={back} className="w-8 px-0">
                       <ArrowLeft />
                     </Button>
                   )}
-                  <Button ref={next} variant={waiting ? "secondary" : "primary"} size="sm" onClick={forward}>
-                    {step === 0 ? "Show me around" : waiting ? "Skip waiting" : last ? "Finish" : "Next"}
-                    {!last && !waiting && <ArrowRight />}
+                  <Button
+                    ref={next}
+                    variant={current.until || current.next ? "secondary" : "primary"}
+                    size="sm"
+                    onClick={onNext}
+                  >
+                    {label}
+                    {!last && !current.next && <ArrowRight />}
                   </Button>
                 </>
               )}

@@ -223,7 +223,7 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button onClick={() => setOpen(true)} data-tour="close-breakdown">
         <Lock />
         Close breakdown
       </Button>

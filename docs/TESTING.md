@@ -25,12 +25,25 @@ make run                      # open http://localhost:8473
 
 **The tour.** On your first visit a tour starts on the Breakdown page. The screen dims,
 the real control stays lit, and a small popup beside it says what it does, with **Next**
-and **Skip**. You do two steps yourself: tap an example, then draft the guide. The tour
-waits while it drafts, then walks through the guide (the repeat warning, time and parts,
-a step and its source, the parts list, changing and approving). Then it offers each tab
-in turn (Guides, Alarm logs, Memory, Add records): **Open** takes you there and explains
-the page, **Not now** skips it. Start the tour again any time with the **?** button at
-the top.
+and **Skip**. It follows the whole job, and you do the steps yourself:
+
+- **Speak or type.** Tap **Speak** to take the voice branch. It tells you to turn your
+  volume up, then gives you a line to say in English (say it in any language). As the
+  assistant asks for what's missing, the suggested answer changes. When the report is
+  complete it tells you to say "Yes, that's right", then joins the typing path. **Type
+  instead** skips it; if the microphone fails, it says what to check.
+- **Draft.** Tap an example, then Draft. The tour waits while it drafts, then explains
+  the guide: the repeat warning, time and parts, a step and its source, the parts list.
+- **Change it.** Ask for the suggested change; the tour shows how changes are marked,
+  then **Keep** or **Discard**.
+- **Approve and print.** Tap Approve; the tour follows to the print page (languages,
+  the A4 sheet, numbered copies, Save as PDF), then back to the guide to show **Close
+  breakdown** and what to say after the repair.
+- **The other tabs.** It offers each one (Guides, Alarm logs, Memory, Add records):
+  **Open** takes you there and explains the page, **Not now** skips it.
+
+Start it again any time with the **?** button at the top. The tour uses Gemini like
+normal use does (a draft, a change, a translation), so give it a few minutes.
 
 **Who you are.** The round badge at the top right shows who is acting. Click it to
 switch between **Manager** and **QA** and to change the name. Some rules depend on the
@@ -311,7 +324,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 12 | Manual upload | New machine's guide cites the uploaded manual |
 | 13 | No manual | No other machine's manual used |
 | 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
-| 15 | Tour | Starts on the first visit; each popup points at the real control; waits while the guide drafts, then explains it; asks before opening each tab; Skip ends it; **?** starts it again |
+| 15 | Tour | Starts on the first visit; popups point at the real controls; voice branch gives lines to say and follows the conversation; waits while the guide drafts; follows approve to the print page; asks before each tab; **?** starts it again |
 
 If an AI step fails with a "too many requests" message, wait a minute: the app limits AI
 calls per hour (`AI_REQUESTS_PER_HOUR`).

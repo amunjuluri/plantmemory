@@ -65,6 +65,7 @@ export function RevisionSummary({
   return (
     <section
       ref={ref}
+      data-tour="revision"
       aria-labelledby="revision-title"
       className="scroll-mt-24 overflow-hidden rounded-(--radius-card) bg-surface shadow-[0_0_0_1.5px_var(--color-accent),var(--shadow-card)] transition-[opacity,translate] duration-250 ease-out starting:translate-y-1.5 starting:opacity-0"
     >

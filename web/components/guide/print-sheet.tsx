@@ -211,7 +211,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
-    <article className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
+    <article data-tour="print-sheet" className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
       {!approved && (
         <div
           aria-hidden
@@ -591,13 +591,19 @@ export function PrintView() {
       <div className="mx-auto flex w-full max-w-[210mm] flex-wrap items-center gap-3 print:hidden">
         <Link
           href={`/guides/view/?id=${encodeURIComponent(guide.id)}`}
+          data-tour="print-back"
           className="inline-flex items-center gap-1.5 rounded-lg text-sm text-fg-muted transition-[color] duration-150 ease-out hover:text-fg"
         >
           <ArrowLeft className="size-4" />
           Back to guide
         </Link>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-sm:w-full max-sm:justify-start">
-          <div role="group" aria-label="Languages on the sheet" className="flex flex-wrap items-center gap-2">
+          <div
+            role="group"
+            aria-label="Languages on the sheet"
+            data-tour="print-languages"
+            className="flex flex-wrap items-center gap-2"
+          >
             {guide.translations.map((t) =>
               blocked(t) ? (
                 <span key={t.language} className={cn(CHIP, "bg-warn-soft text-warn-text")}>
@@ -635,6 +641,7 @@ export function PrintView() {
             )}
           </div>
           <Button
+            data-tour="print-button"
             variant="primary"
             onClick={print}
             loading={printing}
