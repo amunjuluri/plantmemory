@@ -5,7 +5,7 @@ the manager gets a repair guide, checks and changes it, approves and prints it f
 workers, records what was done, and QA releases the machine. Each section says what to
 do, what you should see, and **why it matters on the floor**.
 
-It takes about 30 minutes. Each AI step takes 5 to 25 seconds.
+It takes about 30 minutes. Most AI steps take a few seconds; a full repair guide about 10.
 
 ## Before you start
 
@@ -92,7 +92,7 @@ use these records.
 - A time estimate from the manual and from past downtime, never made up by the model.
 
 **Why it matters:** today the line waits while the manager searches logbooks, SAP and the
-manual. Here the answer arrives in about 20 seconds, and every line shows where it came
+manual. Here the answer arrives in about 10 seconds, and every line shows where it came
 from, so the manager can trust it or check it in one click.
 
 ## 3. See a repeat breakdown, reported in Telugu
@@ -190,10 +190,10 @@ printed sheet.
 ## 8. Approve and print in the workers' languages
 
 1. On a clean draft, click **Approve and print**. The guide is translated into Telugu
-   and Hindi (10 to 20 seconds), then the print view opens.
+   and Hindi (about 5 seconds), then the print view opens.
 2. **Add the language your crew reads.** Click **+ Language** and pick one, e.g.
    **Tamil**. Each language is listed with its name in its own script. It is translated
-   and checked in about 15 seconds, then appears on the sheet. Try **Urdu** too: it is
+   and checked in about 5 seconds, then appears on the sheet. Try **Urdu** too: it is
    set right to left.
 3. Click a language chip to take it off this copy, or click it again to put it back.
 4. Click **Print copy 1**. Open the guide's **Audit trail**: it says who added each
@@ -317,7 +317,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | # | Feature | Pass when |
 |---|---|---|
 | 1 | SAP import | Every row saved; visible in Memory |
-| 2 | Typed report | Guide in about 20 s; lines cite sources; parts show stock |
+| 2 | Typed report | Guide in about 10 s; lines cite sources; parts show stock |
 | 3 | Repeat warning | Telugu report finds the English SAP record; repeat count and downtime shown |
 | 4 | Voice report | Reply in your language; asks only for what's missing |
 | 5 | Logbook photo | Smudge flagged as `[?]`, not guessed |

@@ -232,7 +232,7 @@ export function ManualUpload() {
         <div className="min-w-0 flex-1">
           <p className="font-medium">Reading {fileName}</p>
           <p className="text-sm text-fg-muted">
-            Gemini is reading each page, the alarm table and the figures. Usually 15 to 60 seconds.
+            Gemini is reading each page, the alarm table and the figures. About 10 seconds for a short manual, longer for a thick one.
           </p>
         </div>
         {startedAt && (

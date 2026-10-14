@@ -68,7 +68,7 @@ function ReviewList() {
       <Card className="flex flex-col gap-2 p-5" aria-live="polite">
         <p className="font-medium">Reading the handwriting</p>
         <p className="text-sm text-fg-muted">
-          Gemini is transcribing each entry and expanding short forms. This usually takes 10 to 40
+          Gemini is transcribing each entry and expanding short forms. This usually takes about 5
           seconds.
         </p>
       </Card>

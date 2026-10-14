@@ -358,7 +358,7 @@ export function AlarmsView() {
           <span className="size-4 animate-spin-fast rounded-full border-2 border-accent border-r-transparent" />
           <div>
             <p className="font-medium">Reading {fileName}</p>
-            <p className="text-sm text-fg-muted">Matching each alarm to the manual and past fixes. About 5 to 15 seconds.</p>
+            <p className="text-sm text-fg-muted">Matching each alarm to the manual and past fixes. A few seconds.</p>
           </div>
         </Card>
       )}

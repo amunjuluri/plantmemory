@@ -470,7 +470,7 @@ export function GuideActions({
 
   const translating = (then: string) =>
     toast.loading("Translating into the shop-floor languages…", {
-      description: `${then} About 10 to 20 seconds.`,
+      description: `${then} About 5 seconds.`,
       icon: <TranslatingLoader className="text-fg-muted" />,
     });
 

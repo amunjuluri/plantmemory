@@ -51,7 +51,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
   const readPhoto = async (file: File) => {
     setReading(true);
     const id = toast.loading("Reading the logbook photo…", {
-      description: "This usually takes 10 to 40 seconds.",
+      description: "This usually takes about 5 seconds.",
       icon: <ScanningLoader className="text-fg-muted" />,
     });
     try {

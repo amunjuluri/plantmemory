@@ -202,7 +202,7 @@ export function ReviseComposer({
                 <p className="indic truncate text-fg">{pending.label}</p>
                 <p className="text-fg-subtle">
                   {pending.voice ? "Listening and making the change…" : "Making the change…"}
-                  {wide && " Usually 10 to 20 seconds."}
+                  {wide && " Usually about 5 seconds."}
                 </p>
               </div>
             </div>

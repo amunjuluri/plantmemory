@@ -502,7 +502,7 @@ function AddLanguage({
             )}
           >
             <p className="px-2.5 pt-1.5 pb-1 text-xs text-fg-subtle">
-              Translated and checked in about 15 seconds. Each language adds a line under every step.
+              Translated and checked in about 5 seconds. Each language adds a line under every step.
             </p>
             <div className="max-h-[min(20rem,var(--available-height))] overflow-y-auto overscroll-contain">
               {options.map((o) => (

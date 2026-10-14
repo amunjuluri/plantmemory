@@ -77,7 +77,7 @@ const EVIDENCE = [
 ];
 
 const IMPACT = [
-  "A checked repair guide in about 20 seconds, not a search through logbooks",
+  "A checked repair guide in about 10 seconds, not a search through logbooks",
   "One approved sheet the crew follows in their own language",
   "Every fix stays in plant memory when shifts change or people leave",
 ];
@@ -168,7 +168,7 @@ const STEPS: Step[] = [
           ))}
         </ul>
         <p className="mt-3 text-fg">
-          PlantMemory gives you a checked repair guide in about 20 seconds, from your plant’s past fixes and the
+          PlantMemory gives you a checked repair guide in about 10 seconds, from your plant’s past fixes and the
           manual, printed in your workers’ language.
         </p>
       </>
@@ -284,7 +284,7 @@ const STEPS: Step[] = [
     target: "drafting",
     page: "/",
     title: "Watch it work",
-    body: "It reads the report, searches past fixes and the manual side by side, checks the store, then writes and checks every line. About 20 seconds.",
+    body: "It reads the report, searches past fixes and the manual side by side, checks the store, then writes and checks every line. About 10 seconds.",
     doIt: "The tour goes on when the guide is ready",
     when: drafting,
     until: () => !drafting(),
@@ -347,7 +347,7 @@ const STEPS: Step[] = [
         <Say>Add a safety step: wear a dust mask before opening the guard.</Say>
       </>
     ),
-    doIt: "Send it and give it about 10 seconds. If it asks a question, answer it.",
+    doIt: "Send it and give it about 5 seconds. If it asks a question, answer it.",
     when: onPage("revise"),
     until: () => has("revision"),
   },
@@ -378,7 +378,7 @@ const STEPS: Step[] = [
     target: "guide-actions",
     side: "top",
     title: "Approve and print",
-    body: "When it’s right, approve it. It’s translated for the floor in 10 to 20 seconds, then the print page opens. If code flags something, it goes to QA first.",
+    body: "When it’s right, approve it. It’s translated for the floor in about 5 seconds, then the print page opens. If code flags something, it goes to QA first.",
     doIt: "Tap Approve and print to see the sheet, or press Next",
     when: () => has("approve-button"),
     until: () => path().startsWith("/guides/print") && has("print-sheet"),
@@ -493,7 +493,7 @@ const STEPS: Step[] = [
     page: "/alarms/",
     side: "top",
     title: "Try a sample",
-    body: "Tap the TP-02 alarm export. It’s read in about 5 to 15 seconds.",
+    body: "Tap the TP-02 alarm export. It’s read in a few seconds.",
     doIt: "Tap a sample, or press Next",
     when: () => has("alarms-samples"),
     until: () => has("alarms-errors"),
