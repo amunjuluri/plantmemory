@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { create } from "zustand";
@@ -43,12 +43,43 @@ type Step = {
   next?: { label: string; before?: () => void };
   /** Offers to open another tab: yes goes there, "Not now" skips that tab's steps. */
   visit?: { label: string; path: string };
+  /** A wider card, for the welcome and the wrap-up. */
+  wide?: boolean;
 };
 
-const STATS = [
-  { value: "~20 s", label: "to a cited guide" },
-  { value: "0", label: "made-up part numbers" },
-  { value: "12", label: "languages to print" },
+// Every figure is quoted from the source it links to (checked 14 Oct 2026).
+const SIEMENS = "https://assets.new.siemens.com/siemens/assets/api/uuid:1b43afb5-2d07-47f7-9eb7-893fe7d0bc59/TCOD-2024_original.pdf";
+const EVIDENCE = [
+  {
+    value: "$1.4T",
+    label: "lost a year to unplanned downtime by the world’s 500 biggest companies: 11% of revenue",
+    source: "Siemens, 2024",
+    href: SIEMENS,
+  },
+  {
+    value: "27 h",
+    label: "of unplanned downtime a month at an average large plant",
+    source: "Siemens, 2024",
+    href: SIEMENS,
+  },
+  {
+    value: "$125k",
+    label: "typical cost of one hour of unplanned downtime, from a survey of 3,215 plants",
+    source: "ABB, 2023",
+    href: "https://new.abb.com/news/detail/107660/abb-survey-reveals-unplanned-downtime-costs-125000-per-hour",
+  },
+  {
+    value: "62%",
+    label: "of US drug shortages (2013–17) began with manufacturing or quality problems",
+    source: "US FDA, 2019",
+    href: "https://www.fda.gov/drugs/drug-shortages/report-drug-shortages-root-causes-and-potential-solutions",
+  },
+];
+
+const IMPACT = [
+  "A checked repair guide in about 20 seconds, not a search through logbooks",
+  "One approved sheet the crew follows in their own language",
+  "Every fix stays in plant memory when shifts change or people leave",
 ];
 
 const has = (id: string) => Boolean(document.querySelector(`[data-tour="${id}"]`));
@@ -109,22 +140,36 @@ const STEPS: Step[] = [
   {
     id: "welcome",
     chapter: "Welcome",
-    title: "Welcome to PlantMemory",
+    wide: true,
+    title: "Every hour a line stands still costs money",
     body: (
       <>
-        <p>
-          When a machine stops, the line waits for you. PlantMemory turns the breakdown into an approved repair sheet
-          your workers can follow, in their language.
-        </p>
-        <dl className="mt-3 grid grid-cols-3 gap-1.5">
-          {STATS.map((s) => (
-            <div key={s.label} className="rounded-lg bg-surface-2 px-2.5 py-2 shadow-[inset_0_0_0_1px_var(--color-line)]">
-              <dt className="sr-only">{s.label}</dt>
-              <dd className="tabular text-base leading-5 font-semibold text-fg">{s.value}</dd>
-              <dd className="mt-0.5 text-[0.6875rem] leading-4">{s.label}</dd>
-            </div>
+        <p>When a machine stops, the line waits for your instruction. The cost of that wait is well measured:</p>
+        <ul className="mt-3 grid grid-cols-2 gap-1.5">
+          {EVIDENCE.map((e, i) => (
+            <li
+              key={e.value}
+              style={{ transitionDelay: `${120 + i * 70}ms` }}
+              className="flex flex-col rounded-lg bg-surface-2 px-2.5 py-2 shadow-[inset_0_0_0_1px_var(--color-line)] transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0"
+            >
+              <span className="tabular text-lg leading-6 font-semibold tracking-tight text-fg">{e.value}</span>
+              <span className="mt-0.5 text-[0.6875rem] leading-4">{e.label}</span>
+              <a
+                href={e.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-auto inline-flex items-center gap-0.5 self-start pt-1.5 text-[0.6875rem] font-medium text-fg-subtle underline decoration-line-strong underline-offset-2 transition-[color] duration-150 ease-out hover:text-accent-text"
+              >
+                {e.source}
+                <ArrowUpRight className="size-3" />
+              </a>
+            </li>
           ))}
-        </dl>
+        </ul>
+        <p className="mt-3 text-fg">
+          PlantMemory gives you a checked repair guide in about 20 seconds, from your plant’s past fixes and the
+          manual, printed in your workers’ language.
+        </p>
       </>
     ),
   },
@@ -470,6 +515,28 @@ const STEPS: Step[] = [
     title: "Manager or QA",
     body: "No sign-in in this demo. Switch to QA here to review guides that need a check, and to release the machine after a repair.",
   },
+  {
+    id: "wrap",
+    chapter: "That’s the tour",
+    wide: true,
+    title: "Every closed breakdown makes the next one shorter",
+    body: (
+      <ul className="mt-1 flex flex-col gap-2">
+        {IMPACT.map((line, i) => (
+          <li
+            key={line}
+            style={{ transitionDelay: `${120 + i * 70}ms` }}
+            className="flex items-start gap-2 text-fg transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0"
+          >
+            <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-success-soft text-success-text">
+              <Check className="size-2.5" strokeWidth={3} />
+            </span>
+            {line}
+          </li>
+        ))}
+      </ul>
+    ),
+  },
 ];
 
 /** The next step to show from `from` in direction `dir`, skipping ones that don't apply. */
@@ -801,7 +868,9 @@ export function Tour() {
         data-settled={settled ? "" : undefined}
         className={cn(
           // Above toasts too (Sonner's layer), so a toast never hides the popup.
-          "tour-pop fixed top-0 left-0 z-[1000000000] w-[min(21rem,calc(100vw-1.5rem))] overflow-visible rounded-2xl bg-surface text-fg shadow-raised outline-none",
+          "tour-pop fixed top-0 left-0 z-[1000000000]",
+          current.wide ? "w-[min(27rem,calc(100vw-1.5rem))]" : "w-[min(21rem,calc(100vw-1.5rem))]",
+          "overflow-visible rounded-2xl bg-surface text-fg shadow-raised outline-none",
           !measured && "scale-[0.96] opacity-0",
         )}
         style={{

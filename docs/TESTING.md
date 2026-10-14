@@ -25,7 +25,10 @@ make run                      # open http://localhost:8473
 
 **The tour.** On your first visit a tour starts on the Breakdown page. The screen dims,
 the real control stays lit, and a small popup beside it says what it does, with **Next**
-and **Skip**. It follows the whole job, and you do the steps yourself:
+and **Skip**. The welcome card opens with what downtime costs, each figure linked to its source
+(Siemens' *True Cost of Downtime 2024*, ABB's 2023 survey of 3,215 plants, and the US
+FDA's 2019 drug shortages report). The tour then follows the whole job, and you do the
+steps yourself:
 
 - **Speak or type.** Tap **Speak** to take the voice branch. It tells you to turn your
   volume up, then gives you a line to say in English (say it in any language). As the
