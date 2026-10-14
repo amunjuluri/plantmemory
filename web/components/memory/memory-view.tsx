@@ -328,7 +328,9 @@ export function MemoryView() {
             Everything repair guides draw on: past incidents and fixes, equipment manuals, and the parts store.
           </p>
         </div>
-        <Segmented label="Show" options={TABS} value={tab} onChange={setTab} className="self-start" />
+        <div data-tour="memory-tabs" className="self-start">
+          <Segmented label="Show" options={TABS} value={tab} onChange={setTab} />
+        </div>
       </header>
       {tab === "incidents" && <IncidentsPanel />}
       {tab === "manuals" && <ManualsPanel />}

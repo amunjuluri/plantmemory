@@ -396,3 +396,6 @@
     animation: none;
   }
 }
+.tour-progress {
+  transition: transform 420ms var(--ease-out);
+}

@@ -69,16 +69,18 @@ function Loading() {
   const { steps, status, startedAt, finishedAt } = useBreakdown();
   return (
     <div className="flex flex-col gap-4 transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0">
-      <StepsCard
-        steps={GUIDE_STEPS}
-        state={steps}
-        status={status}
-        startedAt={startedAt}
-        finishedAt={finishedAt}
-        title="Drafting the repair guide"
-      >
-        <DraftingLoader className="mx-auto mb-4 h-24" />
-      </StepsCard>
+      <div data-tour="drafting">
+        <StepsCard
+          steps={GUIDE_STEPS}
+          state={steps}
+          status={status}
+          startedAt={startedAt}
+          finishedAt={finishedAt}
+          title="Drafting the repair guide"
+        >
+          <DraftingLoader className="mx-auto mb-4 h-24" />
+        </StepsCard>
+      </div>
       <div className="flex flex-col gap-4" aria-hidden>
         <Shimmer className="h-6 w-2/3" />
         <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">

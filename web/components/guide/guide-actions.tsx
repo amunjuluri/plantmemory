@@ -671,7 +671,7 @@ export function GuideActions({
 
   return (
     <div ref={bar} className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 md:bottom-4 print:hidden">
-      <div className="flex flex-col gap-3 rounded-(--radius-card) bg-surface/90 p-3 shadow-raised backdrop-blur-xl">
+      <div data-tour="guide-actions" className="flex flex-col gap-3 rounded-(--radius-card) bg-surface/90 p-3 shadow-raised backdrop-blur-xl">
         {composer}
         <div className="flex flex-wrap items-center justify-between gap-3 pl-1">
           <p className="flex min-w-0 items-center gap-2 text-[0.8125rem] text-fg-muted">

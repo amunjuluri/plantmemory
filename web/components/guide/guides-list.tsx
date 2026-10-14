@@ -95,7 +95,7 @@ export function GuidesList() {
           </p>
         </div>
       </header>
-      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" data-tour="guides-filters">
         <Segmented label="Show" size="sm" options={FILTERS} value={filter} onChange={setPicked} />
       </div>
       <Card className="overflow-hidden">

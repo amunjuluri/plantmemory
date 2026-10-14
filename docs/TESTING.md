@@ -23,10 +23,14 @@ make seed seed-kb             # real past repairs, then the stand-in manuals, pa
 make run                      # open http://localhost:8473
 ```
 
-**The tour.** On your first visit a short tour starts on the Breakdown page: the screen
-dims, the real control stays lit, and a small popup beside it says what it does, with
-**Next** and **Skip**. Two steps ask you to do it yourself (tap an example, draft the
-guide). Start it again any time with the **?** button at the top.
+**The tour.** On your first visit a tour starts on the Breakdown page. The screen dims,
+the real control stays lit, and a small popup beside it says what it does, with **Next**
+and **Skip**. You do two steps yourself: tap an example, then draft the guide. The tour
+waits while it drafts, then walks through the guide (the repeat warning, time and parts,
+a step and its source, the parts list, changing and approving). Then it offers each tab
+in turn (Guides, Alarm logs, Memory, Add records): **Open** takes you there and explains
+the page, **Not now** skips it. Start the tour again any time with the **?** button at
+the top.
 
 **Who you are.** The round badge at the top right shows who is acting. Click it to
 switch between **Manager** and **QA** and to change the name. Some rules depend on the
@@ -307,7 +311,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 12 | Manual upload | New machine's guide cites the uploaded manual |
 | 13 | No manual | No other machine's manual used |
 | 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
-| 15 | Tour | Starts on the first visit; each popup points at the real control; Skip ends it; **?** starts it again |
+| 15 | Tour | Starts on the first visit; each popup points at the real control; waits while the guide drafts, then explains it; asks before opening each tab; Skip ends it; **?** starts it again |
 
 If an AI step fails with a "too many requests" message, wait a minute: the app limits AI
 calls per hour (`AI_REQUESTS_PER_HOUR`).

@@ -347,7 +347,11 @@ export function AlarmsView() {
           takes. Warnings that keep rising are flagged before they stop the line.
         </p>
       </header>
-      {status === "idle" && <Picker assets={assets} />}
+      {status === "idle" && (
+        <div data-tour="alarms-picker">
+          <Picker assets={assets} />
+        </div>
+      )}
       {status === "reading" && (
         <Card className="flex items-center gap-3 p-5" aria-live="polite">
           <span className="size-4 animate-spin-fast rounded-full border-2 border-accent border-r-transparent" />
