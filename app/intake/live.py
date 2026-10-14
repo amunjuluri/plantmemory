@@ -94,15 +94,21 @@ Managers often answer briefly. Work out what they mean from the guide:
 - "Did what the guide said", "guide lo cheppinattu chesam", "guide ke hisaab se kiya":
   fill `action_taken` as "Followed guide {guide_id}: " plus a one-line summary of the
   guide's steps. Then ask only what the guide cannot tell you.
-- "Did steps 1 to 4", "only cleaned it": summarise only those steps.
-- Parts: the guide's list is what might be needed, not what was used. Ask which of the
-  listed parts were actually replaced, naming them simply ("the upper punch?"). "None" is
-  a valid answer: then `parts_used` is "None".
+- "Did steps 1 to 4", "only cleaned it": fill `action_taken` as "Followed steps 1 to 4 of
+  guide {guide_id}: " (or say what was done) plus a summary of only those steps.
+- Parts: if they followed the whole guide, the parts it listed were used, and code fills
+  `parts_used` with them. Name them in the read-back ("the upper punch was replaced") so
+  the manager can correct it. Otherwise ask which of the listed parts were actually
+  replaced, naming them simply ("the upper punch?"). "None" is a valid answer: then
+  `parts_used` is "None".
 - Downtime: if they do not know, offer the time since the guide was drafted ("about
   {elapsed}?") and use it if they agree. Convert hours to minutes.
 - Outcome: "running fine now" means resolved; "came back" means recurred; "not sure yet"
   means unknown.
 - Cause: ask once; if they do not know, leave it empty. Do not ask again."""
+
+# The model writes a closure that followed the whole guide this way (see CLOSURE_CONTEXT).
+_WHOLE_GUIDE = re.compile(r"^followed guide\b", re.IGNORECASE)
 
 # "Did it" or "as the guide said" says nothing yet: the model must expand it from the guide.
 _VAGUE_ACTION = re.compile(
@@ -177,6 +183,7 @@ class LiveSession:
             for bad in {e["loc"][0] for e in err.errors() if e["loc"]}:
                 merged[bad] = getattr(self.state.fields, str(bad))
             self.state.fields = IntakeFields.model_validate(merged)
+        filled = self._parts_from_guide()
         missing = self.missing()
         if missing:
             labels = ", ".join(FIELD_LABEL[m] for m in missing)
@@ -191,15 +198,36 @@ class LiveSession:
             if self.mode == "closure"
             else "if it is right, say yes and the repair guide will be drafted"
         )
+        parts_note = (
+            f" The parts were taken from the guide ({filled}): name them in the read-back."
+            if filled
+            else ""
+        )
         return {
             "status": "ok",
             "missing": "nothing",
             "report": summary(self.state),
             "guidance": (
                 "The report is complete. Read it back in one or two short sentences in the "
-                f"manager's language. Tell them: {then}; or tell you what to change."
+                f"manager's language. Tell them: {then}; or tell you what to change.{parts_note}"
             ),
         }
+
+    def _parts_from_guide(self) -> str | None:
+        """Followed the whole guide and named no parts: the guide's parts were the ones used.
+        Filled in code, so "did what the guide said" never leaves the parts empty."""
+        f = self.state.fields
+        if (
+            self.mode != "closure"
+            or not self.guide
+            or not self.guide.parts
+            or f.parts_used
+            or not f.action_taken
+            or not _WHOLE_GUIDE.match(f.action_taken.strip())
+        ):
+            return None
+        f.parts_used = guide_parts(self.guide)
+        return f.parts_used
 
     def confirm(self) -> dict:
         missing = self.missing()
@@ -277,11 +305,16 @@ def _elapsed(since: datetime) -> str:
     return format_minutes(max(1, round((datetime.now(UTC) - since).total_seconds() / 60)))
 
 
+def guide_parts(guide: Guide) -> str:
+    """The guide's parts as one line: "RTP-PN-U-10 Upper punch x1; ..." """
+    return "; ".join(f"{p.part_no} {p.name} x{p.qty}".replace("  ", " ") for p in guide.parts)
+
+
 def instructions(live: LiveSession) -> str:
     if live.mode == "closure" and live.guide:
         g = live.guide
         steps = "\n".join(f"  {n}. {s.text}" for n, s in enumerate(g.steps, 1))
-        parts = "; ".join(f"{p.part_no} {p.name} x{p.qty}" for p in g.parts) or "none"
+        parts = guide_parts(g) or "none"
         context = CLOSURE_CONTEXT.format(
             asset=g.asset_tag or g.incident.area_or_equipment,
             request=g.request[:600],

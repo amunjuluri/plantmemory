@@ -32,10 +32,15 @@ class Settings(BaseSettings):
     google_api_key: SecretStr | None = None
 
     # Models. Defaults follow current Google docs; override per environment.
-    gemini_model: str = "gemini-3.8-flash"
+    # Chosen on 14 Oct 2026 by measurement (DECISIONS 74): gemini-3.8-flash was congested on
+    # Vertex AI's shared capacity (a guide took 30 s to 285 s and some failed "busy"), while
+    # gemini-3.1-flash-lite drafted 16/16 guides in about 10 s, matched it on the eval (13/14
+    # right, 0/11 false alarms) and costs the least ($0.25 / $1.50 per 1M tokens).
+    gemini_model: str = "gemini-3.1-flash-lite"
     # Answers a call when gemini_model is still out of capacity (429/503) after its retries,
-    # so a busy minute on Vertex AI does not fail the manager's guide. Empty disables it.
-    gemini_fallback_model: str = "gemini-3.5-flash"
+    # so a busy minute on Vertex AI does not fail the manager's guide. A different model, so
+    # a separate pool of capacity; also cheap ($0.30 / $2.50) and fast. Empty disables it.
+    gemini_fallback_model: str = "gemini-3.5-flash-lite"
     embedding_model: str = "gemini-embedding-2"
     # Spoken conversations (voice reports). On Vertex AI the Live models are served from
     # a few regions only, not "global"; us-central1 has gemini-3.8-live.
@@ -79,7 +84,7 @@ class Settings(BaseSettings):
     plant_type: str = "pharmaceutical plant"
 
     # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.
-    ai_requests_per_hour: int = 40
+    ai_requests_per_hour: int = 300
 
     # Origins allowed to call the API from another port (local UI dev only), e.g.
     # CORS_ORIGINS='["http://localhost:3473"]'. Empty in production: same origin.

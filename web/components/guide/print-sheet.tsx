@@ -211,7 +211,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
-    <article className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
+    <article data-tour="print-sheet" className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
       {!approved && (
         <div
           aria-hidden
@@ -437,6 +437,31 @@ function FitToWidth({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Opens the print dialog for a copy already recorded. Phones open it only from a tap, and
+ * by the time the copy is recorded the tap has expired: iOS ignores the call silently. If
+ * no dialog opened, a toast offers the same copy behind a fresh tap (and says how to get a
+ * PDF), instead of the button quietly moving on to the next copy number.
+ */
+function openPrint(copy: number) {
+  let opened = false;
+  const mark = () => {
+    opened = true;
+  };
+  window.addEventListener("beforeprint", mark, { once: true });
+  window.print();
+  window.setTimeout(() => {
+    window.removeEventListener("beforeprint", mark);
+    if (opened) return;
+    toast(`Copy ${copy} is recorded and ready`, {
+      id: "print",
+      duration: Infinity,
+      description: "Tap Print to open the print sheet, then pick a printer or Save as PDF.",
+      action: { label: "Print", onClick: () => window.print() },
+    });
+  }, 1000);
+}
+
 type LanguageOption = AppConfig["print_languages"][number];
 
 /** A language added after approval was not seen by QA: it prints only if code found nothing
@@ -477,7 +502,7 @@ function AddLanguage({
             )}
           >
             <p className="px-2.5 pt-1.5 pb-1 text-xs text-fg-subtle">
-              Translated and checked in about 15 seconds. Each language adds a line under every step.
+              Translated and checked in about 5 seconds. Each language adds a line under every step.
             </p>
             <div className="max-h-[min(20rem,var(--available-height))] overflow-y-auto overscroll-contain">
               {options.map((o) => (
@@ -553,7 +578,7 @@ export function PrintView() {
       const printed = await api.printGuide(guide.id, by, languages.map((t) => t.language));
       // Render the new copy number before the print dialog snapshots the page.
       flushSync(() => setGuide(printed));
-      window.print();
+      openPrint(printed.copies_printed);
     } catch (err) {
       toast.error("Couldn’t record the printed copy", { description: err instanceof Error ? err.message : undefined });
     } finally {
@@ -566,13 +591,19 @@ export function PrintView() {
       <div className="mx-auto flex w-full max-w-[210mm] flex-wrap items-center gap-3 print:hidden">
         <Link
           href={`/guides/view/?id=${encodeURIComponent(guide.id)}`}
+          data-tour="print-back"
           className="inline-flex items-center gap-1.5 rounded-lg text-sm text-fg-muted transition-[color] duration-150 ease-out hover:text-fg"
         >
           <ArrowLeft className="size-4" />
           Back to guide
         </Link>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-sm:w-full max-sm:justify-start">
-          <div role="group" aria-label="Languages on the sheet" className="flex flex-wrap items-center gap-2">
+          <div
+            role="group"
+            aria-label="Languages on the sheet"
+            data-tour="print-languages"
+            className="flex flex-wrap items-center gap-2"
+          >
             {guide.translations.map((t) =>
               blocked(t) ? (
                 <span key={t.language} className={cn(CHIP, "bg-warn-soft text-warn-text")}>
@@ -610,6 +641,7 @@ export function PrintView() {
             )}
           </div>
           <Button
+            data-tour="print-button"
             variant="primary"
             onClick={print}
             loading={printing}
@@ -619,6 +651,11 @@ export function PrintView() {
             <Printer />
             {approved ? `Print copy ${guide.copies_printed + 1}` : "Needs approval"}
           </Button>
+          {approved && (
+            <p className="hidden w-full text-center text-xs text-fg-subtle sm:text-right [@media(pointer:coarse)]:block">
+              Opens your phone’s print sheet. Pick a printer, or Save as PDF.
+            </p>
+          )}
         </div>
       </div>
       {stuck.map((t) => (

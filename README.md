@@ -29,10 +29,25 @@ said" is enough; the app asks only what the guide can't tell it) and it is saved
 memory. QA then does the line clearance and releases the machine to production.
 
 Voice is a live conversation on Gemini Live (`gemini-3.8-live`): it starts answering in
-the manager's language about 2 seconds after they stop talking, and the manager can talk
-over it.
+the manager's language within about 2 seconds of them stopping (under one second in a
+direct test), and the manager can talk over it.
 
 ## How it performs
+
+Measured 14 Oct 2026 with `gemini-3.1-flash-lite` (`make benchmark`, `make eval`):
+
+| What | Result |
+|---|---|
+| Time to a finished, checked repair guide | **9.3 s** median, 18.3 s p95 (16 of 16 drafted) |
+| Eight managers drafting at the same moment | 8 of 8 guides, the slowest in 14.5 s, no errors |
+| Gemini cost per guide, with its Telugu and Hindi translation | **about $0.008** (under ₹1) |
+| A spoken breakdown report on Gemini Live | about $0.01; the reply starts under a second after the manager stops |
+| Right machine, alarm code and manual found | 16 of 16 |
+| Repair steps citing a manual page or a past fix | 101 of 112 (the rest are marked "general practice") |
+| Recognising a repeat breakdown | 13 of 14 right, **0 of 11 false alarms** (0 of 6 look-alikes) |
+| Machine with no manual given another machine's manual | 0 of 7 (7 of 7 by search score alone) |
+| Faults planted in guides and translations, caught by code | **333 of 333** |
+| Part numbers Gemini alone gives that exist in the store | 0 of 28; PlantMemory's come only from the store |
 
 ![Where the time goes](docs/benchmark/latency_steps.png)
 
@@ -41,18 +56,13 @@ the manuals side by side, then writing the guide and checking every line in code
 
 ![Time by kind of report](docs/benchmark/latency_cases.png)
 
-Time to a finished, checked guide on Cloud Run for the kinds of reports a manager gives:
-an alarm code, Telugu, Hindi, a two-word report, and a machine with no manual.
+Time to a finished, checked guide for the kinds of reports a manager gives: an alarm
+code, Telugu, Hindi, a two-word report, a vague one, and a machine with no manual.
 
 ![Gemini alone vs PlantMemory](docs/benchmark/plain_vs_plantmemory.png)
 
 The same breakdowns, the same model: Gemini on its own invents part numbers and
 settings; PlantMemory's parts come from the store and its values from cited sources.
-
-![Managers drafting at the same time](docs/benchmark/load.png)
-
-Several managers drafting at once: Cloud Run scales out and guides still arrive in
-about the same time.
 
 Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
 Firestore vector search and Cloud Run.

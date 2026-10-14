@@ -133,7 +133,7 @@ function IncidentsPanel() {
             <p className="text-sm text-fg-muted">Approve a draft or digitize a logbook page to add one.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-line" data-tour="memory-list">
             {items.map((record) => (
               <Row key={record.id} record={record} />
             ))}
@@ -328,7 +328,9 @@ export function MemoryView() {
             Everything repair guides draw on: past incidents and fixes, equipment manuals, and the parts store.
           </p>
         </div>
-        <Segmented label="Show" options={TABS} value={tab} onChange={setTab} className="self-start" />
+        <div data-tour="memory-tabs" className="self-start">
+          <Segmented label="Show" options={TABS} value={tab} onChange={setTab} />
+        </div>
       </header>
       {tab === "incidents" && <IncidentsPanel />}
       {tab === "manuals" && <ManualsPanel />}

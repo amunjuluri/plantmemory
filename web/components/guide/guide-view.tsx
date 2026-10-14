@@ -164,7 +164,7 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
 
   return (
     <article className="flex flex-col gap-5 transition-[opacity,translate] duration-250 ease-out starting:translate-y-2 starting:opacity-0">
-      <header className="flex flex-col gap-2">
+      <header className="flex flex-col gap-2" data-tour="guide-header">
         <div className="flex flex-wrap items-center gap-1.5">
           <StatusBadge status={guide.status} />
           {guide.version > 1 && <Badge>v{guide.version}</Badge>}
@@ -194,7 +194,11 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
 
       <StatusBanner guide={guide} />
       {revision && diff && <RevisionSummary ref={summaryRef} revision={revision} count={diff.count} />}
-      {shown.recurrence_note && <RecurrenceBanner note={shown.recurrence_note} recurrence={shown.recurrence} />}
+      {shown.recurrence_note && (
+        <div data-tour="guide-repeat">
+          <RecurrenceBanner note={shown.recurrence_note} recurrence={shown.recurrence} />
+        </div>
+      )}
       {shown.flags.length > 0 && (
         <Banner tone="warn" icon={<PackageX />} title="Check before it goes to the floor">
           <ul className="flex flex-col gap-1">
@@ -205,7 +209,9 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
         </Banner>
       )}
 
-      <Facts guide={shown} />
+      <div data-tour="guide-facts">
+        <Facts guide={shown} />
+      </div>
       <div className="flex flex-col gap-1.5">
         <p className="text-[0.9375rem] leading-7 text-pretty">
           {shown.summary}
@@ -255,8 +261,12 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
             </div>
           )}
           <SafetyList items={shown.safety} lang={{ tr }} rows={diff?.safety} />
-          <StepList steps={shown.steps} lang={{ tr }} rows={diff?.steps} />
-          <PartsTable parts={shown.parts} rows={diff?.parts} />
+          <div data-tour="guide-steps">
+            <StepList steps={shown.steps} lang={{ tr }} rows={diff?.steps} />
+          </div>
+          <div data-tour="guide-parts">
+            <PartsTable parts={shown.parts} rows={diff?.parts} />
+          </div>
           <CheckList items={shown.restart_checks} lang={{ tr }} rows={diff?.checks} />
           <EscalateList items={shown.escalate_if} lang={{ tr }} rows={diff?.escalate} />
           <OpenQuestions items={shown.open_questions} rows={diff?.questions} />

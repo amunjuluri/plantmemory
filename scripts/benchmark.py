@@ -66,15 +66,15 @@ CASES_PATH = ROOT_DIR / "data" / "eval" / "benchmark_cases.json"
 OUT_DIR = ROOT_DIR / "docs" / "benchmark"
 SAMPLES = ROOT_DIR / "data" / "samples"
 
-# USD per 1M tokens, Gemini API / Vertex AI paid tier, read 12 Oct 2026 from
-# https://ai.google.dev/gemini-api/docs/pricing. Thinking tokens are billed as output.
-# gemini-3.8-flash is at an introductory price until 31 Dec 2026; costs are reported at
-# the standard price from 1 Jan 2027, so they do not rely on the discount.
+# USD per 1M tokens for gemini-3.1-flash-lite, Vertex AI standard tier, global endpoint,
+# read 14 Oct 2026 from https://cloud.google.com/vertex-ai/generative-ai/pricing. Thinking
+# tokens are billed as output. It has no introductory price, so both columns are the same
+# (they mattered for gemini-3.8-flash, the model used before 14 Oct).
 PRICE = {
-    "flash_in": 1.50,
-    "flash_out": 7.50,
-    "flash_in_intro": 0.75,
-    "flash_out_intro": 3.75,
+    "flash_in": 0.25,
+    "flash_out": 1.50,
+    "flash_in_intro": 0.25,
+    "flash_out_intro": 1.50,
     "embed_in": 0.20,
 }
 USD_TO_INR = 88.0  # rounded; only used to show rupees next to dollars

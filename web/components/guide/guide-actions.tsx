@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { AutoHeight } from "@/components/ui/auto-height";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { TranslatingLoader } from "@/components/ui/loaders";
@@ -13,7 +14,7 @@ import { Modal } from "@/components/ui/modal";
 import { Segmented } from "@/components/ui/segmented";
 import { VoiceIcon } from "@/components/voice/icons";
 import { LiveVoice } from "@/components/voice/live-voice";
-import { api, type Guide, type IntakeFields, type Outcome } from "@/lib/api";
+import { api, type Guide, type GuidePart, type IntakeFields, type Outcome } from "@/lib/api";
 import { useLiveVoice } from "@/lib/stores/live-voice";
 import { useActorName, useSession } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -75,23 +76,124 @@ function RejectDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => v
   );
 }
 
+const partKey = (text: string) => text.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+const names = (part: GuidePart, text: string) =>
+  partKey(text).includes(partKey(part.part_no)) ||
+  (part.name.length > 2 && text.toLowerCase().includes(part.name.toLowerCase()));
+
+/** Which of the guide's parts a spoken or typed answer names. Anything else it names is
+ * kept as other parts; "None" ticks nothing. */
+function readParts(text: string, parts: GuidePart[]): { picked: string[]; other: string } {
+  if (/^\s*(none|no parts?|nothing)\b/i.test(text)) return { picked: [], other: "" };
+  return {
+    picked: parts.filter((p) => names(p, text)).map((p) => p.part_no),
+    other: text
+      .split(/[;,]/)
+      .map((piece) => piece.trim())
+      .filter((piece) => piece && !parts.some((p) => names(p, piece)))
+      .join("; "),
+  };
+}
+
+/** What is saved: the ticked parts as "RTP-PN-U-10 Upper punch x1", then any others. With
+ * nothing ticked from a guide that listed parts, "None", so memory says none were needed. */
+function partsText(parts: GuidePart[], picked: string[], other: string): string | null {
+  const used = parts
+    .filter((p) => picked.includes(p.part_no))
+    .map((p) => `${p.part_no} ${p.name} x${p.qty}`.replace(/\s+/g, " "));
+  if (other.trim()) used.push(other.trim());
+  return used.length ? used.join("; ") : parts.length ? "None" : null;
+}
+
+/** The guide's parts as a tick list, so what was replaced is clear at a glance. */
+function PartsUsed({
+  parts,
+  picked,
+  onPick,
+  other,
+  onOther,
+}: {
+  parts: GuidePart[];
+  picked: string[];
+  onPick: (picked: string[]) => void;
+  other: string;
+  onOther: (other: string) => void;
+}) {
+  const none = !picked.length && !other.trim();
+  return (
+    <div role="group" aria-labelledby="close-parts-label" className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <p id="close-parts-label" className="text-[0.8125rem] font-medium">
+          Parts used
+        </p>
+        {parts.length > 0 && (
+          <p className="text-xs text-fg-subtle tabular" aria-live="polite">
+            {none ? "None replaced" : `${picked.length} of ${parts.length} from the guide`}
+          </p>
+        )}
+      </div>
+      {parts.length > 0 && (
+        <ul className="flex flex-col overflow-hidden rounded-(--radius-control) shadow-[inset_0_0_0_1px_var(--color-line-strong)]">
+          {parts.map((part) => {
+            const on = picked.includes(part.part_no);
+            return (
+              <li key={part.part_no} className="border-line not-first:border-t">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2 transition-[background-color] duration-150 ease-out hover:bg-surface-2">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() =>
+                      onPick(on ? picked.filter((p) => p !== part.part_no) : [...picked, part.part_no])
+                    }
+                    className="size-4 shrink-0 accent-(--color-accent)"
+                  />
+                  <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                    <span className="truncate text-sm">{part.name || part.part_no}</span>
+                    {part.name && <span className="truncate font-mono text-xs text-fg-subtle">{part.part_no}</span>}
+                  </span>
+                  <span className="shrink-0 text-[0.8125rem] text-fg-muted tabular">
+                    ×{part.qty}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <Input
+        aria-label={parts.length ? "Other parts used" : "Parts used"}
+        value={other}
+        onChange={(e) => onOther(e.target.value)}
+        placeholder={parts.length ? "Other parts, if any" : "Part numbers or names, or leave empty"}
+        maxLength={600}
+      />
+    </div>
+  );
+}
+
 function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => void }) {
   const by = useActorName();
   const [open, setOpen] = useState(false);
   const [voice, setVoice] = useState(false);
   const [action, setAction] = useState("");
   const [cause, setCause] = useState("");
-  const [parts, setParts] = useState(guide.parts.map((p) => p.part_no).join(", "));
+  const [picked, setPicked] = useState(() => guide.parts.map((p) => p.part_no));
+  const [other, setOther] = useState("");
   const [minutes, setMinutes] = useState("");
   const [outcome, setOutcome] = useState<Outcome>("resolved");
   const [busy, setBusy] = useState(false);
   const [heard, setHeard] = useState(false);
 
-  // Fields fill in while the manager talks, so they can see what will be saved.
+  // Fields fill in while the manager talks; the panel's chips show them until it hands back.
   const fill = (f: IntakeFields) => {
     if (f.action_taken) setAction(f.action_taken);
     if (f.root_cause) setCause(f.root_cause);
-    if (f.parts_used) setParts(f.parts_used);
+    if (f.parts_used) {
+      const read = readParts(f.parts_used, guide.parts);
+      setPicked(read.picked);
+      setOther(read.other);
+    }
     if (f.downtime_minutes != null) setMinutes(String(f.downtime_minutes));
     if (f.outcome) setOutcome(f.outcome);
   };
@@ -103,7 +205,7 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
         by,
         action_taken: action.trim(),
         root_cause: cause.trim() || null,
-        parts_used: parts.trim() || null,
+        parts_used: partsText(guide.parts, picked, other),
         downtime_minutes: minutes ? Number(minutes) : null,
         outcome,
       });
@@ -121,7 +223,7 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button onClick={() => setOpen(true)} data-tour="close-breakdown">
         <Lock />
         Close breakdown
       </Button>
@@ -135,9 +237,11 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
         description="This is saved to plant memory, so the next breakdown like this finds it."
         className="max-w-xl"
       >
-        <div className="flex flex-col gap-4">
+        {/* While talking, the voice panel takes the form's place (its chips show what is
+            filled), so the sheet doesn't grow past the screen; the height change animates. */}
+        <AutoHeight className="-m-1 p-1">
           {voice ? (
-            <div className="rounded-xl p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
+            <div key="voice" className="rounded-xl p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
               <LiveVoice
                 mode="closure"
                 guideId={guide.id}
@@ -151,57 +255,62 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
                 }}
               />
             </div>
-          ) : heard ? (
-            <p className="flex items-center gap-2 rounded-lg bg-success-soft px-3 py-2 text-[0.8125rem] text-success-text">
-              <Check className="size-4 shrink-0" strokeWidth={2.5} />
-              Filled in from what you said. If the fields are right, save to close the breakdown.
-            </p>
           ) : (
-            <Button
-              variant="secondary"
-              className="self-start"
-              onClick={() => {
-                setVoice(true);
-                // Started inside the tap, so the browser allows the microphone and audio.
-                void useLiveVoice.getState().start("closure", guide.id);
-              }}
+            <div
+              key="form"
+              className="flex flex-col gap-4 transition-opacity duration-200 ease-out starting:opacity-0"
             >
-              <VoiceIcon />
-              Speak it instead
-            </Button>
+              {heard ? (
+                <p className="flex items-center gap-2 rounded-lg bg-success-soft px-3 py-2 text-[0.8125rem] text-success-text">
+                  <Check className="size-4 shrink-0" strokeWidth={2.5} />
+                  Filled in from what you said. Check the fields, then save.
+                </p>
+              ) : (
+                <Button
+                  variant="secondary"
+                  className="self-start"
+                  onClick={() => {
+                    setVoice(true);
+                    // Started inside the tap, so the browser allows the microphone and audio.
+                    void useLiveVoice.getState().start("closure", guide.id);
+                  }}
+                >
+                  <VoiceIcon />
+                  Speak it instead
+                </Button>
+              )}
+              <Field label="What was done" htmlFor="close-action">
+                <Textarea id="close-action" value={action} onChange={(e) => setAction(e.target.value)} maxLength={4000} />
+              </Field>
+              <Field label="What caused it" hint="Leave empty if not known yet." htmlFor="close-cause">
+                <Textarea id="close-cause" value={cause} onChange={(e) => setCause(e.target.value)} className="min-h-10" />
+              </Field>
+              <PartsUsed parts={guide.parts} picked={picked} onPick={setPicked} other={other} onOther={setOther} />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-[9rem_minmax(0,1fr)]">
+                <Field label="Downtime (min)" htmlFor="close-minutes">
+                  <Input
+                    id="close-minutes"
+                    inputMode="numeric"
+                    className="tabular"
+                    value={minutes}
+                    onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  />
+                </Field>
+                <Field label="Is it fixed?">
+                  <Segmented label="Outcome" options={OUTCOMES} value={outcome} onChange={setOutcome} className="w-full [&>*]:h-9" />
+                </Field>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={save} loading={busy} disabled={action.trim().length < 3}>
+                  Save and close
+                </Button>
+              </div>
+            </div>
           )}
-            <Field label="What was done" htmlFor="close-action">
-              <Textarea id="close-action" value={action} onChange={(e) => setAction(e.target.value)} maxLength={4000} />
-            </Field>
-            <Field label="What caused it" hint="Leave empty if not known yet." htmlFor="close-cause">
-              <Textarea id="close-cause" value={cause} onChange={(e) => setCause(e.target.value)} className="min-h-10" />
-            </Field>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Parts used" htmlFor="close-parts">
-                <Input id="close-parts" value={parts} onChange={(e) => setParts(e.target.value)} />
-              </Field>
-              <Field label="Downtime (minutes)" htmlFor="close-minutes">
-                <Input
-                  id="close-minutes"
-                  inputMode="numeric"
-                  className="tabular"
-                  value={minutes}
-                  onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                />
-              </Field>
-            </div>
-            <Field label="Is it fixed?">
-              <Segmented label="Outcome" options={OUTCOMES} value={outcome} onChange={setOutcome} className="w-full" />
-            </Field>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={save} loading={busy} disabled={action.trim().length < 3}>
-                Save and close
-              </Button>
-            </div>
-        </div>
+        </AutoHeight>
       </Modal>
     </>
   );
@@ -361,7 +470,7 @@ export function GuideActions({
 
   const translating = (then: string) =>
     toast.loading("Translating into the shop-floor languages…", {
-      description: `${then} About 10 to 20 seconds.`,
+      description: `${then} About 5 seconds.`,
       icon: <TranslatingLoader className="text-fg-muted" />,
     });
 
@@ -480,6 +589,7 @@ export function GuideActions({
           </Button>
           <Button
             data-primary
+            data-tour="approve-button"
             variant="primary"
             onClick={approveAsManager}
             loading={busy === "approve"}
@@ -562,7 +672,7 @@ export function GuideActions({
 
   return (
     <div ref={bar} className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 md:bottom-4 print:hidden">
-      <div className="flex flex-col gap-3 rounded-(--radius-card) bg-surface/90 p-3 shadow-raised backdrop-blur-xl">
+      <div data-tour="guide-actions" className="flex flex-col gap-3 rounded-(--radius-card) bg-surface/90 p-3 shadow-raised backdrop-blur-xl">
         {composer}
         <div className="flex flex-wrap items-center justify-between gap-3 pl-1">
           <p className="flex min-w-0 items-center gap-2 text-[0.8125rem] text-fg-muted">

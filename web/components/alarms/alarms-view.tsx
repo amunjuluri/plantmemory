@@ -68,6 +68,7 @@ function Picker({ assets }: { assets: Asset[] }) {
           setDragging(false);
           accept(e.dataTransfer.files[0]);
         }}
+        data-tour="alarms-drop"
         className={cn(
           "flex flex-col items-center justify-center gap-4 rounded-(--radius-card) border border-dashed px-6 py-12 text-center transition-[background-color,border-color] duration-150 ease-out",
           dragging ? "border-accent bg-accent-soft" : "border-line-strong bg-surface",
@@ -106,7 +107,7 @@ function Picker({ assets }: { assets: Asset[] }) {
           onChange={(e) => accept(e.target.files?.[0])}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm" data-tour="alarms-samples">
         <span className="text-fg-subtle">No log handy? Try a sample:</span>
         {SAMPLES.map((s) => (
           <button
@@ -307,7 +308,7 @@ function Result({ result }: { result: LogAnalysis }) {
       )}
 
       {result.errors.length > 0 ? (
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-3" data-tour="alarms-errors">
           <SectionLabel>Stopped the machine</SectionLabel>
           {result.errors.map((code) => (
             <ErrorCard key={code.code ?? code.message} code={code} onGuide={() => void toGuide(code)} />
@@ -340,20 +341,24 @@ export function AlarmsView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="max-w-2xl">
+      <header className="max-w-2xl" data-tour="alarms-page">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Read a machine log</h1>
         <p className="mt-1.5 text-[0.9375rem] text-fg-muted text-pretty">
           Errors that stopped the machine come first, with the manual’s first actions and how long the fix usually
           takes. Warnings that keep rising are flagged before they stop the line.
         </p>
       </header>
-      {status === "idle" && <Picker assets={assets} />}
+      {status === "idle" && (
+        <div data-tour="alarms-picker">
+          <Picker assets={assets} />
+        </div>
+      )}
       {status === "reading" && (
         <Card className="flex items-center gap-3 p-5" aria-live="polite">
           <span className="size-4 animate-spin-fast rounded-full border-2 border-accent border-r-transparent" />
           <div>
             <p className="font-medium">Reading {fileName}</p>
-            <p className="text-sm text-fg-muted">Matching each alarm to the manual and past fixes. About 5 to 15 seconds.</p>
+            <p className="text-sm text-fg-muted">Matching each alarm to the manual and past fixes. A few seconds.</p>
           </div>
         </Card>
       )}

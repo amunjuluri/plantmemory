@@ -5,7 +5,7 @@ the manager gets a repair guide, checks and changes it, approves and prints it f
 workers, records what was done, and QA releases the machine. Each section says what to
 do, what you should see, and **why it matters on the floor**.
 
-It takes about 30 minutes. Each AI step takes 5 to 25 seconds.
+It takes about 30 minutes. Most AI steps take a few seconds; a full repair guide about 10.
 
 ## Before you start
 
@@ -22,6 +22,34 @@ make install
 make seed seed-kb             # real past repairs, then the stand-in manuals, parts and figures
 make run                      # open http://localhost:8473
 ```
+
+**The tour.** On your first visit a tour starts on the Breakdown page. The screen dims,
+the real control stays lit, and a small popup beside it says what it does, with **Next**
+and **Skip**. The welcome card opens with what downtime costs, each figure linked to its source
+(Siemens' *True Cost of Downtime 2024*, ABB's 2023 survey of 3,215 plants, and the US
+FDA's 2019 drug shortages report). The tour then follows the whole job, and you do the
+steps yourself:
+
+- **Speak or type.** Tap **Speak** to take the voice branch. It tells you to turn your
+  volume up, then gives you a line to say in English (say it in any language). As the
+  assistant asks for what's missing, the suggested answer changes. When the report is
+  complete it tells you to say "Yes, that's right", then joins the typing path. **Type
+  instead** skips it; if the microphone fails, it says what to check.
+- **Draft.** Tap an example, then Draft. The tour waits while it drafts, then explains
+  the guide: the repeat warning, time and parts, a step and its source, the parts list.
+- **Change it.** Ask for the suggested change; the tour shows how changes are marked,
+  then **Keep** or **Discard**.
+- **Approve and print.** Tap Approve; the tour follows to the print page (languages,
+  the A4 sheet, numbered copies, Save as PDF), then back to the guide to show **Close
+  breakdown** and what to say after the repair.
+- **The other tabs.** It offers each one (Guides, Alarm logs, Memory, Add records):
+  **Open** takes you there and explains the page, **Not now** skips it.
+
+**Guided tour** at the top (**Tour** on a phone) starts it again and offers a choice:
+the **full tour**, **this page** (including a guide or the print page), or any one page
+(Breakdown, Guides, Alarm logs, Memory, Add records). On Alarm logs, the page tour has
+you try a sample log and then points at what stopped the machine. The tour uses Gemini like
+normal use does (a draft, a change, a translation), so give it a few minutes.
 
 **Who you are.** The round badge at the top right shows who is acting. Click it to
 switch between **Manager** and **QA** and to change the name. Some rules depend on the
@@ -64,7 +92,7 @@ use these records.
 - A time estimate from the manual and from past downtime, never made up by the model.
 
 **Why it matters:** today the line waits while the manager searches logbooks, SAP and the
-manual. Here the answer arrives in about 20 seconds, and every line shows where it came
+manual. Here the answer arrives in about 10 seconds, and every line shows where it came
 from, so the manager can trust it or check it in one click.
 
 ## 3. See a repeat breakdown, reported in Telugu
@@ -162,10 +190,10 @@ printed sheet.
 ## 8. Approve and print in the workers' languages
 
 1. On a clean draft, click **Approve and print**. The guide is translated into Telugu
-   and Hindi (10 to 20 seconds), then the print view opens.
+   and Hindi (about 5 seconds), then the print view opens.
 2. **Add the language your crew reads.** Click **+ Language** and pick one, e.g.
    **Tamil**. Each language is listed with its name in its own script. It is translated
-   and checked in about 15 seconds, then appears on the sheet. Try **Urdu** too: it is
+   and checked in about 5 seconds, then appears on the sheet. Try **Urdu** too: it is
    set right to left.
 3. Click a language chip to take it off this copy, or click it again to put it back.
 4. Click **Print copy 1**. Open the guide's **Audit trail**: it says who added each
@@ -180,6 +208,11 @@ per step, the parts table, and a **Controlled copy** number. Each print is count
 Supported languages: Assamese, Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi,
 Odia, Punjabi, Tamil, Telugu and Urdu. The ones translated on approval are a setting
 (`GUIDE_LANGUAGES`, default Telugu and Hindi).
+
+**On a phone**, the print button opens the phone's print sheet; pick a printer or
+**Save as PDF**. If the phone doesn't open it straight away (iPhones need the tap
+itself), a message says the copy is recorded, with a **Print** button that opens the
+same copy, so no copy number is used up.
 
 **Why it matters:** workers usually can't carry phones on the floor, and a crew often
 mixes people from different states. A printed sheet in the languages they read means the
@@ -211,12 +244,16 @@ for every rejection, an audit trail) are enforced in code, not left to habit.
 
 1. On an approved guide, click **Close breakdown**.
 2. Fill in what was done, or click **Speak it instead** and say it (e.g. *"did what the
-   guide said, took about an hour and a half"*). The fields fill in as you talk.
-3. Choose **Is it fixed?** and click **Save and close**.
-4. Open **Memory** → **Incidents**: the repair is there.
+   guide said, took about an hour and a half"*). While you talk, the voice panel takes
+   the form's place and its chips show what is filled in; the form comes back filled.
+3. Under **Parts used**, the guide's parts are a tick list: untick any that weren't
+   replaced, and type any others.
+4. Choose **Is it fixed?** and click **Save and close**.
+5. Open **Memory** → **Incidents**: the repair is there.
 
 **You should see** short answers expanded from the guide ("did what the guide said"
-becomes the actual steps), and spoken times turned into minutes.
+becomes the actual steps, and the guide's parts are ticked as used and read back so you
+can correct them), and spoken times turned into minutes.
 
 **Why it matters:** every closed repair teaches plant memory. The next time this
 breakdown happens, the guide includes what worked here, and a fix marked "came back"
@@ -280,19 +317,21 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | # | Feature | Pass when |
 |---|---|---|
 | 1 | SAP import | Every row saved; visible in Memory |
-| 2 | Typed report | Guide in about 20 s; lines cite sources; parts show stock |
+| 2 | Typed report | Guide in about 10 s; lines cite sources; parts show stock |
 | 3 | Repeat warning | Telugu report finds the English SAP record; repeat count and downtime shown |
 | 4 | Voice report | Reply in your language; asks only for what's missing |
 | 5 | Logbook photo | Smudge flagged as `[?]`, not guessed |
 | 6 | Alarm log | Stopping errors first; one click to a guide |
 | 7 | Change by voice or chat | Changes marked; nothing saved until kept; unclear request gets a question; audit trail records it |
-| 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages |
+| 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
 | 9 | QA review | No self-approval; rejection needs a reason |
-| 10 | Close | Saved to memory; short answers expanded from the guide |
+| 10 | Close | Saved to memory; short answers expanded from the guide; "did what the guide said" ticks the guide's parts |
 | 11 | Release | All checks needed; closer can't release |
 | 12 | Manual upload | New machine's guide cites the uploaded manual |
 | 13 | No manual | No other machine's manual used |
-| 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit |
+| 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
+| 15 | Tour | Starts on the first visit; opens without a grey flash; popups point at the real controls; voice branch gives lines to say; waits while the guide drafts; follows approve to the print page; asks before each tab; **Guided tour** offers full, this page or any page |
 
-If an AI step fails with a "too many requests" message, wait a minute: the app limits AI
-calls per hour (`AI_REQUESTS_PER_HOUR`).
+The app allows 300 AI actions per hour from one network address (`AI_REQUESTS_PER_HOUR`),
+far more than a full test needs; past that it answers "too many requests" until the hour
+rolls on.

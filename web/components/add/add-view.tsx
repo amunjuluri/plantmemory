@@ -31,7 +31,7 @@ export function AddView() {
             another CMMS, and equipment manuals. Nothing extracted is saved until you check it.
           </p>
         </div>
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" data-tour="add-tabs">
           <Segmented
             label="What to add"
             options={TABS}

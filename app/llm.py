@@ -17,7 +17,7 @@ from app.config import Settings, get_settings
 log = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
-ThinkingLevel = Literal["low", "medium", "high"]  # "minimal" is rejected by gemini-3.8-flash
+ThinkingLevel = Literal["low", "medium", "high"]  # "minimal" is not accepted by every model
 
 # Vertex AI answers 429 when shared Gemini capacity is briefly exhausted, and 503 when
 # overloaded. Both usually clear within seconds, so every Gemini call retries them with

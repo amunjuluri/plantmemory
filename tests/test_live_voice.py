@@ -76,6 +76,31 @@ def test_a_vague_closure_is_not_complete_and_guide_parts_must_be_answered() -> N
     assert "press Save" in live.confirm()["message"]
 
 
+def test_following_the_whole_guide_fills_its_parts_and_asks_to_name_them() -> None:
+    live = LiveSession(mode="closure", assets=ASSETS, guide=guide())
+    done = live.update(
+        {
+            "action_taken": "Followed guide GDE-TEST: freed the die table.",
+            "downtime_minutes": 95,
+            "outcome": "resolved",
+        }
+    )
+    assert live.state.fields.parts_used == "RTP-PN-U-10 Upper punch x1"
+    assert done["missing"] == "nothing"
+    assert "RTP-PN-U-10 Upper punch x1" in done["guidance"]
+    assert "Parts used: RTP-PN-U-10 Upper punch x1." in done["report"]
+    # A correction replaces what code filled in.
+    live.update({"parts_used": "None"})
+    assert live.state.fields.parts_used == "None"
+
+
+def test_only_some_steps_done_still_asks_which_parts_were_used() -> None:
+    live = LiveSession(mode="closure", assets=ASSETS, guide=guide())
+    live.update({"action_taken": "Followed steps 1 to 2 of guide GDE-TEST: cleaned the punches."})
+    assert live.state.fields.parts_used is None
+    assert "parts_used" in live.missing()
+
+
 def test_closure_instructions_carry_the_guide_and_the_time_since_it_was_drafted() -> None:
     live = LiveSession(mode="closure", assets=ASSETS, guide=guide())
     text = instructions(live)

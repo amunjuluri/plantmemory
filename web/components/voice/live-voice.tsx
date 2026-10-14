@@ -249,7 +249,10 @@ export function LiveVoice({
   };
 
   return (
-    <div className="flex h-[25rem] flex-col transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0">
+    <div
+      data-tour="voice"
+      className="flex h-[25rem] flex-col transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0"
+    >
       <div className="flex h-8 shrink-0 items-center justify-between gap-3">
         {title ? <p className="truncate text-sm font-medium">{title}</p> : <span />}
         <span
@@ -301,7 +304,11 @@ export function LiveVoice({
             </p>
           ) : (
             <p className="mx-auto max-w-xs text-[0.8125rem] text-fg-muted text-balance">
-              {phase === "ended" ? "Conversation ended." : HINT[mode]}
+              {phase === "ended"
+                ? "Conversation ended."
+                : connecting
+                  ? "Turn your volume up: it answers out loud. Allow the microphone if asked."
+                  : HINT[mode]}
             </p>
           )}
         </div>

@@ -17,17 +17,10 @@ import { VoiceIcon } from "@/components/voice/icons";
 import { LiveVoice } from "@/components/voice/live-voice";
 import { api, type Asset } from "@/lib/api";
 import { prepareImage } from "@/lib/image";
-import { useBreakdown } from "@/lib/stores/breakdown";
+import { EXAMPLES, useBreakdown } from "@/lib/stores/breakdown";
 import { useLiveVoice } from "@/lib/stores/live-voice";
 import { useActorName } from "@/lib/stores/session";
 import { cn } from "@/lib/utils";
-
-const EXAMPLES = [
-  { label: "TP-02 punch tight", text: "TP-02 stopped in the middle of the batch. Screen shows E-104 punch tight.", asset: "TP-02" },
-  { label: "Autoclave door seal (Telugu)", text: "ఆటోక్లేవ్ AC-2 సైకిల్ మొదలవ్వట్లేదు, door seal fault అని చూపిస్తోంది", asset: "AC-2" },
-  { label: "Blisters not sealing", text: "BL-3 blisters not sealing properly, tablets falling out of the strips. Screen shows E-44 sealing temperature.", asset: "BL-3" },
-  { label: "Something new", text: "The coating pan spray gun keeps dripping and the pan has stopped.", asset: null },
-];
 
 export function BreakdownForm({ onStart }: { onStart?: () => void }) {
   const { text, assetTag, status, setText, setAssetTag, run, cancel } = useBreakdown();
@@ -58,7 +51,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
   const readPhoto = async (file: File) => {
     setReading(true);
     const id = toast.loading("Reading the logbook photo…", {
-      description: "This usually takes 10 to 40 seconds.",
+      description: "This usually takes about 5 seconds.",
       icon: <ScanningLoader className="text-fg-muted" />,
     });
     try {
@@ -143,6 +136,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
                   </div>
                   <Textarea
                     id="breakdown"
+                    data-tour="report"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => {
@@ -160,7 +154,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <Button type="button" variant="secondary" size="sm" disabled={running} onClick={speak}>
+                  <Button type="button" variant="secondary" size="sm" disabled={running} onClick={speak} data-tour="speak">
                     <VoiceIcon />
                     Speak
                   </Button>
@@ -197,7 +191,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
                     Stop
                   </Button>
                 ) : (
-                  <Button type="submit" variant="primary" size="lg" disabled={!canSubmit}>
+                  <Button type="submit" variant="primary" size="lg" disabled={!canSubmit} data-tour="draft">
                     Draft repair guide
                     <ArrowRight />
                     <span className="ml-1 hidden items-center gap-0.5 [@media(pointer:fine)]:inline-flex">
@@ -212,7 +206,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
 
               <div className="mt-5 border-t border-line pt-4">
                 <p className="mb-2 text-xs font-medium text-fg-subtle">Try an example</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5" data-tour="examples">
                   {EXAMPLES.map((example) => (
                     <button
                       key={example.label}
