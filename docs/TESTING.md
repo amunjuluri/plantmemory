@@ -23,6 +23,11 @@ make seed seed-kb             # real past repairs, then the stand-in manuals, pa
 make run                      # open http://localhost:8473
 ```
 
+**The tour.** On your first visit a short tour starts on the Breakdown page: the screen
+dims, the real control stays lit, and a small popup beside it says what it does, with
+**Next** and **Skip**. Two steps ask you to do it yourself (tap an example, draft the
+guide). Start it again any time with the **?** button at the top.
+
 **Who you are.** The round badge at the top right shows who is acting. Click it to
 switch between **Manager** and **QA** and to change the name. Some rules depend on the
 name: QA can't approve a guide they sent, and the person who closed a repair can't
@@ -181,6 +186,11 @@ Supported languages: Assamese, Bengali, Gujarati, Hindi, Kannada, Malayalam, Mar
 Odia, Punjabi, Tamil, Telugu and Urdu. The ones translated on approval are a setting
 (`GUIDE_LANGUAGES`, default Telugu and Hindi).
 
+**On a phone**, the print button opens the phone's print sheet; pick a printer or
+**Save as PDF**. If the phone doesn't open it straight away (iPhones need the tap
+itself), a message says the copy is recorded, with a **Print** button that opens the
+same copy, so no copy number is used up.
+
 **Why it matters:** workers usually can't carry phones on the floor, and a crew often
 mixes people from different states. A printed sheet in the languages they read means the
 manager explains the job once, and every worker can follow it step by step without
@@ -211,12 +221,16 @@ for every rejection, an audit trail) are enforced in code, not left to habit.
 
 1. On an approved guide, click **Close breakdown**.
 2. Fill in what was done, or click **Speak it instead** and say it (e.g. *"did what the
-   guide said, took about an hour and a half"*). The fields fill in as you talk.
-3. Choose **Is it fixed?** and click **Save and close**.
-4. Open **Memory** → **Incidents**: the repair is there.
+   guide said, took about an hour and a half"*). While you talk, the voice panel takes
+   the form's place and its chips show what is filled in; the form comes back filled.
+3. Under **Parts used**, the guide's parts are a tick list: untick any that weren't
+   replaced, and type any others.
+4. Choose **Is it fixed?** and click **Save and close**.
+5. Open **Memory** → **Incidents**: the repair is there.
 
 **You should see** short answers expanded from the guide ("did what the guide said"
-becomes the actual steps), and spoken times turned into minutes.
+becomes the actual steps, and the guide's parts are ticked as used and read back so you
+can correct them), and spoken times turned into minutes.
 
 **Why it matters:** every closed repair teaches plant memory. The next time this
 breakdown happens, the guide includes what worked here, and a fix marked "came back"
@@ -286,13 +300,14 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 5 | Logbook photo | Smudge flagged as `[?]`, not guessed |
 | 6 | Alarm log | Stopping errors first; one click to a guide |
 | 7 | Change by voice or chat | Changes marked; nothing saved until kept; unclear request gets a question; audit trail records it |
-| 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages |
+| 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
 | 9 | QA review | No self-approval; rejection needs a reason |
-| 10 | Close | Saved to memory; short answers expanded from the guide |
+| 10 | Close | Saved to memory; short answers expanded from the guide; "did what the guide said" ticks the guide's parts |
 | 11 | Release | All checks needed; closer can't release |
 | 12 | Manual upload | New machine's guide cites the uploaded manual |
 | 13 | No manual | No other machine's manual used |
-| 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit |
+| 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
+| 15 | Tour | Starts on the first visit; each popup points at the real control; Skip ends it; **?** starts it again |
 
 If an AI step fails with a "too many requests" message, wait a minute: the app limits AI
 calls per hour (`AI_REQUESTS_PER_HOUR`).
