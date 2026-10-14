@@ -243,6 +243,7 @@ export function GuideEditor({ guide, onSaved, onCancel }: { guide: Guide; onSave
       restart_checks: toItems(checks),
       escalate_if: toStrings(escalate),
       open_questions: toStrings(questions),
+      base_updated_at: guide.updated_at,
     };
     if (!body.title || !body.steps.length) {
       toast.error("A guide needs a title and at least one step.");

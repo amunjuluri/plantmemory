@@ -6,8 +6,9 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-indic: var(--font-geist-sans), var(--font-telugu), var(--font-devanagari), ui-sans-serif,
-    system-ui, sans-serif;
+  --font-indic: var(--font-geist-sans), var(--font-telugu), var(--font-devanagari), var(--font-tamil),
+    var(--font-kannada), var(--font-malayalam), var(--font-bengali), var(--font-gujarati),
+    var(--font-gurmukhi), var(--font-oriya), var(--font-urdu), ui-sans-serif, system-ui, sans-serif;
 
   --color-bg: oklch(0.982 0.002 247);
   --color-surface: oklch(1 0 0);
@@ -315,8 +316,22 @@
   }
 }
 
-/* Telugu and Devanagari need more line height than Latin text to stay readable. */
+/* Indian scripts need more line height than Latin text to stay readable. */
 .indic {
   font-family: var(--font-indic);
   line-height: 1.7;
+}
+
+/* Tamil and Malayalam glyphs are drawn larger than other scripts at the same size; the
+   printed sheet scales its text by --script so every language reads at one size. */
+:lang(ta),
+:lang(ml) {
+  --script: 0.88;
+}
+
+/* Urdu goes to its own font first: the Latin font's fallback (Arial) also has Arabic letters
+   and would take them. Nastaliq slopes down each word and needs more room between lines. */
+.indic:lang(ur) {
+  font-family: var(--font-urdu), var(--font-indic);
+  line-height: 2.1;
 }

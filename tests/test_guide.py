@@ -9,9 +9,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agent import tools
-from app.guide import guardrails, workflow
+from app.guide import guardrails, revise, workflow
 from app.guide.builder import build_guide_events, find_asset, find_codes
 from app.guide.translate import missing_tokens
+from app.intake.voice import InvalidAudioError
 from app.kb import set_kb
 from app.main import app
 from app.models import (
@@ -23,11 +24,14 @@ from app.models import (
     GuideEdit,
     GuideItemOut,
     GuidePartPick,
+    GuidePrint,
     GuideRelease,
     GuideRequest,
     GuideReview,
+    GuideRevisionOut,
     GuideStep,
     GuideStepOut,
+    GuideTranslate,
     ManualPick,
     TranslationOut,
 )
@@ -343,15 +347,15 @@ def test_only_approved_guides_print_and_close_saves_to_memory(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
     with pytest.raises(workflow.GuideError):
-        workflow.record_print(guide.id, GuideAction(by="Ravi"), kb)
+        workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb)
     workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     with pytest.raises(workflow.GuideError):
         workflow.edit(
             guide.id, GuideEdit(by="Ravi", title="x", summary="", safety=[], steps=guide.steps), kb
         )
-    assert workflow.record_print(guide.id, GuideAction(by="Ravi"), kb).copies_printed == 1
-    assert workflow.record_print(guide.id, GuideAction(by="Ravi"), kb).copies_printed == 2
+    assert workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb).copies_printed == 1
+    assert workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb).copies_printed == 2
 
     closed = workflow.close(
         guide.id,
@@ -380,6 +384,45 @@ def test_only_approved_guides_print_and_close_saves_to_memory(env) -> None:
         "printed",
         "closed",
     ]
+
+
+def test_more_languages_are_added_for_printing_and_checked(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    tamil = GuideTranslate(by="Ravi", language="ta")
+    with pytest.raises(workflow.GuideError):
+        workflow.add_language(guide.id, tamil, deps, kb)
+    assert workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb).status == "approved"
+
+    added = workflow.add_language(guide.id, tamil, deps, kb)
+    again = workflow.add_language(guide.id, tamil, deps, kb)
+
+    ta = next(t for t in added.translations if t.language == "ta")
+    assert ta.language_name == "Tamil" and ta.added_by == "Ravi" and not ta.flags
+    assert [t.language for t in again.translations].count("ta") == 1
+    assert again.events[-1].action == "translated" and again.events[-1].comment == "Tamil"
+    for code in ("en", "xx"):
+        with pytest.raises(workflow.GuideError):
+            workflow.add_language(guide.id, GuideTranslate(by="Ravi", language=code), deps, kb)
+    printed = workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["te", "ta"]), kb)
+    assert printed.events[-1].comment == "Copy 1 in English, Telugu, Tamil"
+
+
+def test_a_flagged_language_added_after_approval_does_not_print(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
+
+    added = workflow.add_language(guide.id, GuideTranslate(by="Ravi", language="kn"), deps, kb)
+
+    assert any("T-12" in f for f in added.translations[-1].flags)
+    assert added.events[-1].comment.startswith("Kannada: ")
+    with pytest.raises(workflow.GuideError, match="Kannada"):
+        workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["kn"]), kb)
+    # Telugu has the same flag, but QA saw it before approving.
+    assert workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["te"]), kb)
 
 
 def clean_edit(guide, keep_t12: bool = True) -> GuideEdit:
@@ -464,6 +507,183 @@ def test_qa_releases_the_machine_after_the_repair(env) -> None:
 # --- API ---
 
 
+# --- changing a draft by voice or chat ---
+
+
+def revision(content: GuideContent, changes: list[str], **fields) -> GuideRevisionOut:
+    return GuideRevisionOut(
+        transcript=fields.pop("transcript", "Step 2: gap 99 mm, and drop the lockout."),
+        language=fields.pop("language", "en"),
+        understood=fields.pop("understood", True),
+        reply=fields.pop("reply", None),
+        changes=changes,
+        content=content,
+    )
+
+
+def as_content(guide) -> GuideContent:
+    """The saved guide written back the way the model returns it."""
+    return GuideContent(
+        title=guide.title,
+        summary=guide.summary,
+        safety=[GuideItemOut(text=i.text, citations=i.citations) for i in guide.safety],
+        steps=[
+            GuideStepOut(
+                text=s.text, citations=s.citations, caution=s.caution, figure_id=s.figure_id
+            )
+            for s in guide.steps
+        ],
+        parts=[GuidePartPick(part_no=p.part_no, qty=p.qty, why=p.why) for p in guide.parts],
+        restart_checks=[
+            GuideItemOut(text=i.text, citations=i.citations) for i in guide.restart_checks
+        ],
+        escalate_if=guide.escalate_if,
+        open_questions=guide.open_questions,
+    )
+
+
+def test_revise_proposes_a_checked_change_without_saving(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    changed = as_content(guide)
+    changed.safety = []
+    changed.steps[1] = GuideStepOut(
+        text="Set the punch gap to 99 mm [MAN-RTP37-16].",
+        citations=["MAN-RTP37-16", "MADE-UP"],
+        caution=None,
+        figure_id="FIG-404",
+    )
+    changed.parts.append(GuidePartPick(part_no="XX-9", qty=1, why="invented"))
+    deps.llm.responses[GuideRevisionOut] = revision(changed, ["Step 2 now says 99 mm."])
+
+    result = revise.revise(guide.id, deps, kb, by="Ravi", text="Step 2: gap 99 mm, no lockout")
+
+    proposal = result.proposal
+    assert result.changes == ["Step 2 now says 99 mm."]
+    assert proposal.steps[1].text == "Set the punch gap to 99 mm."
+    assert proposal.steps[1].citations == ["MAN-RTP37-16"]
+    assert any("99 mm" in f for f in proposal.steps[1].flags)
+    assert proposal.steps[1].figure_id is None
+    assert "XX-9" not in [p.part_no for p in proposal.parts]
+    assert any(w.startswith("Safety point removed") for w in result.warnings)
+    assert any(w.startswith("QA must now check it") for w in result.warnings)
+    saved = workflow.load(guide.id, kb)
+    assert saved.safety == guide.safety and saved.events == guide.events
+
+
+def test_revise_builds_on_an_unsaved_proposal_and_earlier_requests(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    first = clean_edit(guide)
+    second = as_content(workflow.preview(guide, first, kb))
+    second.escalate_if = ["The punch is cracked."]
+    deps.llm.responses[GuideRevisionOut] = revision(second, ["Call for help if cracked."])
+
+    result = revise.revise(
+        guide.id,
+        deps,
+        kb,
+        by="Ravi",
+        text="Also call me if the punch is cracked",
+        base=first,
+        history=["Remove the flagged lines"],
+    )
+
+    prompt = deps.llm.prompts[-1][1][0]
+    assert "Remove the flagged lines" in prompt
+    assert "Clean the bore." in prompt
+    assert result.proposal.escalate_if == ["The punch is cracked."]
+    assert [s.text for s in result.proposal.steps] == [s.text for s in first.steps]
+
+
+def test_revise_that_is_unclear_or_changes_nothing_asks_back(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    deps.llm.responses[GuideRevisionOut] = [
+        revision(as_content(guide), [], understood=False, reply="ఏ స్టెప్?", language="te"),
+        revision(as_content(guide), ["Nothing really."]),
+    ]
+
+    unclear = revise.revise(guide.id, deps, kb, by="Ravi", audio=b"OggS" + b"0" * 40)
+    same = revise.revise(guide.id, deps, kb, by="Ravi", text="Make it better")
+
+    assert unclear.proposal is None and unclear.reply == "ఏ స్టెప్?"
+    assert unclear.language == "te"
+    assert same.proposal is None and same.reply == revise.NOTHING_CHANGED
+    with pytest.raises(InvalidAudioError):
+        revise.revise(guide.id, deps, kb, by="Ravi", text="  ")
+
+
+def test_an_answer_to_a_question_back_is_read_with_the_request(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    changed = as_content(guide)
+    changed.steps[0] = GuideStepOut(
+        text="Only the engineer replaces the bushing.", citations=[], caution=None, figure_id=None
+    )
+    deps.llm.responses[GuideRevisionOut] = revision(changed, ["Step 1 now says the engineer."])
+
+    result = revise.revise(
+        guide.id,
+        deps,
+        kb,
+        by="Ravi",
+        text="తొమ్మిదో స్టెప్ లో",
+        asked="Step 6: only the engineer replaces the bushing",
+        question="Step 6 is about the punch. Which step has the bushing?",
+    )
+    plain = revise.revise(guide.id, deps, kb, by="Ravi", text="Step 1", asked="x")
+
+    prompt = deps.llm.prompts[-2][1][0]
+    assert "The manager asked: Step 6: only the engineer replaces the bushing" in prompt
+    assert "You asked back: Step 6 is about the punch." in prompt
+    assert result.proposal is not None
+    assert "You asked back" not in deps.llm.prompts[-1][1][0] and plain.proposal is not None
+
+
+def test_keeping_a_change_records_it_and_refuses_stale_edits(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    opened = guide.updated_at
+    body = clean_edit(guide).model_copy(
+        update={"note": "By voice: “remove the flagged lines”", "base_updated_at": opened}
+    )
+    kept = workflow.edit(guide.id, body, kb)
+    assert kept.events[-1].action == "edited"
+    assert kept.events[-1].comment == "By voice: “remove the flagged lines”"
+
+    stale = body.model_copy(update={"base_updated_at": opened})
+    with pytest.raises(workflow.GuideError, match="Someone changed this guide"):
+        workflow.edit(guide.id, stale, kb)
+
+
+def test_revise_api(env) -> None:
+    deps, kb = env
+    client = TestClient(app)
+    _, guide = draft(deps, kb)
+    changed = as_content(guide)
+    changed.open_questions = ["Is the cam track worn?"]
+    deps.llm.responses[GuideRevisionOut] = revision(changed, ["Added a question."])
+    url = f"/api/guides/{guide.id}/revise"
+
+    ok = client.post(url, data={"by": "Ravi", "text": "Ask if the cam track is worn"})
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["proposal"]["open_questions"] == ["Is the cam track worn?"]
+    assert client.get(f"/api/guides/{guide.id}").json()["open_questions"] == guide.open_questions
+
+    bad_audio = client.post(url, data={"by": "Ravi"}, files={"audio": ("a.txt", b"hello")})
+    assert bad_audio.status_code == 415
+    bad_base = client.post(url, data={"by": "Ravi", "text": "x", "base": "{}"})
+    assert bad_base.status_code == 422
+    assert (
+        client.post("/api/guides/GDE-NOPE/revise", data={"by": "R", "text": "x"}).status_code == 404
+    )
+
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    locked = client.post(url, data={"by": "Ravi", "text": "Change step 1"})
+    assert locked.status_code == 409
+
+
 def test_guide_api_flow(env) -> None:
     client = TestClient(app)
     with client.stream("POST", "/api/guides/stream", json={"text": REQUEST, "by": "Ravi"}) as r:
@@ -506,3 +726,22 @@ def test_knowledge_base_api(env) -> None:
         {"code": "te", "name": "Telugu"},
         {"code": "hi", "name": "Hindi"},
     ]
+
+
+def test_print_languages_api(env) -> None:
+    deps, kb = env
+    client = TestClient(app)
+    _, guide = draft(deps, kb)
+    url = f"/api/guides/{guide.id}/translations"
+
+    names = [o["name"] for o in client.get("/api/config").json()["print_languages"]]
+    assert "Tamil" in names and "English" not in names and names == sorted(names)
+    assert client.post(url, json={"by": "Ravi", "language": "ta"}).status_code == 409
+    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
+    ok = client.post(url, json={"by": "Ravi", "language": "ta"})
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["translations"][-1]["language_name"] == "Tamil"
+    assert client.post(url, json={"by": "Ravi", "language": "xx"}).status_code == 422
+    bad = client.post(f"/api/guides/{guide.id}/print", json={"by": "Ravi", "languages": ["ta"]})
+    assert bad.status_code == 422  # the fake Tamil lost "T-12"

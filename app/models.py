@@ -470,6 +470,11 @@ class GuideTranslation(Model):
     flags: list[str] = Field(
         default_factory=list, description="Lines QA should check against the English."
     )
+    added_by: str | None = Field(
+        default=None,
+        description="Who added this language after approval. Such a translation was not "
+        "seen by QA, so it prints only if code found no flags.",
+    )
 
 
 class GuideEvent(Model):
@@ -478,7 +483,15 @@ class GuideEvent(Model):
     at: datetime = Field(default_factory=_now)
     by: str
     action: Literal[
-        "created", "edited", "submitted", "approved", "rejected", "printed", "closed", "released"
+        "created",
+        "edited",
+        "submitted",
+        "approved",
+        "rejected",
+        "translated",
+        "printed",
+        "closed",
+        "released",
     ]
     comment: str | None = None
 
@@ -614,6 +627,44 @@ class GuideEdit(Model):
     restart_checks: list[GuideItem] = Field(default_factory=list)
     escalate_if: list[str] = Field(default_factory=list)
     open_questions: list[str] = Field(default_factory=list)
+    note: str | None = Field(
+        default=None, max_length=2000, description="Shown in the audit trail with the edit."
+    )
+    base_updated_at: datetime | None = Field(
+        default=None,
+        description="The guide's `updated_at` when editing began. If the guide has changed "
+        "since, the edit is refused rather than overwriting someone else's changes.",
+    )
+
+
+class GuideRevisionOut(Model):
+    """The model's answer to a change the manager asked for, by voice or typed."""
+
+    transcript: str
+    language: str | None
+    understood: bool
+    reply: str | None
+    changes: list[str]
+    content: GuideContent
+
+
+class GuideRevision(Model):
+    """A proposed change to a guide. Nothing is saved: the manager keeps or discards it."""
+
+    transcript: str = Field(description="What the manager asked, in their own words.")
+    language: str | None = None
+    reply: str | None = Field(
+        default=None,
+        description="Set when nothing was changed: a question or the reason, in the "
+        "manager's language.",
+    )
+    changes: list[str] = Field(default_factory=list, description="One line per change.")
+    warnings: list[str] = Field(
+        default_factory=list, description="What the change means for checks, worked out in code."
+    )
+    proposal: Guide | None = Field(
+        default=None, description="The guide with the change, re-checked like an edit."
+    )
 
 
 class GuideAction(Model):
@@ -621,6 +672,19 @@ class GuideAction(Model):
 
     by: SignerName
     comment: str | None = Field(default=None, max_length=2000)
+
+
+class GuidePrint(GuideAction):
+    """A printed copy, and the languages on it besides English."""
+
+    languages: list[str] = Field(default_factory=list, max_length=20)
+
+
+class GuideTranslate(Model):
+    """Add one more shop-floor language to an approved guide."""
+
+    by: SignerName
+    language: str = Field(min_length=2, max_length=3, description="ISO 639-1 code, e.g. ta.")
 
 
 class GuideReview(Model):

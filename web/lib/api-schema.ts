@@ -387,6 +387,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/guides/{guide_id}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revise Guide
+         * @description Propose a change the manager asked for by voice or typed. Nothing is saved.
+         */
+        post: operations["revise_guide_api_guides__guide_id__revise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/guides/{guide_id}/submit": {
         parameters: {
             query?: never;
@@ -459,9 +479,29 @@ export interface paths {
         put?: never;
         /**
          * Print Guide
-         * @description Count a printed copy of an approved guide.
+         * @description Count a printed copy of an approved guide, and the languages on it.
          */
         post: operations["print_guide_api_guides__guide_id__print_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Guide Language
+         * @description Translate an approved guide into one more language for printing.
+         */
+        post: operations["add_guide_language_api_guides__guide_id__translations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -590,8 +630,16 @@ export interface components {
          * @description What the UI needs to know about this deployment.
          */
         AppConfig: {
-            /** Guide Languages */
+            /**
+             * Guide Languages
+             * @description Translated when a guide is approved or sent to QA.
+             */
             guide_languages: components["schemas"]["LanguageOption"][];
+            /**
+             * Print Languages
+             * @description Every language a guide can be printed in; others are added on demand.
+             */
+            print_languages: components["schemas"]["LanguageOption"][];
             /** Store Backend */
             store_backend: string;
             /** Qa Approval */
@@ -674,6 +722,38 @@ export interface components {
             audio?: string | null;
             /** Text */
             text?: string | null;
+        };
+        /** Body_revise_guide_api_guides__guide_id__revise_post */
+        Body_revise_guide_api_guides__guide_id__revise_post: {
+            /** By */
+            by: string;
+            /**
+             * Audio
+             * @description Voice recording
+             */
+            audio?: string | null;
+            /** Text */
+            text?: string | null;
+            /**
+             * Base
+             * @description A proposal not kept yet (GuideEdit JSON), to build on
+             */
+            base?: string | null;
+            /**
+             * History
+             * @description Earlier requests in this session, as a JSON list
+             */
+            history?: string | null;
+            /**
+             * Asked
+             * @description A request that got a question back
+             */
+            asked?: string | null;
+            /**
+             * Question
+             * @description The question; this message answers it
+             */
+            question?: string | null;
         };
         /** Body_upload_manual_api_manuals_upload_post */
         Body_upload_manual_api_manuals_upload_post: {
@@ -1120,6 +1200,16 @@ export interface components {
             escalate_if?: string[];
             /** Open Questions */
             open_questions?: string[];
+            /**
+             * Note
+             * @description Shown in the audit trail with the edit.
+             */
+            note?: string | null;
+            /**
+             * Base Updated At
+             * @description The guide's `updated_at` when editing began. If the guide has changed since, the edit is refused rather than overwriting someone else's changes.
+             */
+            base_updated_at?: string | null;
         };
         /**
          * GuideEvent
@@ -1137,7 +1227,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "printed" | "closed" | "released";
+            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "translated" | "printed" | "closed" | "released";
             /** Comment */
             comment: string | null;
         };
@@ -1246,6 +1336,21 @@ export interface components {
             why: string;
         };
         /**
+         * GuidePrint
+         * @description A printed copy, and the languages on it besides English.
+         */
+        GuidePrint: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Comment */
+            comment?: string | null;
+            /** Languages */
+            languages?: string[];
+        };
+        /**
          * GuideProgress
          * @description One update while a guide is drafted: a step starting or finishing, then the guide.
          */
@@ -1312,6 +1417,36 @@ export interface components {
             decision: "approve" | "reject";
             /** Comment */
             comment?: string | null;
+        };
+        /**
+         * GuideRevision
+         * @description A proposed change to a guide. Nothing is saved: the manager keeps or discards it.
+         */
+        GuideRevision: {
+            /**
+             * Transcript
+             * @description What the manager asked, in their own words.
+             */
+            transcript: string;
+            /** Language */
+            language: string | null;
+            /**
+             * Reply
+             * @description Set when nothing was changed: a question or the reason, in the manager's language.
+             */
+            reply: string | null;
+            /**
+             * Changes
+             * @description One line per change.
+             */
+            changes: string[];
+            /**
+             * Warnings
+             * @description What the change means for checks, worked out in code.
+             */
+            warnings: string[];
+            /** @description The guide with the change, re-checked like an edit. */
+            proposal: components["schemas"]["Guide"] | null;
         };
         /**
          * GuideStep
@@ -1401,6 +1536,22 @@ export interface components {
             updated_at: string;
         };
         /**
+         * GuideTranslate
+         * @description Add one more shop-floor language to an approved guide.
+         */
+        GuideTranslate: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /**
+             * Language
+             * @description ISO 639-1 code, e.g. ta.
+             */
+            language: string;
+        };
+        /**
          * GuideTranslation
          * @description The guide's text in one shop-floor language, item for item.
          */
@@ -1428,6 +1579,11 @@ export interface components {
              * @description Lines QA should check against the English.
              */
             flags: string[];
+            /**
+             * Added By
+             * @description Who added this language after approval. Such a translation was not seen by QA, so it prints only if code found no flags.
+             */
+            added_by: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2726,6 +2882,41 @@ export interface operations {
             };
         };
     };
+    revise_guide_api_guides__guide_id__revise_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_revise_guide_api_guides__guide_id__revise_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuideRevision"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     submit_guide_api_guides__guide_id__submit_post: {
         parameters: {
             query?: never;
@@ -2842,7 +3033,42 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GuideAction"];
+                "application/json": components["schemas"]["GuidePrint"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_guide_language_api_guides__guide_id__translations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideTranslate"];
             };
         };
         responses: {

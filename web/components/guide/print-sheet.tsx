@@ -1,22 +1,26 @@
 "use client";
 
-import { ArrowLeft, Printer } from "lucide-react";
+import { Menu } from "@base-ui/react/menu";
+import { ArrowLeft, Plus, Printer, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
 
 import { sourceLabel } from "@/components/cited-text";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { ErrorState, Shimmer } from "@/components/ui/states";
-import { api, figureUrl, type Guide, type GuideTranslation } from "@/lib/api";
+import { api, figureUrl, type AppConfig, type Guide, type GuideTranslation } from "@/lib/api";
 import { useActorName } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
 
-/** Fixed headings for the printed sheet, so they never depend on a model. */
+/** Fixed headings for the printed sheet, so they never depend on a model. `native` is the
+ * language's name in its own script, shown when choosing languages. */
 const HEADINGS: Record<string, Record<string, string>> = {
   en: {
+    native: "English",
     safety: "Safety first",
     parts: "Parts to collect",
     steps: "Steps",
@@ -26,6 +30,7 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "Valid for this breakdown only. Return this sheet to the supervisor when the work is done.",
   },
   te: {
+    native: "తెలుగు",
     safety: "ముందుగా భద్రత",
     parts: "తీసుకోవలసిన విడిభాగాలు",
     steps: "దశలు",
@@ -35,6 +40,7 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "ఈ బ్రేక్‌డౌన్‌కు మాత్రమే. పని అయ్యాక ఈ కాగితాన్ని సూపర్‌వైజర్‌కు తిరిగి ఇవ్వండి.",
   },
   hi: {
+    native: "हिन्दी",
     safety: "पहले सुरक्षा",
     parts: "लेने वाले पुर्ज़े",
     steps: "चरण",
@@ -43,33 +49,148 @@ const HEADINGS: Record<string, Record<string, string>> = {
     escalate: "ऐसा हो तो रुकें और सुपरवाइज़र को बुलाएँ",
     valid: "सिर्फ़ इस ब्रेकडाउन के लिए। काम पूरा होने पर यह पन्ना सुपरवाइज़र को लौटाएँ।",
   },
+  ta: {
+    native: "தமிழ்",
+    safety: "முதலில் பாதுகாப்பு",
+    parts: "எடுக்க வேண்டிய உதிரிபாகங்கள்",
+    steps: "படிகள்",
+    done: "முடிந்தது",
+    restart: "மீண்டும் இயக்கும் முன்",
+    escalate: "இப்படி நடந்தால் நிறுத்தி மேற்பார்வையாளரை அழைக்கவும்",
+    valid: "இந்தப் பழுதுக்கு மட்டும். வேலை முடிந்ததும் இந்தத் தாளை மேற்பார்வையாளரிடம் திருப்பித் தரவும்.",
+  },
+  kn: {
+    native: "ಕನ್ನಡ",
+    safety: "ಮೊದಲು ಸುರಕ್ಷತೆ",
+    parts: "ತೆಗೆದುಕೊಳ್ಳಬೇಕಾದ ಬಿಡಿಭಾಗಗಳು",
+    steps: "ಹಂತಗಳು",
+    done: "ಆಯಿತು",
+    restart: "ಮತ್ತೆ ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು",
+    escalate: "ಹೀಗಾದರೆ ನಿಲ್ಲಿಸಿ ಮೇಲ್ವಿಚಾರಕರನ್ನು ಕರೆಯಿರಿ",
+    valid: "ಈ ಬ್ರೇಕ್‌ಡೌನ್‌ಗೆ ಮಾತ್ರ. ಕೆಲಸ ಮುಗಿದ ನಂತರ ಈ ಹಾಳೆಯನ್ನು ಮೇಲ್ವಿಚಾರಕರಿಗೆ ಹಿಂತಿರುಗಿಸಿ.",
+  },
+  ml: {
+    native: "മലയാളം",
+    safety: "ആദ്യം സുരക്ഷ",
+    parts: "എടുക്കേണ്ട സ്പെയർ പാർട്ടുകൾ",
+    steps: "ഘട്ടങ്ങൾ",
+    done: "കഴിഞ്ഞു",
+    restart: "വീണ്ടും തുടങ്ങുന്നതിന് മുമ്പ്",
+    escalate: "ഇങ്ങനെ സംഭവിച്ചാൽ നിർത്തി സൂപ്പർവൈസറെ വിളിക്കുക",
+    valid: "ഈ ബ്രേക്ക്ഡൗണിന് മാത്രം. ജോലി കഴിഞ്ഞാൽ ഈ ഷീറ്റ് സൂപ്പർവൈസർക്ക് തിരികെ നൽകുക.",
+  },
+  mr: {
+    native: "मराठी",
+    safety: "आधी सुरक्षा",
+    parts: "घ्यायचे सुटे भाग",
+    steps: "पायऱ्या",
+    done: "झाले",
+    restart: "पुन्हा सुरू करण्यापूर्वी",
+    escalate: "असे झाल्यास थांबा आणि सुपरवायझरला बोलवा",
+    valid: "फक्त या बिघाडासाठी. काम झाल्यावर हा कागद सुपरवायझरला परत द्या.",
+  },
+  bn: {
+    native: "বাংলা",
+    safety: "আগে নিরাপত্তা",
+    parts: "যে যন্ত্রাংশ নিতে হবে",
+    steps: "ধাপ",
+    done: "হয়েছে",
+    restart: "আবার চালু করার আগে",
+    escalate: "এমন হলে থামুন এবং সুপারভাইজারকে ডাকুন",
+    valid: "শুধু এই ব্রেকডাউনের জন্য। কাজ শেষ হলে এই কাগজটি সুপারভাইজারকে ফেরত দিন।",
+  },
+  as: {
+    native: "অসমীয়া",
+    safety: "প্ৰথমে সুৰক্ষা",
+    parts: "ল'বলগীয়া যন্ত্ৰাংশ",
+    steps: "পদক্ষেপ",
+    done: "হ'ল",
+    restart: "পুনৰ চলোৱাৰ আগতে",
+    escalate: "এনে হ'লে ৰখক আৰু চুপাৰভাইজাৰক মাতক",
+    valid: "কেৱল এই ব্ৰেকডাউনৰ বাবে। কাম শেষ হ'লে এই কাগজখন চুপাৰভাইজাৰক ঘূৰাই দিয়ক।",
+  },
+  gu: {
+    native: "ગુજરાતી",
+    safety: "પહેલાં સલામતી",
+    parts: "લેવાના સ્પેર પાર્ટ્સ",
+    steps: "પગલાં",
+    done: "થઈ ગયું",
+    restart: "ફરી ચાલુ કરતાં પહેલાં",
+    escalate: "આવું થાય તો રોકાઈ જાઓ અને સુપરવાઇઝરને બોલાવો",
+    valid: "ફક્ત આ બ્રેકડાઉન માટે. કામ પૂરું થાય પછી આ કાગળ સુપરવાઇઝરને પાછો આપો.",
+  },
+  pa: {
+    native: "ਪੰਜਾਬੀ",
+    safety: "ਪਹਿਲਾਂ ਸੁਰੱਖਿਆ",
+    parts: "ਲੈਣ ਵਾਲੇ ਪੁਰਜ਼ੇ",
+    steps: "ਕਦਮ",
+    done: "ਹੋ ਗਿਆ",
+    restart: "ਦੁਬਾਰਾ ਚਾਲੂ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ",
+    escalate: "ਇਹ ਹੋਵੇ ਤਾਂ ਰੁਕੋ ਅਤੇ ਸੁਪਰਵਾਈਜ਼ਰ ਨੂੰ ਬੁਲਾਓ",
+    valid: "ਸਿਰਫ਼ ਇਸ ਬ੍ਰੇਕਡਾਊਨ ਲਈ। ਕੰਮ ਪੂਰਾ ਹੋਣ 'ਤੇ ਇਹ ਕਾਗਜ਼ ਸੁਪਰਵਾਈਜ਼ਰ ਨੂੰ ਵਾਪਸ ਕਰੋ।",
+  },
+  or: {
+    native: "ଓଡ଼ିଆ",
+    safety: "ପ୍ରଥମେ ସୁରକ୍ଷା",
+    parts: "ନେବାକୁ ଥିବା ପାର୍ଟସ",
+    steps: "ପଦକ୍ଷେପ",
+    done: "ହୋଇଗଲା",
+    restart: "ପୁଣି ଚାଲୁ କରିବା ପୂର୍ବରୁ",
+    escalate: "ଏପରି ହେଲେ ବନ୍ଦ କରି ସୁପରଭାଇଜରଙ୍କୁ ଡାକନ୍ତୁ",
+    valid: "କେବଳ ଏହି ବ୍ରେକଡାଉନ ପାଇଁ। କାମ ସରିବା ପରେ ଏହି କାଗଜ ସୁପରଭାଇଜରଙ୍କୁ ଫେରାଇ ଦିଅନ୍ତୁ।",
+  },
+  ur: {
+    native: "اردو",
+    safety: "پہلے حفاظت",
+    parts: "لینے والے پرزے",
+    steps: "مراحل",
+    done: "ہو گیا",
+    restart: "دوبارہ چالو کرنے سے پہلے",
+    escalate: "ایسا ہو تو رک جائیں اور سپروائزر کو بلائیں",
+    valid: "صرف اس خرابی کے لیے۔ کام مکمل ہونے پر یہ کاغذ سپروائزر کو واپس کریں۔",
+  },
 };
 
-function heading(key: string, langs: GuideTranslation[]) {
-  return [HEADINGS.en[key], ...langs.map((t) => HEADINGS[t.language]?.[key]).filter(Boolean)];
+/** Urdu is written right to left; every other print language left to right. */
+const dir = (language: string) => (language === "ur" ? "rtl" : undefined);
+
+type Said = { text?: string; language: string };
+
+function heading(key: string, langs: GuideTranslation[]): Said[] {
+  return [
+    { text: HEADINGS.en[key], language: "en" },
+    ...langs.map((t) => ({ text: HEADINGS[t.language]?.[key], language: t.language })),
+  ].filter((h) => h.text);
 }
 
-function Heading({ parts, className }: { parts: string[]; className?: string }) {
+function Heading({ parts, className }: { parts: Said[]; className?: string }) {
   return (
     <h2 className={cn("flex flex-wrap items-baseline gap-x-2.5 text-[11pt] font-bold uppercase tracking-wide", className)}>
       {parts.map((p, i) => (
         <span key={i} className={cn(i > 0 && "indic font-semibold normal-case tracking-normal text-neutral-600")}>
           {i > 0 && <span className="mr-2.5 text-neutral-300">/</span>}
-          {p}
+          <span lang={p.language} dir={dir(p.language)} className="text-[calc(11pt*var(--script,1))]">
+            {p.text}
+          </span>
         </span>
       ))}
     </h2>
   );
 }
 
-function Lines({ english, translated }: { english: string; translated: (string | undefined)[] }) {
+function Lines({ english, translated }: { english: string; translated: Said[] }) {
   return (
     <div className="flex flex-col gap-0.5">
       <p className="text-[10.5pt] leading-snug font-medium">{english}</p>
-      {translated.map((t, i) =>
-        t ? (
-          <p key={i} className="indic text-[10.5pt] leading-snug text-neutral-800">
-            {t}
+      {translated.map((t) =>
+        t.text ? (
+          <p
+            key={t.language}
+            lang={t.language}
+            dir={dir(t.language)}
+            className="indic text-[calc(10.5pt*var(--script,1))] leading-snug text-neutral-800"
+          >
+            {t.text}
           </p>
         ) : null,
       )}
@@ -90,7 +211,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
-    <article className="relative mx-auto w-full max-w-[210mm] bg-white p-[10mm] text-black shadow-raised print:max-w-none print:p-0 print:shadow-none">
+    <article className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
       {!approved && (
         <div
           aria-hidden
@@ -108,7 +229,12 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             <p className="text-[8.5pt] font-semibold tracking-[0.15em] text-neutral-500 uppercase">Repair work instruction</p>
             <h1 className="mt-1 text-[16pt] leading-tight font-bold">{guide.title}</h1>
             {languages.map((t) => (
-              <p key={t.language} className="indic mt-0.5 text-[11pt] font-semibold text-neutral-700">
+              <p
+                key={t.language}
+                lang={t.language}
+                dir={dir(t.language)}
+                className="indic mt-0.5 text-[calc(11pt*var(--script,1))] font-semibold text-neutral-700"
+              >
                 {t.title}
               </p>
             ))}
@@ -120,7 +246,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             </p>
           </div>
         </div>
-        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[8.5pt] sm:grid-cols-4 print:grid-cols-4">
+        <dl className="mt-3 grid grid-cols-4 gap-x-6 gap-y-1 text-[8.5pt]">
           <div>
             <dt className="text-neutral-500">Guide</dt>
             <dd className="font-mono font-semibold">
@@ -149,7 +275,12 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             {printed && ` Printed by ${printed.by}, ${formatDateTime(printed.at)}.`}
           </p>
           {languages.map((t) => (
-            <p key={t.language} className="indic">
+            <p
+              key={t.language}
+              lang={t.language}
+              dir={dir(t.language)}
+              className="indic text-[calc(8.5pt*var(--script,1))]"
+            >
               {HEADINGS[t.language]?.valid}
             </p>
           ))}
@@ -163,7 +294,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             {guide.safety.map((item, i) => (
               <li key={i} className="flex gap-2">
                 <span aria-hidden className="mt-0.5 text-[11pt] leading-none">⚠</span>
-                <Lines english={item.text} translated={languages.map((t) => t.safety[i])} />
+                <Lines english={item.text} translated={languages.map((t) => ({ text: t.safety[i], language: t.language }))} />
               </li>
             ))}
           </ul>
@@ -205,11 +336,11 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
                 {i + 1}
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <Lines english={step.text} translated={languages.map((t) => t.steps[i])} />
+                <Lines english={step.text} translated={languages.map((t) => ({ text: t.steps[i], language: t.language }))} />
                 {step.caution && (
                   <div className="flex gap-1.5 rounded-[1mm] border border-black px-2 py-1">
                     <span aria-hidden className="text-[10pt] leading-tight font-bold">!</span>
-                    <Lines english={step.caution} translated={languages.map((t) => t.step_cautions[i] || undefined)} />
+                    <Lines english={step.caution} translated={languages.map((t) => ({ text: t.step_cautions[i] || undefined, language: t.language }))} />
                   </div>
                 )}
               </div>
@@ -217,11 +348,18 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
                 // eslint-disable-next-line @next/next/no-img-element -- served by the API
                 <img src={figureUrl(step.figure_id)} alt="" className="h-[32mm] w-[42mm] shrink-0 object-contain" />
               )}
-              <div className="flex w-[12mm] shrink-0 flex-col items-center gap-1 pt-1">
+              <div className="flex w-[12mm] shrink-0 flex-col items-center gap-0.5 pt-1">
                 <Box />
-                <span className="indic text-center text-[6.5pt] leading-tight text-neutral-500">
-                  {heading("done", languages).join(" / ")}
-                </span>
+                {heading("done", languages).map((h) => (
+                  <span
+                    key={h.language}
+                    lang={h.language}
+                    dir={dir(h.language)}
+                    className="indic text-center text-[calc(6.5pt*var(--script,1))] leading-tight text-neutral-500"
+                  >
+                    {h.text}
+                  </span>
+                ))}
               </div>
             </li>
           ))}
@@ -235,7 +373,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             {guide.restart_checks.map((item, i) => (
               <li key={i} className="flex gap-2.5">
                 <Box />
-                <Lines english={item.text} translated={languages.map((t) => t.restart_checks[i])} />
+                <Lines english={item.text} translated={languages.map((t) => ({ text: t.restart_checks[i], language: t.language }))} />
               </li>
             ))}
           </ul>
@@ -249,7 +387,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
             {guide.escalate_if.map((text, i) => (
               <li key={i} className="flex gap-2">
                 <span aria-hidden className="mt-0.5 font-bold">✋</span>
-                <Lines english={text} translated={languages.map((t) => t.escalate_if[i])} />
+                <Lines english={text} translated={languages.map((t) => ({ text: t.escalate_if[i], language: t.language }))} />
               </li>
             ))}
           </ul>
@@ -273,6 +411,95 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   );
 }
 
+/**
+ * Shows the sheet exactly as it prints: an A4 page, laid out at A4 width on every screen
+ * and scaled down to fit a narrow one, like a PDF viewer. Pinch to zoom in.
+ */
+function FitToWidth({ children }: { children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const a4 = (210 / 25.4) * 96; // 210 mm in CSS pixels
+    const fit = () => setScale(Math.min(1, el.clientWidth / a4));
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={box} className="flex w-full justify-center print:block">
+      <div style={{ "--fit": scale } as React.CSSProperties} className="[zoom:var(--fit)] print:[zoom:1]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+type LanguageOption = AppConfig["print_languages"][number];
+
+/** A language added after approval was not seen by QA: it prints only if code found nothing
+ * to check (the server refuses it otherwise). */
+const blocked = (t: GuideTranslation) => Boolean(t.added_by && t.flags.length);
+
+const CHIP =
+  "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium transition-[background-color,color,scale] duration-150 ease-out active:not-disabled:scale-[0.97] disabled:cursor-not-allowed";
+
+/** Pick one more language for the sheet. Each is translated and checked when picked. */
+function AddLanguage({
+  options,
+  onPick,
+  disabled,
+}: {
+  options: LanguageOption[];
+  onPick: (option: LanguageOption) => void;
+  disabled: boolean;
+}) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        disabled={disabled}
+        className={cn(
+          CHIP,
+          "bg-surface-2 text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)] hover:not-disabled:bg-surface-3 hover:not-disabled:text-fg disabled:opacity-50 data-popup-open:bg-surface-3",
+        )}
+      >
+        <Plus className="size-3.5" />
+        Language
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end" sideOffset={6} collisionPadding={12} className="z-50 outline-none">
+          <Menu.Popup
+            className={cn(
+              "w-64 origin-(--transform-origin) rounded-xl bg-surface p-1 text-fg shadow-raised outline-none",
+              "transition-[opacity,scale] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-ending-style:duration-100 data-starting-style:scale-[0.97] data-starting-style:opacity-0",
+            )}
+          >
+            <p className="px-2.5 pt-1.5 pb-1 text-xs text-fg-subtle">
+              Translated and checked in about 15 seconds. Each language adds a line under every step.
+            </p>
+            <div className="max-h-[min(20rem,var(--available-height))] overflow-y-auto overscroll-contain">
+              {options.map((o) => (
+                <Menu.Item
+                  key={o.code}
+                  onClick={() => onPick(o)}
+                  className="flex min-h-9 cursor-default items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-sm outline-none data-highlighted:bg-surface-2"
+                >
+                  <span className="font-medium">{o.name}</span>
+                  <span lang={o.code} dir={dir(o.code)} className="indic text-fg-subtle">
+                    {HEADINGS[o.code]?.native}
+                  </span>
+                </Menu.Item>
+              ))}
+            </div>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
 export function PrintView() {
   const id = useSearchParams().get("id");
   const by = useActorName();
@@ -280,23 +507,50 @@ export function PrintView() {
   const [error, setError] = useState<string | null>(null);
   const [hidden, setHidden] = useState<string[]>([]);
   const [printing, setPrinting] = useState(false);
+  const [options, setOptions] = useState<LanguageOption[]>([]);
+  const [adding, setAdding] = useState<LanguageOption | null>(null);
 
   useEffect(() => {
     if (!id) return;
     api.guide(id).then(setGuide, (err: unknown) => setError(err instanceof Error ? err.message : "Couldn’t load the guide."));
   }, [id]);
 
+  const approved = guide?.status === "approved";
+  useEffect(() => {
+    if (approved) api.config().then((c) => setOptions(c.print_languages), () => undefined);
+  }, [approved]);
+
   if (!id) return <ErrorState title="No guide chosen" message="Open a guide and choose Print." />;
   if (error) return <ErrorState title="Couldn’t load the guide" message={error} />;
   if (!guide) return <Shimmer className="mx-auto h-[60vh] w-full max-w-[210mm]" />;
 
-  const approved = guide.status === "approved";
-  const languages = guide.translations.filter((t) => !hidden.includes(t.language));
+  const languages = guide.translations.filter((t) => !hidden.includes(t.language) && !blocked(t));
+  const stuck = guide.translations.filter(blocked);
+  const more = options.filter((o) => !guide.translations.some((t) => t.language === o.code));
+
+  const add = async (option: LanguageOption) => {
+    setAdding(option);
+    try {
+      const updated = await api.addGuideLanguage(guide.id, by, option.code);
+      setGuide(updated);
+      setHidden((h) => h.filter((x) => x !== option.code));
+      const added = updated.translations.find((t) => t.language === option.code);
+      if (added && blocked(added)) {
+        toast.warning(`${option.name} can’t be printed yet`, { description: added.flags[0] });
+      } else {
+        toast.success(`${option.name} added to the sheet`, { description: "Checked: every number and code came through." });
+      }
+    } catch (err) {
+      toast.error(`Couldn’t translate into ${option.name}`, { description: err instanceof Error ? err.message : undefined });
+    } finally {
+      setAdding(null);
+    }
+  };
 
   const print = async () => {
     setPrinting(true);
     try {
-      const printed = await api.printGuide(guide.id, by);
+      const printed = await api.printGuide(guide.id, by, languages.map((t) => t.language));
       // Render the new copy number before the print dialog snapshots the page.
       flushSync(() => setGuide(printed));
       window.print();
@@ -317,30 +571,78 @@ export function PrintView() {
           <ArrowLeft className="size-4" />
           Back to guide
         </Link>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {guide.translations.map((t) => {
-            const on = !hidden.includes(t.language);
-            return (
-              <button
-                key={t.language}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setHidden((h) => (on ? [...h, t.language] : h.filter((x) => x !== t.language)))}
-                className={cn(
-                  "h-8 rounded-full px-3 text-[0.8125rem] font-medium transition-[background-color,color,scale] duration-150 ease-out active:scale-[0.97]",
-                  on ? "bg-accent-soft text-accent-text" : "bg-surface-2 text-fg-subtle line-through",
-                )}
-              >
-                {t.language_name}
-              </button>
-            );
-          })}
-          <Button variant="primary" onClick={print} loading={printing} disabled={!approved}>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-sm:w-full max-sm:justify-start">
+          <div role="group" aria-label="Languages on the sheet" className="flex flex-wrap items-center gap-2">
+            {guide.translations.map((t) =>
+              blocked(t) ? (
+                <span key={t.language} className={cn(CHIP, "bg-warn-soft text-warn-text")}>
+                  <TriangleAlert className="size-3.5" />
+                  {t.language_name}
+                </span>
+              ) : (
+                <button
+                  key={t.language}
+                  type="button"
+                  aria-pressed={!hidden.includes(t.language)}
+                  onClick={() =>
+                    setHidden((h) => (h.includes(t.language) ? h.filter((x) => x !== t.language) : [...h, t.language]))
+                  }
+                  className={cn(
+                    CHIP,
+                    hidden.includes(t.language)
+                      ? "bg-surface-2 text-fg-subtle line-through"
+                      : "bg-accent-soft text-accent-text",
+                  )}
+                >
+                  {t.language_name}
+                </button>
+              ),
+            )}
+            {adding && (
+              <span role="status" className={cn(CHIP, "bg-surface-2 text-fg-muted")}>
+                <Spinner className="size-3.5" />
+                {adding.name}
+                <span className="sr-only">: translating and checking</span>
+              </span>
+            )}
+            {approved && more.length > 0 && (
+              <AddLanguage options={more} onPick={(o) => void add(o)} disabled={Boolean(adding)} />
+            )}
+          </div>
+          <Button
+            variant="primary"
+            onClick={print}
+            loading={printing}
+            disabled={!approved || Boolean(adding)}
+            className="max-sm:mt-1 max-sm:w-full"
+          >
             <Printer />
             {approved ? `Print copy ${guide.copies_printed + 1}` : "Needs approval"}
           </Button>
         </div>
       </div>
+      {stuck.map((t) => (
+        <div
+          key={t.language}
+          role="status"
+          className="mx-auto flex w-full max-w-[210mm] flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-text print:hidden"
+        >
+          <p className="min-w-56 flex-1">
+            <span className="font-medium">{t.language_name} isn’t on the sheet.</span>{" "}
+            {t.flags.length === 1 ? "One line" : `${t.flags.length} lines`} lost a number or code in translation:{" "}
+            {t.flags[0]}
+          </p>
+          {approved && (
+            <Button
+              size="sm"
+              onClick={() => void add({ code: t.language, name: t.language_name })}
+              disabled={Boolean(adding)}
+            >
+              Translate again
+            </Button>
+          )}
+        </div>
+      ))}
       {!approved && (
         <p className="mx-auto w-full max-w-[210mm] rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-text print:hidden">
           {guide.status === "closed" || guide.status === "released"
@@ -348,7 +650,9 @@ export function PrintView() {
             : "Only approved guides can be printed. This is a preview."}
         </p>
       )}
-      <Sheet guide={guide} languages={languages} />
+      <FitToWidth>
+        <Sheet guide={guide} languages={languages} />
+      </FitToWidth>
     </div>
   );
 }
