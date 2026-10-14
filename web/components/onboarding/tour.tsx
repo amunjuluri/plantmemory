@@ -84,8 +84,9 @@ const IMPACT = [
 
 const has = (id: string) => Boolean(document.querySelector(`[data-tour="${id}"]`));
 const drafting = () => useBreakdown.getState().status === "running";
-const drafted = () => Boolean(useBreakdown.getState().guide);
-const onPage = (id: string) => () => drafted() && has(id);
+// Guide steps apply wherever a guide is on screen: under the breakdown form, or a guide
+// opened from the Guides tab.
+const onPage = (id: string) => () => has(id);
 const path = () => window.location.pathname;
 
 // The breakdown voice conversation, as the tour sees it.
@@ -295,16 +296,14 @@ const STEPS: Step[] = [
     id: "guide",
     chapter: "Your guide",
     target: "guide-header",
-    page: "/",
     title: "Your repair guide",
-    body: "It’s a draft: nothing reaches the floor until you approve it. Every guide gets an ID and a history of who did what.",
+    body: "Nothing reaches the floor until it’s approved. The badge shows where it stands, and every guide keeps a history of who did what.",
     when: onPage("guide-header"),
   },
   {
     id: "repeat",
     chapter: "Your guide",
     target: "guide-repeat",
-    page: "/",
     title: "It has happened before",
     body: "How often, the downtime it has cost, and whether last time’s fix held. That’s the knowledge that walks out when a shift changes.",
     when: onPage("guide-repeat"),
@@ -313,7 +312,6 @@ const STEPS: Step[] = [
     id: "facts",
     chapter: "Your guide",
     target: "guide-facts",
-    page: "/",
     title: "Time and parts at a glance",
     body: "Time from the manual and past repairs, parts checked against the store, and what the guide is based on. Worked out by code, not guessed.",
     when: onPage("guide-facts"),
@@ -323,7 +321,6 @@ const STEPS: Step[] = [
     chapter: "Your guide",
     target: "guide-steps",
     child: "ol > li",
-    page: "/",
     title: "Every step shows its source",
     body: "Tap a chip to open the manual page or past fix it came from. A value that isn’t in a source is flagged.",
     when: onPage("guide-steps"),
@@ -332,7 +329,6 @@ const STEPS: Step[] = [
     id: "parts",
     chapter: "Your guide",
     target: "guide-parts",
-    page: "/",
     title: "Parts to collect",
     body: "With stock and bin location. A short part is flagged before anyone walks to the store.",
     when: onPage("guide-parts"),
@@ -343,7 +339,6 @@ const STEPS: Step[] = [
     id: "revise",
     chapter: "Change it",
     target: "revise",
-    page: "/",
     side: "top",
     title: "Ask for a change",
     body: (
@@ -360,7 +355,6 @@ const STEPS: Step[] = [
     id: "revision",
     chapter: "Change it",
     target: "revision",
-    page: "/",
     title: "Every change is marked",
     body: "New, changed and removed lines are highlighted in the guide, and checked against the sources like a hand edit.",
     when: () => has("revision"),
@@ -369,7 +363,6 @@ const STEPS: Step[] = [
     id: "keep",
     chapter: "Change it",
     target: "guide-actions",
-    page: "/",
     side: "top",
     title: "Keep it or discard it",
     body: "Nothing is saved until you keep it. The guide’s history records what you asked for.",
@@ -383,12 +376,11 @@ const STEPS: Step[] = [
     id: "approve",
     chapter: "Approve",
     target: "guide-actions",
-    page: "/",
     side: "top",
     title: "Approve and print",
     body: "When it’s right, approve it. It’s translated for the floor in 10 to 20 seconds, then the print page opens. If code flags something, it goes to QA first.",
     doIt: "Tap Approve and print to see the sheet, or press Next",
-    when: onPage("guide-actions"),
+    when: () => has("approve-button"),
     until: () => path().startsWith("/guides/print") && has("print-sheet"),
   },
   {
@@ -458,7 +450,17 @@ const STEPS: Step[] = [
     page: "/guides/",
     title: "Every guide, by stage",
     body: "QA works from “Waiting for QA”. Approved guides are printed from here; closed ones wait for QA to check the line and release the machine.",
+  },  {
+    id: "guides-row",
+    chapter: "Guides",
+    target: "guides-list",
+    child: "li",
+    page: "/guides/",
+    title: "Open any guide",
+    body: "Its steps, languages and history, and the next action: approve, print, close after the repair, or release for QA.",
+    when: () => has("guides-list"),
   },
+
   {
     id: "to-alarms",
     chapter: "Alarm logs",
@@ -470,11 +472,43 @@ const STEPS: Step[] = [
   {
     id: "alarms",
     chapter: "Alarm logs",
-    target: "alarms-picker",
+    target: "alarms-page",
+    page: "/alarms/",
+    title: "Read a machine’s log",
+    body: "When the HMI or controller has logged the alarms, start here instead of describing the breakdown.",
+  },
+  {
+    id: "alarms-drop",
+    chapter: "Alarm logs",
+    target: "alarms-drop",
     page: "/alarms/",
     title: "Drop in a log",
-    body: "Errors that stopped the machine come first, with the manual’s first actions and usual time. Warnings that keep rising are flagged before they stop the line. One click drafts the guide.",
+    body: "An HMI alarm export (CSV) or a controller printout. Pick the machine, or let it work it out from the log.",
+    when: () => has("alarms-drop"),
   },
+  {
+    id: "alarms-sample",
+    chapter: "Alarm logs",
+    target: "alarms-samples",
+    page: "/alarms/",
+    side: "top",
+    title: "Try a sample",
+    body: "Tap the TP-02 alarm export. It’s read in about 5 to 15 seconds.",
+    doIt: "Tap a sample, or press Next",
+    when: () => has("alarms-samples"),
+    until: () => has("alarms-errors"),
+  },
+  {
+    id: "alarms-result",
+    chapter: "Alarm logs",
+    target: "alarms-errors",
+    child: ":scope > :nth-child(2)",
+    page: "/alarms/",
+    title: "What stopped the machine, first",
+    body: "Each stopping error with the manual’s first actions and how long the fix usually takes. Rising warnings are listed below. One click drafts the repair guide.",
+    when: () => has("alarms-errors"),
+  },
+
   {
     id: "to-memory",
     chapter: "Memory",
@@ -490,7 +524,17 @@ const STEPS: Step[] = [
     page: "/memory/",
     title: "What every guide draws on",
     body: "Past incidents, manuals by page and the parts store. Every closed breakdown is added here, so no fix is lost between shifts.",
+  },  {
+    id: "memory-row",
+    chapter: "Memory",
+    target: "memory-list",
+    child: "li",
+    page: "/memory/",
+    title: "Every past fix, searchable",
+    body: "What failed, what was done and whether it held, whoever wrote it and in whatever language. Tap one to read it with its source.",
+    when: () => has("memory-list"),
   },
+
   {
     id: "to-add",
     chapter: "Add records",
@@ -539,9 +583,28 @@ const STEPS: Step[] = [
   },
 ];
 
+const at = (id: string) => STEPS.findIndex((s) => s.id === id);
+
+/** Tours the header menu offers: the whole job, or one page. `path` is the page it
+ * belongs to ("This page"); `pick` puts it in the list of pages. */
+export const SECTIONS = {
+  full: { label: "Full tour", hint: "From a breakdown to a printed sheet, about 3 min", first: "welcome", last: "wrap" },
+  breakdown: { label: "Breakdown", hint: "Report it, then draft a guide", first: "report", last: "approve", path: "/", pick: true },
+  guide: { label: "This guide", hint: "Sources, changes, approval, closing", first: "guide", last: "close", path: "/guides/view/" },
+  print: { label: "The print page", hint: "Languages, the A4 sheet, numbered copies", first: "print-languages", last: "close", path: "/guides/print/" },
+  guides: { label: "Guides", hint: "Every guide by stage", first: "guides", last: "guides-row", path: "/guides/", pick: true },
+  alarms: { label: "Alarm logs", hint: "From a machine’s log to a guide", first: "alarms", last: "alarms-result", path: "/alarms/", pick: true },
+  memory: { label: "Memory", hint: "Past fixes, manuals, parts", first: "memory", last: "memory-row", path: "/memory/", pick: true },
+  add: { label: "Add records", hint: "Logbooks, SAP, manuals", first: "add", last: "add", path: "/add/", pick: true },
+} satisfies Record<string, { label: string; hint: string; first: string; last: string; path?: string; pick?: boolean }>;
+export type Section = keyof typeof SECTIONS;
+
+/** The steps of the tour that is running, as indexes into STEPS. */
+let range: [number, number] = [0, STEPS.length - 1];
+
 /** The next step to show from `from` in direction `dir`, skipping ones that don't apply. */
 function nextStep(from: number, dir: 1 | -1): number | null {
-  for (let i = from + dir; i >= 0 && i < STEPS.length; i += dir) {
+  for (let i = from + dir; i >= range[0] && i <= range[1]; i += dir) {
     const s = STEPS[i];
     if (!s.when || s.when()) return i;
   }
@@ -554,7 +617,7 @@ function branchStep(from: number): number | null {
   const group = STEPS[from].group;
   if (!group) return nextStep(from, 1);
   let last = from;
-  for (let i = 0; i < STEPS.length; i++) {
+  for (let i = range[0]; i <= range[1]; i++) {
     if (STEPS[i].group !== group) continue;
     last = i;
     if (i !== from && (!STEPS[i].when || STEPS[i].when!())) return i;
@@ -562,12 +625,23 @@ function branchStep(from: number): number | null {
   return nextStep(last, 1);
 }
 
-type TourState = { step: number | null; start: () => void; go: (step: number) => void; end: () => void };
+type TourState = {
+  step: number | null;
+  section: Section;
+  start: (section?: Section) => void;
+  go: (step: number) => void;
+  end: () => void;
+};
 
 export const useTour = create<TourState>((set) => ({
   step: null,
-  start: () => set({ step: 0 }),
-  go: (step) => set({ step: Math.max(0, Math.min(STEPS.length - 1, step)) }),
+  section: "full",
+  start: (section = "full") => {
+    const { first, last } = SECTIONS[section];
+    range = [at(first), at(last)];
+    set({ step: range[0], section });
+  },
+  go: (step) => set({ step: Math.max(range[0], Math.min(range[1], step)) }),
   end: () => {
     try {
       localStorage.setItem(SEEN_KEY, "1");
@@ -630,7 +704,11 @@ export function Tour() {
   const pathname = usePathname();
   const router = useRouter();
   const [hole, setHole] = useState<Box | null>(null);
-  const [screen, setScreen] = useState({ w: 0, h: 0 });
+  // Read at once, not on the first animation frame, so the card and the dimming appear
+  // together instead of the grey arriving first.
+  const [screen, setScreen] = useState(() =>
+    typeof window === "undefined" ? { w: 0, h: 0 } : { w: window.innerWidth, h: window.innerHeight },
+  );
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [leaving, setLeaving] = useState(false);
   // Placed once: from then on the popup glides between elements instead of jumping.
@@ -745,6 +823,17 @@ export function Tour() {
     return () => cancelAnimationFrame(frame);
   }, [current]);
 
+  // Where the element is, measured before the step first paints (then followed per frame).
+  useLayoutEffect(() => {
+    if (!current) return;
+    const el = findTarget(current);
+    const r = el?.getBoundingClientRect();
+    // Measuring layout before paint is what a layout effect is for (React docs).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHole(r && r.width ? { x: r.left - PAD, y: r.top - PAD, w: r.width + PAD * 2, h: r.height + PAD * 2 } : null);
+    setScreen({ w: window.innerWidth, h: window.innerHeight });
+  }, [current]);
+
   useLayoutEffect(() => {
     const el = pop.current;
     if (!el) return;
@@ -830,7 +919,8 @@ export function Tour() {
         { left: hole.x + hole.w, top: hole.y, right: 0, height: hole.h },
       ]
     : [{ inset: 0 }];
-  const progress = step / (STEPS.length - 1);
+  const progress = (step - range[0]) / Math.max(1, range[1] - range[0]);
+  const canGoBack = nextStep(step, -1) !== null;
   // On a short screen the popup may have to sit over the element; then an arrow would
   // point at nothing.
   const overlaps =
@@ -843,7 +933,7 @@ export function Tour() {
       className={cn(
         "print:hidden",
         "transition-opacity duration-150 ease-out",
-        leaving ? "opacity-0" : "opacity-100 starting:opacity-0",
+        leaving || !measured ? "opacity-0" : "opacity-100 starting:opacity-0",
       )}
     >
       {/* Clicks outside the lit element are held, so the tour can't be lost mid-way. */}
@@ -871,7 +961,7 @@ export function Tour() {
           "tour-pop fixed top-0 left-0 z-[1000000000]",
           current.wide ? "w-[min(27rem,calc(100vw-1.5rem))]" : "w-[min(21rem,calc(100vw-1.5rem))]",
           "overflow-visible rounded-2xl bg-surface text-fg shadow-raised outline-none",
-          !measured && "scale-[0.96] opacity-0",
+          "starting:scale-[0.96]",
         )}
         style={{
           transform: `translate(${Math.round(left)}px, ${Math.round(top)}px)`,
@@ -900,7 +990,7 @@ export function Tour() {
         )}
 
         {/* How far through the tour: a hairline along the top edge. */}
-        {step > 0 && (
+        {current.id !== "welcome" && (
           <span aria-hidden className="absolute inset-x-4 top-0 h-0.5 overflow-hidden rounded-full bg-line">
             <span
               className="tour-progress absolute inset-0 origin-left rounded-full bg-accent"
@@ -920,7 +1010,7 @@ export function Tour() {
               <span className="text-xs font-medium text-accent-text">
                 {current.chapter}
                 <span className="sr-only">
-                  , step {step} of {STEPS.length - 1}
+                  , step {step - range[0] + 1} of {range[1] - range[0] + 1}
                 </span>
               </span>
             )}
@@ -969,7 +1059,7 @@ export function Tour() {
                 </>
               ) : (
                 <>
-                  {step > 1 && !current.until && !current.group && (
+                  {canGoBack && step > 1 && !current.until && !current.group && (
                     <Button variant="secondary" size="sm" aria-label="Back" onClick={back} className="w-8 px-0">
                       <ArrowLeft />
                     </Button>

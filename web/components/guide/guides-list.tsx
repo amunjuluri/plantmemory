@@ -117,7 +117,7 @@ export function GuidesList() {
             </Link>
           </div>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-line" data-tour="guides-list">
             {guides.map((guide) => (
               <Row key={guide.id} guide={guide} />
             ))}

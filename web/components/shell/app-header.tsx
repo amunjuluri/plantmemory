@@ -1,15 +1,18 @@
 "use client";
 
+import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
 import {
   ChevronDown,
-  CircleHelp,
   ClipboardCheck,
+  Compass,
   Database,
   FilePlus2,
   FlaskConical,
+  MapPin,
   Moon,
+  Route,
   Siren,
   Sun,
   Wrench,
@@ -19,7 +22,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-import { useTour } from "@/components/onboarding/tour";
+import { SECTIONS, useTour, type Section } from "@/components/onboarding/tour";
 import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { api } from "@/lib/api";
@@ -88,26 +91,79 @@ function ThemeToggle() {
   );
 }
 
-/** Starts the product tour again. */
-function TourButton() {
-  const show = useTour((s) => s.start);
+/** The tour for the page on screen, if it has one. */
+function pageSection(pathname: string): Section | null {
+  const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
+  if (path === "/") return "breakdown";
+  if (path.startsWith("/guides/view/")) return "guide";
+  if (path.startsWith("/guides/print/")) return "print";
+  if (path.startsWith("/guides/")) return "guides";
+  if (path.startsWith("/alarms/")) return "alarms";
+  if (path.startsWith("/memory/")) return "memory";
+  if (path.startsWith("/add/")) return "add";
+  return null;
+}
+
+const TOUR_ITEM =
+  "flex cursor-default items-start gap-3 rounded-lg px-2.5 py-2 outline-none data-highlighted:bg-surface-2 [&_svg]:mt-0.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-subtle";
+
+/** Labelled, so it reads as a tour and not a help page: the whole job, this page, or
+ * any one page. */
+function TourMenu() {
+  const start = useTour((s) => s.start);
+  const here = pageSection(usePathname());
+  // After the menu has closed and handed focus back, so the tour can take it.
+  const begin = (section: Section) => setTimeout(() => start(section), 120);
+  const pages = (Object.keys(SECTIONS) as Section[]).filter((k) => "pick" in SECTIONS[k] && SECTIONS[k].pick);
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger
-        onClick={show}
-        aria-label="How PlantMemory works"
-        className="grid size-9 place-items-center rounded-(--radius-control) text-fg-muted transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-2 hover:text-fg active:scale-[0.97] [&_svg]:size-4"
+    <Menu.Root>
+      <Menu.Trigger
+        aria-label="Guided tour"
+        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-[0.8125rem] font-medium text-accent-text transition-[background-color,scale] duration-150 ease-out hover:bg-accent-soft/70 active:scale-[0.97] data-popup-open:bg-accent-soft/70 max-[359px]:px-2 [&_svg]:size-4"
       >
-        <CircleHelp />
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={8}>
-          <Tooltip.Popup className="origin-(--transform-origin) rounded-lg bg-fg px-2.5 py-1.5 text-xs text-bg shadow-raised transition-[scale,opacity] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-instant:duration-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
-            How it works
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+        <Compass />
+        <span className="max-[359px]:hidden">
+          <span className="sm:hidden">Tour</span>
+          <span className="max-sm:hidden">Guided tour</span>
+        </span>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end" sideOffset={8} collisionPadding={12} className="z-50 outline-none">
+          <Menu.Popup className="w-[min(20rem,calc(100vw-1.5rem))] origin-(--transform-origin) rounded-xl bg-surface p-1 text-fg shadow-raised outline-none transition-[opacity,scale] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-ending-style:duration-100 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
+            <Menu.Item onClick={() => begin("full")} className={TOUR_ITEM}>
+              <Route className="!text-accent-text" />
+              <span className="flex flex-col">
+                <span className="text-sm font-medium">{SECTIONS.full.label}</span>
+                <span className="text-xs text-fg-muted">{SECTIONS.full.hint}</span>
+              </span>
+            </Menu.Item>
+            {here && (
+              <Menu.Item onClick={() => begin(here)} className={TOUR_ITEM}>
+                <MapPin />
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium">This page: {SECTIONS[here].label}</span>
+                  <span className="text-xs text-fg-muted">{SECTIONS[here].hint}</span>
+                </span>
+              </Menu.Item>
+            )}
+            <Menu.Separator className="mx-2 my-1 h-px bg-line" />
+            <Menu.Group>
+              <Menu.GroupLabel className="px-2.5 pt-1 pb-0.5 text-xs text-fg-subtle">Or one page</Menu.GroupLabel>
+              {pages
+                .filter((k) => k !== here)
+                .map((k) => (
+                  <Menu.Item key={k} onClick={() => begin(k)} className={cn(TOUR_ITEM, "py-1.5")}>
+                    <span className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
+                      <span className="shrink-0 text-sm whitespace-nowrap">{SECTIONS[k].label}</span>
+                      <span className="truncate text-xs text-fg-subtle">{SECTIONS[k].hint}</span>
+                    </span>
+                  </Menu.Item>
+                ))}
+            </Menu.Group>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
@@ -233,7 +289,7 @@ export function AppHeader() {
         <Tooltip.Provider delay={400}>
           <div className="ml-auto flex items-center gap-1.5">
             <SyntheticBadge />
-            <TourButton />
+            <TourMenu />
             <ThemeToggle />
             <ActorSwitch />
           </div>

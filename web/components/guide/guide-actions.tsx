@@ -589,6 +589,7 @@ export function GuideActions({
           </Button>
           <Button
             data-primary
+            data-tour="approve-button"
             variant="primary"
             onClick={approveAsManager}
             loading={busy === "approve"}

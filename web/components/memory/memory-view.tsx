@@ -133,7 +133,7 @@ function IncidentsPanel() {
             <p className="text-sm text-fg-muted">Approve a draft or digitize a logbook page to add one.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-line" data-tour="memory-list">
             {items.map((record) => (
               <Row key={record.id} record={record} />
             ))}

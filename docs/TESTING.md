@@ -45,7 +45,10 @@ steps yourself:
 - **The other tabs.** It offers each one (Guides, Alarm logs, Memory, Add records):
   **Open** takes you there and explains the page, **Not now** skips it.
 
-Start it again any time with the **?** button at the top. The tour uses Gemini like
+**Guided tour** at the top (**Tour** on a phone) starts it again and offers a choice:
+the **full tour**, **this page** (including a guide or the print page), or any one page
+(Breakdown, Guides, Alarm logs, Memory, Add records). On Alarm logs, the page tour has
+you try a sample log and then points at what stopped the machine. The tour uses Gemini like
 normal use does (a draft, a change, a translation), so give it a few minutes.
 
 **Who you are.** The round badge at the top right shows who is acting. Click it to
@@ -327,7 +330,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 12 | Manual upload | New machine's guide cites the uploaded manual |
 | 13 | No manual | No other machine's manual used |
 | 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
-| 15 | Tour | Starts on the first visit; popups point at the real controls; voice branch gives lines to say and follows the conversation; waits while the guide drafts; follows approve to the print page; asks before each tab; **?** starts it again |
+| 15 | Tour | Starts on the first visit; opens without a grey flash; popups point at the real controls; voice branch gives lines to say; waits while the guide drafts; follows approve to the print page; asks before each tab; **Guided tour** offers full, this page or any page |
 
 If an AI step fails with a "too many requests" message, wait a minute: the app limits AI
 calls per hour (`AI_REQUESTS_PER_HOUR`).
