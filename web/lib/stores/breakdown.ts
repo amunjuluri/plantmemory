@@ -14,6 +14,14 @@ export const GUIDE_STEPS: { id: GuideStepId; label: string }[] = [
   { id: "write_guide", label: "Writing the repair guide" },
 ];
 
+/** Sample reports for the demo: the form offers them, and the welcome tour starts with the first. */
+export const EXAMPLES = [
+  { label: "TP-02 punch tight", text: "TP-02 stopped in the middle of the batch. Screen shows E-104 punch tight.", asset: "TP-02" },
+  { label: "Autoclave door seal (Telugu)", text: "ఆటోక్లేవ్ AC-2 సైకిల్ మొదలవ్వట్లేదు, door seal fault అని చూపిస్తోంది", asset: "AC-2" },
+  { label: "Blisters not sealing", text: "BL-3 blisters not sealing properly, tablets falling out of the strips. Screen shows E-44 sealing temperature.", asset: "BL-3" },
+  { label: "Something new", text: "The coating pan spray gun keeps dripping and the pan has stopped.", asset: null },
+];
+
 const freshSteps = (): Record<GuideStepId, StepState> => ({
   understand: { status: "pending" },
   search_history: { status: "pending" },

@@ -335,3 +335,64 @@
   font-family: var(--font-urdu), var(--font-indic);
   line-height: 2.1;
 }
+
+
+/* Product tour. The spotlight is a hole cut by a huge shadow; it glides between elements
+   (on-screen movement: ease-in-out). The popup follows it the same way once placed, and
+   its words crossfade with a little blur. */
+.tour-spot {
+  box-shadow:
+    0 0 0 2px oklch(1 0 0 / 0.85),
+    0 0 0 200vmax oklch(0.16 0.01 257 / 0.52);
+  transition:
+    transform 420ms var(--ease-in-out),
+    width 420ms var(--ease-in-out),
+    height 420ms var(--ease-in-out);
+}
+.dark .tour-spot {
+  box-shadow:
+    0 0 0 2px var(--color-accent),
+    0 0 0 200vmax oklch(0 0 0 / 0.62);
+}
+/* The manager is asked to tap this one: a soft ring breathes around it. */
+.tour-spot-do::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: tour-ring 1.8s var(--ease-out) infinite;
+}
+@keyframes tour-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-accent);
+    opacity: 0.7;
+  }
+  100% {
+    box-shadow: 0 0 0 10px var(--color-accent);
+    opacity: 0;
+  }
+}
+.tour-pop {
+  transition:
+    opacity 200ms var(--ease-out),
+    scale 200ms var(--ease-out);
+}
+.tour-pop[data-settled] {
+  transition:
+    transform 420ms var(--ease-in-out),
+    opacity 200ms var(--ease-out),
+    scale 200ms var(--ease-out);
+}
+.tour-arrow {
+  transition: left 420ms var(--ease-in-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot,
+  .tour-pop[data-settled],
+  .tour-arrow {
+    transition-duration: 0ms;
+  }
+  .tour-spot-do::after {
+    animation: none;
+  }
+}

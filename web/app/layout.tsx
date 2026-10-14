@@ -14,6 +14,7 @@ import {
   Noto_Sans_Telugu,
 } from "next/font/google";
 
+import { Tour } from "@/components/onboarding/tour";
 import { AppHeader, MobileTabBar } from "@/components/shell/app-header";
 import { Providers } from "@/components/shell/providers";
 import { RecordSheet } from "@/components/record-sheet";
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <MobileTabBar />
           <RecordSheet />
+          <Tour />
         </Providers>
       </body>
     </html>

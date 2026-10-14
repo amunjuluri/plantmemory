@@ -4,6 +4,7 @@ import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
 import {
   ChevronDown,
+  CircleHelp,
   ClipboardCheck,
   Database,
   FilePlus2,
@@ -18,6 +19,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
+import { useTour } from "@/components/onboarding/tour";
 import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { api } from "@/lib/api";
@@ -86,6 +88,29 @@ function ThemeToggle() {
   );
 }
 
+/** Starts the product tour again. */
+function TourButton() {
+  const show = useTour((s) => s.start);
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        onClick={show}
+        aria-label="How PlantMemory works"
+        className="grid size-9 place-items-center rounded-(--radius-control) text-fg-muted transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-2 hover:text-fg active:scale-[0.97] [&_svg]:size-4"
+      >
+        <CircleHelp />
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={8}>
+          <Tooltip.Popup className="origin-(--transform-origin) rounded-lg bg-fg px-2.5 py-1.5 text-xs text-bg shadow-raised transition-[scale,opacity] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-instant:duration-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
+            How it works
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
+
 /** Shown only while the demo data is loaded: the label belongs to the data, so a plant
  * running on its own manuals and records never sees it. */
 function SyntheticBadge() {
@@ -135,6 +160,7 @@ function ActorSwitch() {
   return (
     <Popover.Root>
       <Popover.Trigger
+        data-tour="actor"
         className="flex h-9 items-center gap-2 rounded-(--radius-control) pr-2 pl-1 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-surface-2 active:scale-[0.98] data-popup-open:bg-surface-2"
         aria-label={`Acting as ${name}, ${ROLE_LABEL[role]}. Change`}
       >
@@ -188,10 +214,11 @@ export function AppHeader() {
           <span className="text-[0.9375rem]">PlantMemory</span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          {NAV.map(({ href, label }) => (
+          {NAV.map(({ href, label, short }) => (
             <Link
               key={href}
               href={href}
+              data-tour={`nav-${short.toLowerCase()}`}
               aria-current={isActive(href) ? "page" : undefined}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:text-fg",
@@ -206,6 +233,7 @@ export function AppHeader() {
         <Tooltip.Provider delay={400}>
           <div className="ml-auto flex items-center gap-1.5">
             <SyntheticBadge />
+            <TourButton />
             <ThemeToggle />
             <ActorSwitch />
           </div>
@@ -229,6 +257,7 @@ export function MobileTabBar() {
           <Link
             key={href}
             href={href}
+            data-tour={`nav-${short.toLowerCase()}`}
             aria-current={isActive(href) ? "page" : undefined}
             className="relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-fg-subtle transition-[color,scale] duration-150 ease-out active:scale-[0.96] aria-[current=page]:text-accent-text [&_svg]:size-5"
           >
