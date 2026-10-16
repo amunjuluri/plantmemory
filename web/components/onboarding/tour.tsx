@@ -77,6 +77,7 @@ const EVIDENCE = [
 ];
 
 const IMPACT = [
+  "Which machines are stopped, and for how long, at a glance",
   "A checked repair guide in about 10 seconds, not a search through logbooks",
   "One approved sheet the crew follows in their own language",
   "Every fix stays in plant memory when shifts change or people leave",
@@ -173,6 +174,23 @@ const STEPS: Step[] = [
         </p>
       </>
     ),
+  },
+  {
+    id: "plant",
+    chapter: "Your plant",
+    target: "plant-status",
+    page: "/",
+    title: "Your plant at a glance",
+    body: "Which machines are running, which have stopped and for how long, and which wait for QA to release them. Tap it to see each machine and open its guide.",
+  },
+  {
+    id: "flow",
+    chapter: "How it works",
+    target: "flow",
+    page: "/",
+    title: "Four steps, nothing missed",
+    body: "Describe the breakdown, get a checked guide in about 10 seconds, approve and print it for the crew, then close it so QA can release the machine. Let’s do the first one.",
+    when: onPage("flow"),
   },
   {
     id: "report",
@@ -274,7 +292,15 @@ const STEPS: Step[] = [
     target: "draft",
     page: "/",
     title: "Draft the repair guide",
-    body: "Past fixes, the manual, the parts store and the time, put together and checked. Tap it and watch.",
+    body: (
+      <>
+        <p>Past fixes, the manual, the parts store and the time, put together and checked. Tap it and watch.</p>
+        <p className="mt-2 text-xs text-fg-subtle">
+          If the machine already has an open guide, the form offers it first so one stop isn’t drafted twice. For the
+          tour, draft anyway.
+        </p>
+      </>
+    ),
     doIt: "Tap Draft to see it work, or press Next",
     when: () => !drafting(),
   },
@@ -295,10 +321,10 @@ const STEPS: Step[] = [
   {
     id: "guide",
     chapter: "Your guide",
-    target: "guide-header",
+    target: "guide-stages",
     title: "Your repair guide",
-    body: "Nothing reaches the floor until it’s approved. The badge shows where it stands, and every guide keeps a history of who did what.",
-    when: onPage("guide-header"),
+    body: "The track shows where it stands, from draft to QA’s release. Nothing reaches the floor until it’s approved, and every guide keeps a history of who did what.",
+    when: onPage("guide-stages"),
   },
   {
     id: "repeat",
@@ -427,7 +453,10 @@ const STEPS: Step[] = [
       <>
         <p>After the repair, tap it and say what was done. A short answer is enough:</p>
         <Say>Did what the guide said. Took about an hour. It’s fixed.</Say>
-        <p className="mt-2">It fills in the steps and parts from the guide, and saves the fix to plant memory.</p>
+        <p className="mt-2">
+          It fills in the steps and parts from the guide and saves the fix to plant memory. QA then releases the
+          machine, and it shows as running again at the top of the Breakdown page.
+        </p>
       </>
     ),
     when: () => path().startsWith("/guides/view") && has("close-breakdown"),
@@ -448,9 +477,10 @@ const STEPS: Step[] = [
     target: "guides-filters",
     child: "[role=group]",
     page: "/guides/",
-    title: "Every guide, by stage",
-    body: "QA works from “Waiting for QA”. Approved guides are printed from here; closed ones wait for QA to check the line and release the machine.",
-  },  {
+    title: "Every guide, by what’s next",
+    body: "Open guides are still being decided or worked. QA works from “Waiting for QA” and “Waiting for release”. A guide that isn’t needed is withdrawn with a reason, never deleted.",
+  },
+  {
     id: "guides-row",
     chapter: "Guides",
     target: "guides-list",
@@ -524,7 +554,8 @@ const STEPS: Step[] = [
     page: "/memory/",
     title: "What every guide draws on",
     body: "Past incidents, manuals by page and the parts store. Every closed breakdown is added here, so no fix is lost between shifts.",
-  },  {
+  },
+  {
     id: "memory-row",
     chapter: "Memory",
     target: "memory-list",
@@ -536,21 +567,12 @@ const STEPS: Step[] = [
   },
 
   {
-    id: "to-add",
-    chapter: "Add records",
-    target: "nav-add",
+    id: "memory-add",
+    chapter: "Memory",
+    target: "memory-add",
+    page: "/memory/",
     title: "Bring in what you already have",
-    body: "Old logbooks, SAP history and manuals make the memory useful from day one. Take a look?",
-    visit: { label: "Open Add records", path: "/add/" },
-  },
-  {
-    id: "add",
-    chapter: "Add records",
-    target: "add-tabs",
-    child: "[role=group]",
-    page: "/add/",
-    title: "Logbooks, SAP and manuals",
-    body: "Photograph a handwritten logbook, import a SAP or CMMS export, or upload a manual PDF. Nothing extracted is saved until you check it.",
+    body: "Old logbook photos, SAP or CMMS history and manual PDFs make the memory useful from day one. Nothing extracted is saved until you check it.",
   },
   {
     id: "actor",
@@ -581,6 +603,17 @@ const STEPS: Step[] = [
       </ul>
     ),
   },
+
+  // Page tours only (after the wrap-up, so the full tour doesn't include them).
+  {
+    id: "add",
+    chapter: "Add records",
+    target: "add-tabs",
+    child: "[role=group]",
+    page: "/add/",
+    title: "Logbooks, SAP and manuals",
+    body: "Photograph a handwritten logbook, import a SAP or CMMS export, or upload a manual PDF. Nothing extracted is saved until you check it.",
+  },
 ];
 
 const at = (id: string) => STEPS.findIndex((s) => s.id === id);
@@ -589,12 +622,12 @@ const at = (id: string) => STEPS.findIndex((s) => s.id === id);
  * belongs to ("This page"); `pick` puts it in the list of pages. */
 export const SECTIONS = {
   full: { label: "Full tour", hint: "From a breakdown to a printed sheet, about 3 min", first: "welcome", last: "wrap" },
-  breakdown: { label: "Breakdown", hint: "Report it, then draft a guide", first: "report", last: "approve", path: "/", pick: true },
+  breakdown: { label: "Breakdown", hint: "Plant status, report it, draft a guide", first: "plant", last: "approve", path: "/", pick: true },
   guide: { label: "This guide", hint: "Sources, changes, approval, closing", first: "guide", last: "close", path: "/guides/view/" },
   print: { label: "The print page", hint: "Languages, the A4 sheet, numbered copies", first: "print-languages", last: "close", path: "/guides/print/" },
   guides: { label: "Guides", hint: "Every guide by stage", first: "guides", last: "guides-row", path: "/guides/", pick: true },
   alarms: { label: "Alarm logs", hint: "From a machine’s log to a guide", first: "alarms", last: "alarms-result", path: "/alarms/", pick: true },
-  memory: { label: "Memory", hint: "Past fixes, manuals, parts", first: "memory", last: "memory-row", path: "/memory/", pick: true },
+  memory: { label: "Memory", hint: "Past fixes, manuals, parts", first: "memory", last: "memory-add", path: "/memory/", pick: true },
   add: { label: "Add records", hint: "Logbooks, SAP, manuals", first: "add", last: "add", path: "/add/", pick: true },
 } satisfies Record<string, { label: string; hint: string; first: string; last: string; path?: string; pick?: boolean }>;
 export type Section = keyof typeof SECTIONS;
