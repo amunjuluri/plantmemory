@@ -181,6 +181,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/telemetry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Telemetry
+         * @description Page views, actions and errors from the browser, written to the logs (see
+         *     app/telemetry.py). Over the per-client cap they are dropped quietly.
+         */
+        post: operations["telemetry_api_telemetry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assets": {
         parameters: {
             query?: never;
@@ -407,26 +428,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/guides/{guide_id}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Guide
-         * @description Translate the guide into the shop-floor languages and send it to QA.
-         */
-        post: operations["submit_guide_api_guides__guide_id__submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/guides/{guide_id}/approve": {
         parameters: {
             query?: never;
@@ -439,7 +440,8 @@ export interface paths {
         /**
          * Approve Guide
          * @description The manager approves the guide they checked; it goes to QA instead if code finds a
-         *     reason QA must approve (the reasons are in `qa_reasons`).
+         *     reason QA must approve (the reasons are in `qa_reasons`). There is no other way to
+         *     send a guide to QA: code decides, not the manager.
          */
         post: operations["approve_guide_api_guides__guide_id__approve_post"];
         delete?: never;
@@ -522,6 +524,47 @@ export interface paths {
          * @description Record what was actually done; it is saved to plant memory.
          */
         post: operations["close_guide_api_guides__guide_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guides/{guide_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Guide
+         * @description Take back a guide that is not needed (the machine restarted, a mistaken or repeated
+         *     report). It stays in the list with the reason; a printed guide must be closed instead.
+         */
+        post: operations["withdraw_guide_api_guides__guide_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plant
+         * @description Every machine: running, stopped (with its open guide), or waiting for QA's release.
+         */
+        get: operations["plant_api_plant_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -646,6 +689,11 @@ export interface components {
             qa_approval: string;
             /** Release Checks */
             release_checks: string[];
+            /**
+             * Analytics Measurement Id
+             * @description Google Analytics 4 id; none when it isn't set up.
+             */
+            analytics_measurement_id: string | null;
         };
         /**
          * ApproveRequest
@@ -1058,7 +1106,7 @@ export interface components {
              * @default draft
              * @enum {string}
              */
-            status: "draft" | "in_review" | "approved" | "rejected" | "closed" | "released";
+            status: "draft" | "in_review" | "approved" | "rejected" | "closed" | "released" | "withdrawn";
             /**
              * Version
              * @default 1
@@ -1227,7 +1275,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "translated" | "printed" | "closed" | "released";
+            action: "created" | "edited" | "submitted" | "approved" | "rejected" | "translated" | "printed" | "closed" | "released" | "withdrawn";
             /** Comment */
             comment: string | null;
         };
@@ -1509,7 +1557,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "draft" | "in_review" | "approved" | "rejected" | "closed" | "released";
+            status: "draft" | "in_review" | "approved" | "rejected" | "closed" | "released" | "withdrawn";
             /** Version */
             version: number;
             /** Title */
@@ -1584,6 +1632,20 @@ export interface components {
              * @description Who added this language after approval. Such a translation was not seen by QA, so it prints only if code found no flags.
              */
             added_by: string | null;
+        };
+        /**
+         * GuideWithdraw
+         * @description Take back a guide that is not needed: the machine restarted, it was reported by
+         *     mistake, or it repeats another guide.
+         */
+        GuideWithdraw: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Reason */
+            reason: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1901,6 +1963,49 @@ export interface components {
             guide_prompt: string;
         };
         /**
+         * MachineStatus
+         * @description One machine now, worked out from its repair guides.
+         */
+        MachineStatus: {
+            /** Tag */
+            tag: string;
+            /** Equipment Model */
+            equipment_model: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "running" | "stopped" | "awaiting_release";
+            /**
+             * Stage
+             * @description Where the guide for this stop stands; none when running.
+             */
+            stage: ("draft" | "in_review" | "approved" | "rejected" | "closed" | "released" | "withdrawn") | null;
+            /**
+             * Copies Printed
+             * @default 0
+             */
+            copies_printed: number;
+            /**
+             * Guide Id
+             * @description The guide to open for this stop.
+             */
+            guide_id: string | null;
+            /** Guide Title */
+            guide_title: string | null;
+            /**
+             * Open Guides
+             * @description Guides not yet released or withdrawn.
+             * @default 0
+             */
+            open_guides: number;
+            /**
+             * Since
+             * @description Stopped: when the first open guide was drafted. Running: when it was last released to production.
+             */
+            since: string | null;
+        };
+        /**
          * ManualSectionPublic
          * @description A manual section as returned to clients (no embedding).
          */
@@ -2008,6 +2113,30 @@ export interface components {
             lead_time_days: number | null;
             /** Figure Id */
             figure_id: string | null;
+        };
+        /**
+         * PlantStatus
+         * @description Which machines are running, stopped or waiting for QA to release them.
+         */
+        PlantStatus: {
+            /** Machines */
+            machines: components["schemas"]["MachineStatus"][];
+            /** Running */
+            running: number;
+            /** Stopped */
+            stopped: number;
+            /** Awaiting Release */
+            awaiting_release: number;
+            /**
+             * Unassigned
+             * @description Open guides that name no machine.
+             */
+            unassigned: number;
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
         };
         /**
          * Progress
@@ -2228,6 +2357,48 @@ export interface components {
             action_taken: string | null;
             /** Downtime Minutes */
             downtime_minutes: number | null;
+        };
+        /**
+         * TelemetryBatch
+         * @description Events from one browser tab. `visitor` is a random id kept in that browser.
+         */
+        TelemetryBatch: {
+            /** Visitor */
+            visitor: string;
+            /** Session */
+            session: string;
+            /** Events */
+            events: components["schemas"]["TelemetryEvent"][];
+        };
+        /**
+         * TelemetryError
+         * @description An error the browser caught: uncaught, a failed request, or a crashed page.
+         */
+        TelemetryError: {
+            /**
+             * Name
+             * @default Error
+             */
+            name: string;
+            /** Message */
+            message: string;
+            /** Stack */
+            stack?: string | null;
+        };
+        /**
+         * TelemetryEvent
+         * @description Something that happened in the browser: a page opened, a tour step, an error.
+         */
+        TelemetryEvent: {
+            /** Name */
+            name: string;
+            /** Path */
+            path?: string | null;
+            /** Props */
+            props?: {
+                [key: string]: string | number | boolean | null;
+            };
+            error?: components["schemas"]["TelemetryError"] | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2522,6 +2693,37 @@ export interface operations {
             };
         };
     };
+    telemetry_api_telemetry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelemetryBatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     assets_api_assets_get: {
         parameters: {
             query?: never;
@@ -2788,7 +2990,7 @@ export interface operations {
     guides_api_guides_get: {
         parameters: {
             query?: {
-                status?: ("draft" | "in_review" | "approved" | "rejected" | "closed" | "released") | null;
+                status?: ("draft" | "in_review" | "approved" | "rejected" | "closed" | "released" | "withdrawn") | null;
             };
             header?: never;
             path?: never;
@@ -2904,41 +3106,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuideRevision"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_guide_api_guides__guide_id__submit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                guide_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GuideAction"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Guide"];
                 };
             };
             /** @description Validation Error */
@@ -3123,6 +3290,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_guide_api_guides__guide_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guide_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuideWithdraw"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guide"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plant_api_plant_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantStatus"];
                 };
             };
         };

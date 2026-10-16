@@ -1,12 +1,12 @@
 "use client";
 
-import { AlertCircle, BookOpen, Inbox, Package, Trash2 } from "lucide-react";
+import { AlertCircle, BookOpen, FilePlus2, Inbox, Package, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { OutcomeBadge, RecordId } from "@/components/incident-meta";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { Spinner } from "@/components/ui/spinner";
@@ -322,11 +322,18 @@ export function MemoryView() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-4">
-        <div className="max-w-2xl">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Plant memory</h1>
-          <p className="mt-1.5 text-[0.9375rem] text-fg-muted">
-            Everything repair guides draw on: past incidents and fixes, equipment manuals, and the parts store.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="max-w-2xl">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Plant memory</h1>
+            <p className="mt-1.5 text-[0.9375rem] text-fg-muted">
+              Everything repair guides draw on: past incidents and fixes, equipment manuals, and the parts store.
+              Every closed breakdown is added here.
+            </p>
+          </div>
+          <Link href="/add/" className={buttonVariants({ variant: "secondary" })} data-tour="memory-add">
+            <FilePlus2 />
+            Add records
+          </Link>
         </div>
         <div data-tour="memory-tabs" className="self-start">
           <Segmented label="Show" options={TABS} value={tab} onChange={setTab} />

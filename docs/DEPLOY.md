@@ -81,6 +81,37 @@ a draft, a voice conversation, an approval and so on each count once. That is ro
 a team sharing one office network, and at about a cent an action it caps the cost at
 about $3 an hour per address. At most 3 instances run at once.
 
+## Seeing who used it, and what broke
+
+Nothing to set up: on Cloud Run the app writes JSON logs that Cloud Logging and Cloud
+Error Reporting read.
+
+- **Visits and use.** Each browser gets a random id (no cookies, no sign-in, no names).
+  The app logs when it opens (device, time zone, new or returning), each page, the tour
+  (started, each step, where it ended), drafts with their time, voice sessions and why
+  one failed (e.g. microphone blocked), and the status bar. The server logs every guide
+  action (drafted, approved, sent to QA, printed, closed, released, withdrawn), imports,
+  uploads and change requests. Never what anyone typed or said.
+- **A report.** `make visits` (or `DAYS=7 make visits`) lists every visitor with when
+  they came (India time), device, pages, how far the tour went, drafts, voice and
+  errors; then errors grouped, failed requests, and drafting times.
+- **Errors.** Uncaught browser errors, rejected promises, a page that crashes (it shows
+  "This page stopped working" with Try again) and server exceptions go to
+  [Error Reporting](https://console.cloud.google.com/errors), grouped, with stack traces.
+  Turn on its email notifications there to hear about a new error at once. Requests that
+  fail or never arrive are logged as `api_failed`.
+- **Logs Explorer.** Query `jsonPayload.event="page_view"`, `jsonPayload.source="server"`
+  or `severity>=ERROR` for the raw entries.
+- **Google Analytics (optional).** For dashboards of visitors, countries and realtime
+  use, create a Firebase web app with Analytics (Firebase console → Add app → Web) or a
+  GA4 property, and set its measurement id: `ANALYTICS_MEASUREMENT_ID=G-XXXXXXX` for
+  `make deploy`, or a repository variable of that name for deploys from GitHub. The app
+  then sends the same events to it. Without an id nothing is sent to Google Analytics.
+
+Browser events are capped at 1,200 batches an hour per address
+(`TELEMETRY_BATCHES_PER_HOUR`); past that they are dropped, so a broken page can't fill
+the logs.
+
 ## Run the production image locally
 
 ```bash

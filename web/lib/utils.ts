@@ -76,3 +76,19 @@ export const INDUSTRY_LABEL = {
   healthcare: "Healthcare",
   generic: "General",
 } as const;
+
+/** A duration that may run to days: "just now", "12 min", "2 h 14 min", "3 d 4 h". */
+export function formatDuration(minutes: number): string {
+  const whole = Math.max(0, Math.floor(minutes));
+  if (Number.isNaN(whole)) return "";
+  if (whole < 1) return "just now";
+  if (whole < 24 * 60) return formatMinutes(whole);
+  const days = Math.floor(whole / (24 * 60));
+  const hours = Math.floor((whole % (24 * 60)) / 60);
+  return hours ? `${days} d ${hours} h` : `${days} d`;
+}
+
+/** How long since `iso`, for a stop that is still going. */
+export function formatSince(iso: string, now: number): string {
+  return formatDuration((now - new Date(iso).getTime()) / 60_000);
+}

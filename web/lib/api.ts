@@ -1,4 +1,5 @@
 import type { components } from "./api-schema";
+import { track } from "./telemetry";
 
 type Schemas = components["schemas"];
 export type Draft = Schemas["Draft-Output"];
@@ -40,6 +41,9 @@ export type IntakeMode = IntakeState["mode"];
 export type LogAnalysis = Schemas["LogAnalysis"];
 export type LogCodeSummary = Schemas["LogCodeSummary"];
 export type CmmsImportResult = Schemas["CmmsImportResult"];
+export type PlantStatus = Schemas["PlantStatus"];
+export type MachineStatus = Schemas["MachineStatus"];
+export type MachineState = MachineStatus["state"];
 export type GuideStepId = "understand" | "search_history" | "search_manuals" | "find_parts" | "write_guide";
 
 /** Same origin in production; the FastAPI dev server during `next dev`. */
@@ -66,14 +70,28 @@ async function errorFrom(response: Response): Promise<ApiError> {
   return new ApiError(message, response.status);
 }
 
+/** A request that failed on our side, or never arrived, is worth knowing about; a refused
+ * one (4xx) is the app working as meant, except being rate limited. */
+function noteFailure(path: string, status: number, message: string) {
+  if (status === 0 || status >= 500 || status === 429) {
+    track("api_failed", { endpoint: path.split("?")[0].replace(/GDE-[A-Z0-9]+/g, ":id"), status, message });
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, init);
-  } catch {
+  } catch (err) {
+    if (init?.signal?.aborted) throw err;
+    noteFailure(path, 0, "network");
     throw new ApiError("Can't reach PlantMemory. Check your connection and try again.", 0);
   }
-  if (!response.ok) throw await errorFrom(response);
+  if (!response.ok) {
+    const err = await errorFrom(response);
+    noteFailure(path, err.status, err.message);
+    throw err;
+  }
   return response.json() as Promise<T>;
 }
 
@@ -90,9 +108,14 @@ async function* postEvents<T>(path: string, body: unknown, signal: AbortSignal):
     response = await fetch(`${API_BASE}${path}`, { ...json(body), signal });
   } catch (err) {
     if (signal.aborted) throw err;
+    noteFailure(path, 0, "network");
     throw new ApiError("Can't reach PlantMemory. Check your connection and try again.", 0);
   }
-  if (!response.ok || !response.body) throw await errorFrom(response);
+  if (!response.ok || !response.body) {
+    const err = await errorFrom(response);
+    noteFailure(path, err.status, err.message);
+    throw err;
+  }
 
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
@@ -222,10 +245,11 @@ export const api = {
     }),
   approveGuide: (id: string, by: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/approve`, json({ by })),
+  /** Take back a guide that is not needed; it stays in the list with the reason. */
+  withdrawGuide: (id: string, by: string, reason: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/withdraw`, json({ by, reason })),
   releaseGuide: (id: string, by: string, checks: string[], comment?: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/release`, json({ by, checks, comment })),
-  submitGuide: (id: string, by: string) =>
-    request<Guide>(`/api/guides/${encodeURIComponent(id)}/submit`, json({ by })),
   reviewGuide: (id: string, by: string, decision: "approve" | "reject", comment?: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/review`, json({ by, decision, comment })),
   printGuide: (id: string, by: string, languages: string[]) =>
@@ -243,6 +267,8 @@ export const api = {
       parts_used?: string | null;
     },
   ) => request<Guide>(`/api/guides/${encodeURIComponent(id)}/close`, json(body)),
+
+  plant: () => request<PlantStatus>("/api/plant"),
 
   analyzeLog: (file: File, assetTag: string | null, signal?: AbortSignal) =>
     request<LogAnalysis>("/api/logs/analyze", { ...upload({ file, asset_tag: assetTag }), signal }),

@@ -13,17 +13,23 @@ import { useSession } from "@/lib/stores/session";
 import { formatDateTime, plural } from "@/lib/utils";
 import { StatusBadge } from "./meta";
 
-type Filter = "all" | GuideStatus;
+type Filter = "open" | "in_review" | "closed" | "released" | "withdrawn" | "all";
 
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "in_review", label: "Waiting for QA" },
-  { value: "approved", label: "Approved" },
-  { value: "draft", label: "Drafts" },
-  { value: "rejected", label: "Sent back" },
-  { value: "closed", label: "Waiting for release" },
-  { value: "released", label: "Released" },
+/** Grouped by what someone has to do: everything still open (drafts, sent back, with QA,
+ * approved), QA's two queues, then the finished ones. */
+const FILTERS: { value: Filter; label: string; statuses: GuideStatus[] | null }[] = [
+  { value: "open", label: "Open", statuses: ["draft", "rejected", "in_review", "approved"] },
+  { value: "in_review", label: "Waiting for QA", statuses: ["in_review"] },
+  { value: "closed", label: "Waiting for release", statuses: ["closed"] },
+  { value: "released", label: "Released", statuses: ["released"] },
+  { value: "withdrawn", label: "Withdrawn", statuses: ["withdrawn"] },
+  { value: "all", label: "All", statuses: null },
 ];
+
+const matches = (filter: Filter, guide: GuideSummary) => {
+  const statuses = FILTERS.find((f) => f.value === filter)?.statuses;
+  return !statuses || statuses.includes(guide.status);
+};
 
 function Row({ guide }: { guide: GuideSummary }) {
   return (
@@ -65,17 +71,29 @@ export function GuidesList() {
   const role = useSession((s) => s.role);
   // QA lands on their queue until they pick another filter.
   const [picked, setPicked] = useState<Filter | null>(null);
-  const filter: Filter = picked ?? (role === "qa" ? "in_review" : "all");
-  const [loaded, setLoaded] = useState<{ filter: Filter; guides: GuideSummary[] } | null>(null);
+  const filter: Filter = picked ?? (role === "qa" ? "in_review" : "open");
+  const [all, setAll] = useState<GuideSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const guides = loaded?.filter === filter ? loaded.guides : null;
+  const guides = all?.filter((g) => matches(filter, g)) ?? null;
+  const options = FILTERS.map((f) => ({
+    value: f.value,
+    label: (
+      <>
+        {f.label}
+        {all && (
+          <span className="tabular ml-1.5 text-fg-subtle">{all.filter((g) => matches(f.value, g)).length}</span>
+        )}
+      </>
+    ),
+  }));
 
+  // One list, filtered here: a few hundred rows at most, and every filter shows its count.
   useEffect(() => {
     let live = true;
-    api.guides(filter === "all" ? null : filter).then(
+    api.guides().then(
       (list) => {
         if (!live) return;
-        setLoaded({ filter, guides: list });
+        setAll(list);
         setError(null);
       },
       (err: unknown) => live && setError(err instanceof Error ? err.message : "Couldn’t load guides."),
@@ -83,7 +101,7 @@ export function GuidesList() {
     return () => {
       live = false;
     };
-  }, [filter]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +114,7 @@ export function GuidesList() {
         </div>
       </header>
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" data-tour="guides-filters">
-        <Segmented label="Show" size="sm" options={FILTERS} value={filter} onChange={setPicked} />
+        <Segmented label="Show" size="sm" options={options} value={filter} onChange={setPicked} />
       </div>
       <Card className="overflow-hidden">
         {error ? (
@@ -109,7 +127,15 @@ export function GuidesList() {
           <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
             <ClipboardList className="size-6 text-fg-subtle" />
             <div>
-              <p className="font-medium">{filter === "in_review" ? "Nothing waiting for QA" : "No guides here yet"}</p>
+              <p className="font-medium">
+                {filter === "in_review"
+                  ? "Nothing waiting for QA"
+                  : filter === "closed"
+                    ? "No machine waiting for release"
+                    : filter === "open"
+                      ? "No open guides"
+                      : "No guides here yet"}
+              </p>
               <p className="mt-1 text-sm text-fg-muted">Guides appear here once a manager drafts one for a breakdown.</p>
             </div>
             <Link href="/" className={buttonVariants({ variant: "secondary", size: "sm" })}>

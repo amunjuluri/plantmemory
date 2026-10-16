@@ -85,6 +85,12 @@ class Settings(BaseSettings):
 
     # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.
     ai_requests_per_hour: int = 300
+    # Per-client cap on browser telemetry batches (page views, errors); over it they are
+    # dropped, so a stuck page can't flood the logs. 0 disables the cap.
+    telemetry_batches_per_hour: int = 1200
+    # Google Analytics 4 measurement id ("G-XXXXXXX"), from a Firebase web app or a GA4
+    # property. Empty: no Google Analytics; the app's own events still reach the logs.
+    analytics_measurement_id: str = ""
 
     # Origins allowed to call the API from another port (local UI dev only), e.g.
     # CORS_ORIGINS='["http://localhost:3473"]'. Empty in production: same origin.

@@ -27,8 +27,9 @@ make run                      # open http://localhost:8473
 the real control stays lit, and a small popup beside it says what it does, with **Next**
 and **Skip**. The welcome card opens with what downtime costs, each figure linked to its source
 (Siemens' *True Cost of Downtime 2024*, ABB's 2023 survey of 3,215 plants, and the US
-FDA's 2019 drug shortages report). The tour then follows the whole job, and you do the
-steps yourself:
+FDA's 2019 drug shortages report). Next it points at the **plant status bar** (which
+machines are running or stopped) and the four steps of the job, then follows the whole
+job, and you do the steps yourself:
 
 - **Speak or type.** Tap **Speak** to take the voice branch. It tells you to turn your
   volume up, then gives you a line to say in English (say it in any language). As the
@@ -42,8 +43,9 @@ steps yourself:
 - **Approve and print.** Tap Approve; the tour follows to the print page (languages,
   the A4 sheet, numbered copies, Save as PDF), then back to the guide to show **Close
   breakdown** and what to say after the repair.
-- **The other tabs.** It offers each one (Guides, Alarm logs, Memory, Add records):
-  **Open** takes you there and explains the page, **Not now** skips it.
+- **The other tabs.** It offers each one (Guides, Alarm logs, Memory, with **Add
+  records** inside Memory): **Open** takes you there and explains the page, **Not now**
+  skips it.
 
 **Guided tour** at the top (**Tour** on a phone) starts it again and offers a choice:
 the **full tour**, **this page** (including a guide or the print page), or any one page
@@ -64,7 +66,7 @@ release the machine. So use two different names, e.g. "Ravi Kumar" (manager) and
 
 ## 1. Give the plant some history (SAP import)
 
-1. Open **Add records** → **SAP / CMMS export**.
+1. Open **Memory**, click **Add records**, then **SAP / CMMS export**.
 2. Click the sample **SAP PM notification list (IW29)**.
 3. Gemini maps the export's columns to incident fields. Check the rows, then click
    **Save 12 records**.
@@ -84,6 +86,8 @@ use these records.
    plant memory and the manuals, finding parts, writing the guide.
 
 **You should see** a repair guide with:
+- A track under the title: **Drafted**, **Approved**, **Printed**, **Repaired**,
+  **Released**. The next stage is lit, so you always know what is left to do.
 - **Safety first**, then numbered **Repair steps**, **Parts to collect** and
   **Before restarting** checks.
 - A chip such as **Manual p.16** on every line that comes from the manual. Click it: the
@@ -121,7 +125,12 @@ English SAP records because search works by meaning, not by matching words.
    reads the report back. Say "yes" to draft the guide.
 
 **You should see** a spoken reply about 2 seconds after you stop talking, in your
-language, and the report filling in on screen as you talk.
+language. Under the orb, **Report so far** lists Machine, Problem, Stopped? and Alarm,
+each filling in with the full answer as you talk. The item it is asking about says
+**Asking now…**, the others say **Needed** or are optional, and a count shows how many
+of the needed answers it has. Details you mention in passing (when it started, the
+batch) appear under **Also noted**. When it has everything it says **Complete, check
+it**.
 
 **Why it matters:** managers are often on the floor or on the phone when a machine
 stops. Talking in their own language is faster than typing in English, and the app makes
@@ -129,7 +138,7 @@ sure the report is complete before it drafts anything.
 
 ## 5. Read a handwritten logbook page
 
-1. Open **Add records** → **Logbook photo**, and click the sample
+1. Open **Memory** → **Add records** → **Logbook photo**, and click the sample
    **Pharma area log (messy)**.
 2. Check the entries it read.
 
@@ -225,13 +234,16 @@ off the sheet with the reason and a **Translate again** button.
 ## 9. QA review, when code finds a reason
 
 The manager can approve alone only when every line has a source, no value is flagged and
-every translation kept its numbers. Otherwise the guide must go to QA.
+every translation kept its numbers. Otherwise the guide must go to QA. Code decides this,
+not the manager: there is no button to send a guide to QA, or to skip QA.
 
-1. As the **Manager**, make a guide that needs QA (step 7.6 does this), then click
-   **Send to QA**.
+1. As the **Manager**, make a guide that needs QA (step 7.6 does this). The bar says why
+   QA must check it, and the button reads **Approve for QA**. Click it: the guide goes to
+   QA. (A clean guide shows only **Edit** and **Approve and print**.)
 2. Switch to **QA** with a different name. Open **Guides** → **Waiting for QA**.
 3. Check the reasons shown at the top, then either **Approve for printing**, or
    **Send back** (a reason is required; the manager sees it at the top of the guide).
+   When the manager approves a sent-back guide again, it goes back to QA.
 4. Try approving as QA with the same name that sent it: it is refused.
 
 To make QA approve every guide, set `QA_APPROVAL=always` in `.env`.
@@ -245,7 +257,8 @@ for every rejection, an audit trail) are enforced in code, not left to habit.
 1. On an approved guide, click **Close breakdown**.
 2. Fill in what was done, or click **Speak it instead** and say it (e.g. *"did what the
    guide said, took about an hour and a half"*). While you talk, the voice panel takes
-   the form's place and its chips show what is filled in; the form comes back filled.
+   the form's place and its **Report so far** list shows each answer; the form comes back
+   filled.
 3. Under **Parts used**, the guide's parts are a tick list: untick any that weren't
    replaced, and type any others.
 4. Choose **Is it fixed?** and click **Save and close**.
@@ -261,6 +274,9 @@ raises the repeat warning.
 
 ## 11. QA releases the machine
 
+Every closed repair goes to QA; the machine can't be released any other way. The count
+on **Guides** in the top bar includes these, as well as guides waiting for QA's approval.
+
 1. Switch to **QA**, using a name other than the one who closed it.
 2. On the closed guide, click **Release to production**, tick every line-clearance check
    and click **Release**.
@@ -271,9 +287,36 @@ closed the repair unable to release it.
 **Why it matters:** in pharma a repaired machine can't restart until QA has checked the
 area. This records who cleared it and when.
 
-## 12. Add an equipment manual
+## 12. See which machines are running, and withdraw a guide
 
-1. Open **Add records** → **Equipment manual** and click the sample
+1. Open **Breakdown**. The bar at the top says how many machines are running, with one
+   cell per machine: green running, red stopped, amber repaired and waiting for QA's
+   release. The longest stop is named with how long it has lasted.
+2. Click the bar. Each machine is listed with where its repair stands ("Waiting for
+   QA", "Repair under way", "Repaired, QA to release") and **Open** for its guide. On a
+   running machine, **Report** picks it in the form and puts the cursor in the report.
+3. Pick a machine that is stopped (or tap **TP-02 punch tight** after drafting one for
+   TP-02). Under the report a note says it already has an open guide, with **Open it**.
+4. Draft a guide, approve it, close it and release it (sections 2, 8, 10 and 11). The
+   bar follows each step: stopped, then waiting for release, then running again with
+   "Back in production".
+5. On a draft that isn't needed, click **Withdraw** (top right of the guide), pick a
+   reason such as **Reported by mistake** and confirm. The guide says who withdrew it
+   and why, and the machine counts as running again. On **Guides** it is under
+   **Withdrawn**.
+
+**You should see** the bar change within a second of each step. A guide with a printed
+copy can't be withdrawn (close the repair instead), and a withdrawal always needs a
+reason.
+
+**Why it matters:** the manager sees at a glance which machines are down and for how
+long, and which only wait for QA's line clearance, without asking around. The note on
+the form stops the same breakdown being drafted twice, and a mistaken report can be
+taken back without deleting anything from the record.
+
+## 13. Add an equipment manual
+
+1. Open **Memory** → **Add records** → **Equipment manual** and click the sample
    **Fluid bed dryer FBD-1 manual (6 pages)**.
 2. When it is read, click **Try a breakdown on FBD-1**.
 
@@ -283,7 +326,7 @@ for FBD-1 that cites this manual.
 **Why it matters:** each new machine comes with a manual. Uploading the PDF is enough
 for guides to use it.
 
-## 13. A machine with no manual
+## 14. A machine with no manual
 
 On **Breakdown**, click **Something new** (a coating pan), then **Draft repair guide**.
 
@@ -293,7 +336,7 @@ marked as general practice, so it goes to QA.
 **Why it matters:** a confident guide for the wrong machine is worse than none. The app
 uses a manual only when Gemini confirms it is for that equipment.
 
-## 14. Phone and dark mode
+## 15. Phone and dark mode
 
 Open any guide on a phone, or in Chrome's device toolbar at 320 to 414 px wide. Switch
 the theme with the sun/moon button.
@@ -303,7 +346,7 @@ guide, the main action (e.g. **Approve and print**) gets a full-width row at the
 and the other actions share the row above. The print page shows the sheet exactly as it
 prints, an A4 page scaled to fit the screen, like a PDF; pinch to zoom in.
 
-## 15. Automated checks
+## 16. Automated checks
 
 ```bash
 make test        # backend tests (no Gemini calls; the model is faked)
@@ -324,13 +367,14 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 6 | Alarm log | Stopping errors first; one click to a guide |
 | 7 | Change by voice or chat | Changes marked; nothing saved until kept; unclear request gets a question; audit trail records it |
 | 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
-| 9 | QA review | No self-approval; rejection needs a reason |
+| 9 | QA review | Only code sends a guide to QA (no manager button); no self-approval; rejection needs a reason; a sent-back guide returns to QA |
 | 10 | Close | Saved to memory; short answers expanded from the guide; "did what the guide said" ticks the guide's parts |
 | 11 | Release | All checks needed; closer can't release |
-| 12 | Manual upload | New machine's guide cites the uploaded manual |
-| 13 | No manual | No other machine's manual used |
-| 14 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
-| 15 | Tour | Starts on the first visit; opens without a grey flash; popups point at the real controls; voice branch gives lines to say; waits while the guide drafts; follows approve to the print page; asks before each tab; **Guided tour** offers full, this page or any page |
+| 12 | Plant status | Counts and durations match the open guides; bar follows draft, close and release; duplicate note on the form; withdraw needs a reason, not allowed once printed |
+| 13 | Manual upload | New machine's guide cites the uploaded manual |
+| 14 | No manual | No other machine's manual used |
+| 15 | Phone | No overflow at 320 px; print preview is the A4 page scaled to fit; closing by voice doesn't grow past the screen |
+| 16 | Tour | Starts on the first visit; points at the plant status bar and the four steps; opens without a grey flash; popups point at the real controls; voice branch gives lines to say; waits while the guide drafts; follows approve to the print page; asks before each tab; **Guided tour** offers full, this page or any page |
 
 The app allows 300 AI actions per hour from one network address (`AI_REQUESTS_PER_HOUR`),
 far more than a full test needs; past that it answers "too many requests" until the hour

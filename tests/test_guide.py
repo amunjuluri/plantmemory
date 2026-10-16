@@ -290,11 +290,14 @@ def test_missing_tokens_accepts_indian_digits() -> None:
     assert missing_tokens("Replace RTP-BS-07.", "RTP-BS-07 మార్చండి") == []
 
 
-def test_submit_translates_and_flags_lost_codes(env) -> None:
+def test_approval_translates_and_sends_lost_codes_to_qa(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
-    guide = workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    guide = workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     assert guide.status == "in_review"
+    assert "Telugu: 1 line may not match the English." in guide.qa_reasons
+    assert guide.events[-1].action == "submitted"
+    assert guide.events[-1].comment.startswith("QA needed: ")
     assert [t.language for t in guide.translations] == ["te", "hi"]
     te = guide.translations[0]
     assert te.language_name == "Telugu"
@@ -305,7 +308,7 @@ def test_submit_translates_and_flags_lost_codes(env) -> None:
 def test_qa_cannot_review_own_submission_and_must_explain_a_rejection(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     with pytest.raises(workflow.GuideError) as own:
         workflow.review(guide.id, GuideReview(by=" ravi ", decision="approve"), kb)
     assert own.value.status_code == 403
@@ -318,10 +321,20 @@ def test_qa_cannot_review_own_submission_and_must_explain_a_rejection(env) -> No
     assert rejected.status == "rejected"
 
 
+def test_a_sent_back_guide_goes_back_to_qa_when_approved_again(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.review(guide.id, GuideReview(by="Sita", decision="reject", comment="Fix it"), kb)
+    again = workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    assert again.status == "in_review"
+    assert "QA sent an earlier version back." in again.qa_reasons
+
+
 def test_edit_after_rejection_rechecks_and_bumps_version(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="reject", comment="Fix it"), kb)
     edit = GuideEdit(
         by="Ravi",
@@ -348,7 +361,7 @@ def test_only_approved_guides_print_and_close_saves_to_memory(env) -> None:
     _, guide = draft(deps, kb)
     with pytest.raises(workflow.GuideError):
         workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb)
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     with pytest.raises(workflow.GuideError):
         workflow.edit(
@@ -412,7 +425,7 @@ def test_more_languages_are_added_for_printing_and_checked(env) -> None:
 def test_a_flagged_language_added_after_approval_does_not_print(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
 
     added = workflow.add_language(guide.id, GuideTranslate(by="Ravi", language="kn"), deps, kb)
@@ -488,7 +501,7 @@ def test_qa_always_policy_sends_every_guide_to_qa(env) -> None:
 def test_qa_releases_the_machine_after_the_repair(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     with pytest.raises(workflow.GuideError):
         workflow.release(guide.id, GuideRelease(by="Sita", checks=list(RELEASE_CHECKS)), kb)
@@ -679,7 +692,7 @@ def test_revise_api(env) -> None:
         client.post("/api/guides/GDE-NOPE/revise", data={"by": "R", "text": "x"}).status_code == 404
     )
 
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     locked = client.post(url, data={"by": "Ravi", "text": "Change step 1"})
     assert locked.status_code == 409
 
@@ -694,8 +707,10 @@ def test_guide_api_flow(env) -> None:
 
     assert client.get("/api/guides").json()[0]["id"] == gid
     assert client.post(f"/api/guides/{gid}/print", json={"by": "Ravi"}).status_code == 409
+    # The manager can't choose to send a guide to QA; approving routes it when code says so.
+    assert client.post(f"/api/guides/{gid}/submit", json={"by": "Ravi"}).status_code in (404, 405)
     assert (
-        client.post(f"/api/guides/{gid}/submit", json={"by": "Ravi"}).json()["status"]
+        client.post(f"/api/guides/{gid}/approve", json={"by": "Ravi"}).json()["status"]
         == "in_review"
     )
     own = client.post(f"/api/guides/{gid}/review", json={"by": "Ravi", "decision": "approve"})
@@ -737,7 +752,7 @@ def test_print_languages_api(env) -> None:
     names = [o["name"] for o in client.get("/api/config").json()["print_languages"]]
     assert "Tamil" in names and "English" not in names and names == sorted(names)
     assert client.post(url, json={"by": "Ravi", "language": "ta"}).status_code == 409
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     ok = client.post(url, json={"by": "Ravi", "language": "ta"})
     assert ok.status_code == 200, ok.text

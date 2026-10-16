@@ -4,7 +4,7 @@ import datetime as dt
 from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Industry = Literal["paper", "pharma", "healthcare", "generic"]
 Outcome = Literal["resolved", "recurred", "unknown"]
@@ -391,7 +391,9 @@ class Asset(Model):
 
 # --- Repair guides ---
 
-GuideStatus = Literal["draft", "in_review", "approved", "rejected", "closed", "released"]
+GuideStatus = Literal[
+    "draft", "in_review", "approved", "rejected", "closed", "released", "withdrawn"
+]
 GUIDE_NOTICE = (
     "AI-drafted from plant records and equipment manuals, then checked and approved by a "
     "person. Only an approved, printed copy may be used on the shop floor."
@@ -492,6 +494,7 @@ class GuideEvent(Model):
         "printed",
         "closed",
         "released",
+        "withdrawn",
     ]
     comment: str | None = None
 
@@ -703,6 +706,14 @@ class GuideRelease(Model):
     comment: str | None = Field(default=None, max_length=2000)
 
 
+class GuideWithdraw(Model):
+    """Take back a guide that is not needed: the machine restarted, it was reported by
+    mistake, or it repeats another guide."""
+
+    by: SignerName
+    reason: str = Field(min_length=3, max_length=2000)
+
+
 class GuideClose(Model):
     """What was actually done. Saved to plant memory so the next search finds it."""
 
@@ -883,3 +894,78 @@ class ManualExtraction(Model):
 class ManualUploadResult(Model):
     summary: ManualSummary
     sections: list[ManualSectionPublic]
+
+
+# --- Plant status ---
+
+MachineState = Literal["running", "stopped", "awaiting_release"]
+
+
+class MachineStatus(Model):
+    """One machine now, worked out from its repair guides."""
+
+    tag: str
+    equipment_model: str | None = None
+    state: MachineState
+    stage: GuideStatus | None = Field(
+        default=None, description="Where the guide for this stop stands; none when running."
+    )
+    copies_printed: int = 0
+    guide_id: str | None = Field(default=None, description="The guide to open for this stop.")
+    guide_title: str | None = None
+    open_guides: int = Field(default=0, description="Guides not yet released or withdrawn.")
+    since: datetime | None = Field(
+        default=None,
+        description="Stopped: when the first open guide was drafted. Running: when it was "
+        "last released to production.",
+    )
+
+
+class PlantStatus(Model):
+    """Which machines are running, stopped or waiting for QA to release them."""
+
+    machines: list[MachineStatus]
+    running: int
+    stopped: int
+    awaiting_release: int
+    unassigned: int = Field(description="Open guides that name no machine.")
+    as_of: datetime = Field(default_factory=_now)
+
+
+# --- Telemetry (see app/telemetry.py) ---
+
+TelemetryValue = str | int | float | bool | None
+
+
+class TelemetryError(Model):
+    """An error the browser caught: uncaught, a failed request, or a crashed page."""
+
+    name: str = Field(default="Error", max_length=100)
+    message: str = Field(max_length=2000)
+    stack: str | None = Field(default=None, max_length=8000)
+
+
+class TelemetryEvent(Model):
+    """Something that happened in the browser: a page opened, a tour step, an error."""
+
+    name: str = Field(pattern=r"^[a-z][a-z0-9_]{0,47}$")
+    path: str | None = Field(default=None, max_length=300)
+    props: dict[str, TelemetryValue] = Field(default_factory=dict, max_length=24)
+    error: TelemetryError | None = None
+
+    @field_validator("props")
+    @classmethod
+    def _short(cls, props: dict[str, TelemetryValue]) -> dict[str, TelemetryValue]:
+        return {
+            k[:40]: v[:300] if isinstance(v, str) else v
+            for k, v in props.items()
+            if k and k[0].isalpha()
+        }
+
+
+class TelemetryBatch(Model):
+    """Events from one browser tab. `visitor` is a random id kept in that browser."""
+
+    visitor: str = Field(pattern=r"^[A-Za-z0-9-]{8,64}$")
+    session: str = Field(pattern=r"^[A-Za-z0-9-]{8,64}$")
+    events: list[TelemetryEvent] = Field(min_length=1, max_length=30)

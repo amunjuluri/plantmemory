@@ -2,14 +2,11 @@
 
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
-import { Tooltip } from "@base-ui/react/tooltip";
 import {
   ChevronDown,
   ClipboardCheck,
   Compass,
   Database,
-  FilePlus2,
-  FlaskConical,
   MapPin,
   Moon,
   Route,
@@ -27,6 +24,7 @@ import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { api } from "@/lib/api";
 import { ROLE_LABEL, useSession, type Role } from "@/lib/stores/session";
+import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 
@@ -34,25 +32,27 @@ const NAV = [
   { href: "/", label: "Breakdown", short: "Breakdown", icon: Wrench },
   { href: "/alarms/", label: "Alarm logs", short: "Alarms", icon: Siren },
   { href: "/guides/", label: "Guides", short: "Guides", icon: ClipboardCheck },
-  { href: "/memory/", label: "Memory", short: "Memory", icon: Database },
-  { href: "/add/", label: "Add records", short: "Add", icon: FilePlus2 },
+  // Adding records is part of Memory: its page is opened from there.
+  { href: "/memory/", label: "Memory", short: "Memory", icon: Database, also: "/add/" },
 ] as const;
 
 function useActive() {
   const pathname = usePathname();
   const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
-  return (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
+  return (href: string, also?: string) =>
+    href === "/" ? path === "/" : path.startsWith(href) || (also ? path.startsWith(also) : false);
 }
 
-/** Guides waiting for QA, refreshed on every navigation. */
+/** Guides waiting for QA: to approve before printing, and repairs closed for QA to
+ * release the machine. Refreshed on every navigation. */
 function useReviewCount() {
   const pathname = usePathname();
   const [count, setCount] = useState(0);
   useEffect(() => {
     let live = true;
     api
-      .guides("in_review")
-      .then((guides) => live && setCount(guides.length))
+      .guides()
+      .then((guides) => live && setCount(guides.filter((g) => g.status === "in_review" || g.status === "closed").length))
       .catch(() => undefined);
     return () => {
       live = false;
@@ -81,7 +81,11 @@ function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={() => {
+        const next = resolvedTheme === "dark" ? "light" : "dark";
+        setTheme(next);
+        track("theme_changed", { theme: next });
+      }}
       aria-label="Switch light or dark theme"
       className="grid size-9 place-items-center rounded-(--radius-control) text-fg-muted transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-2 hover:text-fg active:scale-[0.97] [&_svg]:size-4"
     >
@@ -167,32 +171,6 @@ function TourMenu() {
   );
 }
 
-/** Shown only while the demo data is loaded: the label belongs to the data, so a plant
- * running on its own manuals and records never sees it. */
-function SyntheticBadge() {
-  const [synthetic, setSynthetic] = useState(false);
-  useEffect(() => {
-    api.manuals().then((ms) => setSynthetic(ms.some((m) => /synthetic/i.test(m.manual_title))), () => undefined);
-  }, []);
-  if (!synthetic) return null;
-  return (
-    <Tooltip.Root>
-      <Tooltip.Trigger className="hidden h-7 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 text-xs font-medium text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)] lg:inline-flex">
-        <FlaskConical className="size-3.5" />
-        Synthetic data
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={8}>
-          <Tooltip.Popup className="max-w-64 origin-(--transform-origin) rounded-lg bg-fg px-3 py-2 text-xs leading-5 text-bg shadow-raised transition-[scale,opacity] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-instant:duration-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
-            Every incident, manual, part and log here is invented for this demo. No real plant or
-            company data is used.
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  );
-}
-
 function initials(name: string) {
   return (
     name
@@ -228,7 +206,7 @@ function ActorSwitch() {
         >
           {initials(name)}
         </span>
-        <span className="hidden flex-col items-start leading-tight sm:flex">
+        <span className="hidden flex-col items-start leading-tight sm:flex md:max-lg:hidden">
           <span className="max-w-32 truncate text-[0.8125rem] font-medium">{name}</span>
           <span className="text-[0.6875rem] text-fg-subtle">{role === "qa" ? "QA" : "Manager"}</span>
         </span>
@@ -242,7 +220,16 @@ function ActorSwitch() {
               The demo has no sign-in. Switch to QA to review a guide; QA can’t approve a guide they
               sent themselves.
             </Popover.Description>
-            <Segmented label="Role" options={ROLES} value={role} onChange={setRole} className="mt-3 w-full" />
+            <Segmented
+              label="Role"
+              options={ROLES}
+              value={role}
+              onChange={(next) => {
+                setRole(next);
+                track("role_switched", { role: next });
+              }}
+              className="mt-3 w-full"
+            />
             <label className="mt-3 flex flex-col gap-1.5 text-[0.8125rem] font-medium">
               Your name
               <Input
@@ -270,12 +257,12 @@ export function AppHeader() {
           <span className="text-[0.9375rem]">PlantMemory</span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          {NAV.map(({ href, label, short }) => (
+          {NAV.map(({ href, label, short, ...rest }) => (
             <Link
               key={href}
               href={href}
               data-tour={`nav-${short.toLowerCase()}`}
-              aria-current={isActive(href) ? "page" : undefined}
+              aria-current={isActive(href, "also" in rest ? rest.also : undefined) ? "page" : undefined}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:text-fg",
                 "aria-[current=page]:bg-surface-2 aria-[current=page]:text-fg",
@@ -286,14 +273,11 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <Tooltip.Provider delay={400}>
-          <div className="ml-auto flex items-center gap-1.5">
-            <SyntheticBadge />
-            <TourMenu />
-            <ThemeToggle />
-            <ActorSwitch />
-          </div>
-        </Tooltip.Provider>
+        <div className="ml-auto flex items-center gap-1.5">
+          <TourMenu />
+          <ThemeToggle />
+          <ActorSwitch />
+        </div>
       </div>
     </header>
   );
@@ -308,13 +292,13 @@ export function MobileTabBar() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/85 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-xl backdrop-saturate-150 md:hidden print:hidden"
     >
-      <div className="grid h-16 grid-cols-5">
-        {NAV.map(({ href, short, icon: Icon }) => (
+      <div className="grid h-16 grid-cols-4">
+        {NAV.map(({ href, short, icon: Icon, ...rest }) => (
           <Link
             key={href}
             href={href}
             data-tour={`nav-${short.toLowerCase()}`}
-            aria-current={isActive(href) ? "page" : undefined}
+            aria-current={isActive(href, "also" in rest ? rest.also : undefined) ? "page" : undefined}
             className="relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-fg-subtle transition-[color,scale] duration-150 ease-out active:scale-[0.96] aria-[current=page]:text-accent-text [&_svg]:size-5"
           >
             <Icon strokeWidth={1.75} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Camera, Siren, Square } from "lucide-react";
+import { ArrowRight, Camera, CircleAlert, Siren, Square } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -19,8 +19,42 @@ import { api, type Asset } from "@/lib/api";
 import { prepareImage } from "@/lib/image";
 import { EXAMPLES, useBreakdown } from "@/lib/stores/breakdown";
 import { useLiveVoice } from "@/lib/stores/live-voice";
+import { stageLabel, useNow, usePlant } from "@/lib/stores/plant";
 import { useActorName } from "@/lib/stores/session";
-import { cn } from "@/lib/utils";
+import { track } from "@/lib/telemetry";
+import { cn, formatSince } from "@/lib/utils";
+
+/** The machine picked already has an open guide: open it rather than draft the same
+ * breakdown twice. Hidden while that machine's own new guide is on screen. */
+function OpenGuideNotice({ tag }: { tag: string | null }) {
+  const machine = usePlant((s) => s.status?.machines.find((m) => m.tag === tag));
+  const shown = useBreakdown((s) => s.guide?.asset_tag === tag && s.status === "done");
+  const now = useNow();
+  if (!tag || !machine?.guide_id || machine.state === "running" || shown) return null;
+  const since = machine.since ? formatSince(machine.since, now) : null;
+  return (
+    <div
+      role="status"
+      className="flex gap-2.5 rounded-lg bg-warn-soft px-3 py-2.5 text-[0.8125rem] leading-5 text-warn-text transition-[opacity,translate] duration-200 ease-out starting:-translate-y-0.5 starting:opacity-0"
+    >
+      <CircleAlert className="mt-0.5 size-4 shrink-0" />
+      <p className="min-w-0">
+        <span className="font-medium">
+          {tag} already has an open guide
+          {since && <span className="tabular font-normal">, stopped {since === "just now" ? since : `for ${since}`}</span>}.
+        </span>{" "}
+        {stageLabel(machine, true)}.{" "}
+        <Link
+          href={`/guides/view/?id=${encodeURIComponent(machine.guide_id)}`}
+          className="font-medium underline decoration-current/40 underline-offset-2 hover:decoration-current"
+        >
+          Open it
+        </Link>
+        , or draft a new one only if this is a different fault.
+      </p>
+    </div>
+  );
+}
 
 export function BreakdownForm({ onStart }: { onStart?: () => void }) {
   const { text, assetTag, status, setText, setAssetTag, run, cancel } = useBreakdown();
@@ -66,7 +100,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
       toast.success("Filled in from the photo", {
         id,
         description: rest.length
-          ? `The page has ${rest.length + 1} entries; the first is used. Use Add records to save them all.`
+          ? `The page has ${rest.length + 1} entries; the first is used. Use Memory → Add records to save them all.`
           : "Check the text, then draft the guide.",
       });
     } catch (err) {
@@ -151,6 +185,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
                     className="indic min-h-32"
                     enterKeyHint="send"
                   />
+                  {!running && <OpenGuideNotice tag={assetTag} />}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -215,6 +250,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
                       onClick={() => {
                         setText(example.text);
                         setAssetTag(example.asset);
+                        track("example_used", { example: example.label });
                       }}
                       className={cn(
                         "h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)]",

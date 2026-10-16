@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, Factory, Languages, Lock, PackageX, ShieldAlert, ShieldCheck, Undo2 } from "lucide-react";
+import { Ban, CircleCheck, Factory, Languages, Lock, PackageX, ShieldAlert, ShieldCheck, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,10 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, SectionLabel } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { ApiError, api, type Guide, type GuideRevision } from "@/lib/api";
+import { refreshPlant } from "@/lib/stores/plant";
+import { track } from "@/lib/telemetry";
 import { useRecords } from "@/lib/stores/records";
 import { useActorName, useSession } from "@/lib/stores/session";
 import { formatDateTime } from "@/lib/utils";
-import { AuditTrail, GuideActions } from "./guide-actions";
+import { AuditTrail, canWithdraw, GuideActions, WithdrawDialog } from "./guide-actions";
 import { GuideEditor } from "./guide-editor";
 import {
   CheckList,
@@ -26,17 +28,29 @@ import {
   StepList,
 } from "./guide-sections";
 import { StatusBadge } from "./meta";
+import { GuideStages } from "./stages";
 import { ReviseComposer } from "./revise-composer";
 import { auditNote, diffGuide, toEdit, type Ask, type Revision } from "./revision";
 import { RevisionSummary } from "./revision-summary";
 
 function StatusBanner({ guide }: { guide: Guide }) {
   const last = (action: string) => [...guide.events].reverse().find((e) => e.action === action);
+  if (guide.status === "withdrawn") {
+    const event = last("withdrawn");
+    return (
+      <Banner tone="neutral" icon={<Ban className="text-fg-muted" />} title={`Withdrawn by ${event?.by ?? "the manager"}`}>
+        <span className="text-fg-muted">
+          {event ? `${formatDateTime(event.at)}. ` : ""}
+          {event?.comment ? `“${event.comment}”` : "Not needed."}
+        </span>
+      </Banner>
+    );
+  }
   if (guide.status === "rejected") {
     const event = last("rejected");
     return (
       <Banner tone="danger" icon={<Undo2 />} title={`Sent back by ${event?.by ?? "QA"}`}>
-        {event?.comment ?? "QA asked for changes."} Edit the guide, then send it again.
+        {event?.comment ?? "QA asked for changes."} Edit the guide, then approve it; it goes back to QA.
       </Banner>
     );
   }
@@ -78,7 +92,12 @@ function StatusBanner({ guide }: { guide: Guide }) {
 }
 
 /** A repair guide: evidence, steps, parts, translations, history and the next action. */
-export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Guide) => void }) {
+export function GuideView({ guide, onChange: setGuide }: { guide: Guide; onChange: (g: Guide) => void }) {
+  // Every change to a guide may start or end a machine's stop.
+  const onChange = (g: Guide) => {
+    setGuide(g);
+    refreshPlant();
+  };
   const { remember, rememberSections } = useRecords();
   const role = useSession((s) => s.role);
   const by = useActorName();
@@ -174,7 +193,10 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
               {code}
             </Badge>
           ))}
-          <span className="ml-auto font-mono text-xs text-fg-subtle">{guide.id}</span>
+          <span className="ml-auto flex items-center gap-1">
+            {role === "manager" && canWithdraw(guide) && !revision && <WithdrawDialog guide={guide} onDone={onChange} />}
+            <span className="font-mono text-xs text-fg-subtle">{guide.id}</span>
+          </span>
         </div>
         <h2 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl">
           {shown.title}
@@ -190,6 +212,7 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
             {guide.equipment_model && <span className="text-fg-subtle"> · {guide.equipment_model}</span>}
           </p>
         )}
+        <GuideStages guide={guide} className="mt-3 max-w-xl" />
       </header>
 
       <StatusBanner guide={guide} />
@@ -289,7 +312,15 @@ export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Gui
         composer={canRevise ? <ReviseComposer guide={guide} revision={revision} onProposal={propose} /> : undefined}
         review={
           revision && diff
-            ? { count: diff.count, keeping, onKeep: keep, onDiscard: () => setRevision(null) }
+            ? {
+                count: diff.count,
+                keeping,
+                onKeep: keep,
+                onDiscard: () => {
+                  setRevision(null);
+                  track("change_discarded", { guide: guide.id });
+                },
+              }
             : undefined
         }
       />
