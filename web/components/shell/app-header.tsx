@@ -228,7 +228,7 @@ function ActorSwitch() {
         >
           {initials(name)}
         </span>
-        <span className="hidden flex-col items-start leading-tight sm:flex">
+        <span className="hidden flex-col items-start leading-tight sm:flex md:max-lg:hidden">
           <span className="max-w-32 truncate text-[0.8125rem] font-medium">{name}</span>
           <span className="text-[0.6875rem] text-fg-subtle">{role === "qa" ? "QA" : "Manager"}</span>
         </span>
