@@ -1,41 +1,12 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 
 import type { IntakeFields, IntakeMode, IntakeTurnResult } from "@/lib/api";
 import { liveLevels, useLiveVoice } from "@/lib/stores/live-voice";
-import { cn, formatMinutes } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { CloseIcon, KeyboardIcon, MicIcon, MicOffIcon, SendIcon, TranscriptIcon, VoiceIcon } from "./icons";
-
-type Chip = { key: keyof IntakeFields; label: string; show: (f: IntakeFields) => string | null };
-
-const CHIPS: Record<IntakeMode, Chip[]> = {
-  breakdown: [
-    { key: "equipment", label: "Machine", show: (f) => f.equipment ?? null },
-    { key: "symptom", label: "Problem", show: (f) => f.symptom ?? null },
-    {
-      key: "machine_stopped",
-      label: "Stopped?",
-      show: (f) => (f.machine_stopped == null ? null : f.machine_stopped ? "Stopped" : "Running"),
-    },
-    { key: "error_code", label: "Alarm", show: (f) => f.error_code ?? null },
-  ],
-  closure: [
-    { key: "action_taken", label: "What was done", show: (f) => f.action_taken ?? null },
-    { key: "parts_used", label: "Parts", show: (f) => f.parts_used ?? null },
-    {
-      key: "downtime_minutes",
-      label: "Downtime",
-      show: (f) => (f.downtime_minutes == null ? null : formatMinutes(f.downtime_minutes)),
-    },
-    {
-      key: "outcome",
-      label: "Fixed?",
-      show: (f) => (f.outcome ? { resolved: "Fixed", recurred: "Came back", unknown: "Not sure" }[f.outcome] : null),
-    },
-  ],
-};
+import { ReportSoFar } from "./report-so-far";
 
 const HINT: Record<IntakeMode, string> = {
   breakdown: "Say which machine, what is wrong, and any alarm on the screen. Telugu, Hindi, English or mixed.",
@@ -82,18 +53,18 @@ function Orb({ state, onSpeaking }: { state: OrbState; onSpeaking: (s: boolean) 
   const colour = state === "speaking" ? "speak" : state === "listening" ? "listen" : "idle";
 
   return (
-    <div className="relative grid size-44 place-items-center" aria-hidden>
+    <div className="relative grid aspect-square h-full max-h-36 place-items-center" aria-hidden>
       <span
         ref={glow}
         className={cn(
-          "absolute inset-6 rounded-full blur-2xl transition-[background-color] duration-500 ease-out will-change-[scale,opacity]",
+          "absolute inset-[17%] rounded-full blur-2xl transition-[background-color] duration-500 ease-out will-change-[scale,opacity]",
           colour === "speak" ? "bg-success/45" : colour === "listen" ? "bg-accent/45" : "bg-fg-subtle/25",
         )}
       />
       <span
         ref={sphere}
         className={cn(
-          "relative size-28 overflow-hidden rounded-full will-change-[scale] transition-[opacity] duration-500 ease-out",
+          "relative size-[67%] overflow-hidden rounded-full will-change-[scale] transition-[opacity] duration-500 ease-out",
           "shadow-[inset_0_-10px_24px_oklch(0.2_0.05_259/0.25),0_12px_32px_-12px_oklch(0.2_0.05_259/0.5)]",
           state === "connecting" && "opacity-70",
         )}
@@ -114,7 +85,7 @@ function Orb({ state, onSpeaking }: { state: OrbState; onSpeaking: (s: boolean) 
       <svg
         viewBox="0 0 100 100"
         className={cn(
-          "absolute inset-3 size-[calc(100%-1.5rem)] transition-opacity duration-300 ease-out",
+          "absolute inset-[8%] size-[84%] transition-opacity duration-300 ease-out",
           state === "connecting" ? "opacity-100" : "opacity-0",
         )}
         style={{ animation: "orbit 1.1s linear infinite" }}
@@ -224,7 +195,6 @@ export function LiveVoice({
     if (transcript) list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" });
   }, [messages, transcript]);
 
-  const fields = result?.state.fields;
   const live = phase === "live";
   const connecting = phase === "connecting";
   const active = live || connecting;
@@ -251,7 +221,7 @@ export function LiveVoice({
   return (
     <div
       data-tour="voice"
-      className="flex h-[25rem] flex-col transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0"
+      className="flex h-[32rem] flex-col transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0"
     >
       <div className="flex h-8 shrink-0 items-center justify-between gap-3">
         {title ? <p className="truncate text-sm font-medium">{title}</p> : <span />}
@@ -276,13 +246,13 @@ export function LiveVoice({
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <div className="grid min-h-0 flex-1 place-items-center">
+        <div className="grid min-h-0 flex-1 place-items-center py-1">
           <Orb state={orbState} onSpeaking={setSpeaking} />
         </div>
 
         {/* Live captions: only the latest line, in a fixed box, so the panel never grows. */}
         <div
-          className="flex h-[4.75rem] shrink-0 flex-col justify-end overflow-hidden px-2 text-center [mask-image:linear-gradient(to_bottom,transparent,black_1.75rem)]"
+          className="flex h-[4.25rem] shrink-0 flex-col justify-end overflow-hidden px-2 text-center [mask-image:linear-gradient(to_bottom,transparent,black_1.75rem)]"
           aria-live="polite"
         >
           {error ? (
@@ -313,33 +283,8 @@ export function LiveVoice({
           )}
         </div>
 
-        <div
-          className="mt-3 flex h-7 shrink-0 justify-center-safe gap-1.5 overflow-x-auto [scrollbar-width:none]"
-          aria-label="What the report has so far"
-        >
-          {CHIPS[mode].map((chip) => {
-            const value = fields ? chip.show(fields) : null;
-            return (
-              <span
-                key={chip.key}
-                title={value ? `${chip.label}: ${value}` : undefined}
-                className={cn(
-                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-[background-color,color,box-shadow] duration-300 ease-out",
-                  value
-                    ? "bg-success-soft text-success-text"
-                    : "text-fg-subtle shadow-[inset_0_0_0_1px_var(--color-line-strong)]",
-                )}
-              >
-                {value && (
-                  <Check className="size-3 shrink-0 transition-[scale,opacity] duration-200 ease-out starting:scale-50 starting:opacity-0" strokeWidth={3} />
-                )}
-                <span className="sr-only">{chip.label}: </span>
-                <span key={value ?? ""} className="max-w-36 truncate transition-opacity duration-200 ease-out starting:opacity-0">
-                  {value ?? chip.label}
-                </span>
-              </span>
-            );
-          })}
+        <div className="mt-2 shrink-0">
+          <ReportSoFar mode={mode} result={result} live={live} />
         </div>
 
         {/* The written conversation, over the orb rather than below it. */}

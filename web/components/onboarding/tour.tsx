@@ -266,7 +266,7 @@ const STEPS: Step[] = [
     title: "Check it, then confirm",
     body: (
       <>
-        <p>It reads the report back. If the chips are right, say:</p>
+        <p>It reads the report back, and “Report so far” lists every answer. If it’s right, say:</p>
         <Say>Yes, that’s right.</Say>
         <p className="mt-2">Or tap Draft repair guide. Say what’s wrong to change it.</p>
       </>

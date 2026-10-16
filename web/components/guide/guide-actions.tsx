@@ -268,7 +268,7 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
   const [busy, setBusy] = useState(false);
   const [heard, setHeard] = useState(false);
 
-  // Fields fill in while the manager talks; the panel's chips show them until it hands back.
+  // Fields fill in while the manager talks; the panel's "Report so far" shows them until it hands back.
   const fill = (f: IntakeFields) => {
     if (f.action_taken) setAction(f.action_taken);
     if (f.root_cause) setCause(f.root_cause);
@@ -320,8 +320,9 @@ function CloseDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => vo
         description="This is saved to plant memory, so the next breakdown like this finds it."
         className="max-w-xl"
       >
-        {/* While talking, the voice panel takes the form's place (its chips show what is
-            filled), so the sheet doesn't grow past the screen; the height change animates. */}
+        {/* While talking, the voice panel takes the form's place (its "Report so far" shows
+            what is filled), so the sheet doesn't grow past the screen; the height change
+            animates. */}
         <AutoHeight className="-m-1 p-1">
           {voice ? (
             <div key="voice" className="rounded-xl p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
