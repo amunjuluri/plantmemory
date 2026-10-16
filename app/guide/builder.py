@@ -9,10 +9,12 @@ import asyncio
 import json
 import logging
 import re
+import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from app import telemetry
 from app.agent import prompts, tools
 from app.agent.guardrails import _display_date, format_minutes, ordinal
 from app.agent.tools import AgentDeps
@@ -294,6 +296,7 @@ async def build_guide_events(
     request: GuideRequest, deps: AgentDeps, kb: KnowledgeBase
 ) -> AsyncIterator[GuideProgress]:
     """Draft a guide, yielding progress for each step and finally the saved guide."""
+    began = time.perf_counter()
 
     def started(step: str) -> GuideProgress:
         return GuideProgress(type="step", step=step, status="started")
@@ -372,9 +375,19 @@ async def build_guide_events(
         if guide.downtime.manual_minutes:
             line += f", about {format_minutes(guide.downtime.manual_minutes)}"
         yield done("write_guide", line)
+        telemetry.event(
+            "guide_drafted",
+            guide=guide.id,
+            asset=guide.asset_tag,
+            seconds=round(time.perf_counter() - began, 1),
+            steps=len(guide.steps),
+            repeat=bool(guide.recurrence and guide.recurrence.is_repeat),
+            qa_needed=bool(guide.qa_reasons),
+        )
         yield GuideProgress(type="guide", guide=guide)
     except Exception as err:
         if is_overloaded(err):
+            telemetry.event("guide_draft_busy", seconds=round(time.perf_counter() - began, 1))
             log.warning("Gemini overloaded after retries: %s", err)
             yield GuideProgress(type="error", detail=BUSY_MESSAGE)
         else:

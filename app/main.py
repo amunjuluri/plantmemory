@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import contextlib
+import time
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -26,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 from google.genai import errors as genai_errors
 from pydantic import Field, TypeAdapter, ValidationError
 
+from app import telemetry
 from app.agent import agent
 from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
@@ -75,13 +77,17 @@ from app.models import (
     Model,
     Part,
     PlantStatus,
+    TelemetryBatch,
 )
-from app.ratelimit import client_id, limit_ai_calls, limiter
+from app.ratelimit import RateLimiter, client_id, limit_ai_calls, limiter
+from app.telemetry import record_batch, setup_logging
 
 VERSION = "0.2.0"
 
 settings = get_settings()
+setup_logging()
 app = FastAPI(title="PlantMemory", version=VERSION)
+telemetry_limiter = RateLimiter(settings.telemetry_batches_per_hour)
 # The UI's scripts, styles and pages are 4 to 5 times smaller gzipped (Lighthouse: 722 KB
 # saved on a phone's first visit). Starlette never compresses server-sent events, so guide
 # progress still streams.
@@ -104,6 +110,15 @@ async def gemini_error(request: Request, err: genai_errors.APIError) -> JSONResp
             {"detail": BUSY_MESSAGE}, status_code=503, headers={"Retry-After": "30"}
         )
     return JSONResponse({"detail": "The AI service returned an error."}, status_code=502)
+
+
+@app.exception_handler(Exception)
+async def unexpected_error(request: Request, err: Exception) -> JSONResponse:
+    """A bug: a plain message for the UI. Starlette raises it again after this, and the
+    server logs it with its traceback, which Error Reporting picks up."""
+    return JSONResponse(
+        {"detail": "Something went wrong on our side. It has been reported."}, status_code=500
+    )
 
 
 @app.exception_handler(workflow.GuideError)
@@ -166,9 +181,11 @@ async def ingest_logbook(
     """Read incidents from a logbook photo for review. Nothing is saved yet."""
     image = await file.read(logbook_ocr.MAX_IMAGE_BYTES + 1)
     try:
-        return await asyncio.to_thread(
+        result = await asyncio.to_thread(
             logbook_ocr.extract_records, image, file.filename, get_deps(), industry
         )
+        telemetry.event("logbook_read", records=len(result.records))
+        return result
     except logbook_ocr.InvalidImageError as err:
         raise HTTPException(status_code=415, detail=str(err)) from err
 
@@ -180,6 +197,7 @@ def confirm_logbook(body: ConfirmRequest) -> list[IncidentPublic]:
         saved = logbook_ocr.confirm_records(body.records, get_deps())
     except logbook_ocr.ConfirmError as err:
         raise HTTPException(status_code=422, detail=str(err)) from err
+    telemetry.event("records_saved", records=len(saved))
     return [_public(r) for r in saved]
 
 
@@ -228,6 +246,9 @@ class AppConfig(Model):
     store_backend: str
     qa_approval: str
     release_checks: list[str]
+    analytics_measurement_id: str | None = Field(
+        default=None, description="Google Analytics 4 id; none when it isn't set up."
+    )
 
 
 @app.get("/api/config")
@@ -243,7 +264,20 @@ def app_config() -> AppConfig:
         store_backend=settings.store_backend,
         qa_approval=settings.qa_approval,
         release_checks=list(RELEASE_CHECKS),
+        analytics_measurement_id=settings.analytics_measurement_id or None,
     )
+
+
+@app.post("/api/telemetry", status_code=204)
+def browser_events(batch: TelemetryBatch, request: Request) -> Response:
+    """Page views, actions and errors from the browser, written to the logs (see
+    app/telemetry.py). Over the per-client cap they are dropped quietly."""
+    try:
+        telemetry_limiter.check(client_id(request))
+    except HTTPException:
+        return Response(status_code=204)
+    record_batch(batch, user_agent=request.headers.get("user-agent", "")[:300])
+    return Response(status_code=204)
 
 
 @app.get("/api/assets")
@@ -285,7 +319,7 @@ async def upload_manual(
     """Read a manual so guides can cite it by page. Replaces an earlier upload of it."""
     data = await file.read(manual_ingest.MAX_PDF_BYTES + 1)
     try:
-        return await asyncio.to_thread(
+        result = await asyncio.to_thread(
             manual_ingest.ingest_manual,
             data,
             file.filename,
@@ -293,6 +327,8 @@ async def upload_manual(
             get_deps(),
             get_kb(),
         )
+        telemetry.event("manual_uploaded", sections=len(result.sections))
+        return result
     except manual_ingest.InvalidManualError as err:
         raise HTTPException(status_code=415, detail=str(err)) from err
 
@@ -383,7 +419,7 @@ async def revise_guide(
         raise HTTPException(status_code=422, detail="Invalid proposal or history.") from err
     data = await audio.read(voice.MAX_AUDIO_BYTES + 1) if audio else None
     try:
-        return await asyncio.to_thread(
+        result = await asyncio.to_thread(
             revise.revise,
             guide_id,
             get_deps(),
@@ -396,6 +432,15 @@ async def revise_guide(
             asked=asked,
             question=question,
         )
+        telemetry.event(
+            "change_proposed",
+            guide=guide_id,
+            via="voice" if data else "text",
+            language=result.language,
+            changes=len(result.changes),
+            question=result.reply is not None,
+        )
+        return result
     except voice.InvalidAudioError as err:
         raise HTTPException(status_code=415, detail=str(err)) from err
 
@@ -494,7 +539,10 @@ async def intake_live(
         return
     session = live.LiveSession(mode=mode, assets=list_assets(kb), guide=guide)
     codes = list(dict.fromkeys(c.code for c in kb.codes.all()))
+    began = time.perf_counter()
+    telemetry.event("voice_session_started", mode=mode)
     await live.run(ws, session, get_live_client(), settings, codes)
+    telemetry.event("voice_session_ended", mode=mode, seconds=round(time.perf_counter() - began, 1))
     with contextlib.suppress(RuntimeError, WebSocketDisconnect):  # the browser already left
         await ws.close()
 
@@ -527,9 +575,17 @@ async def analyze_log(
     """Split a log into errors and warnings, with manual first actions and time estimates."""
     data = await file.read(machine_logs.MAX_LOG_BYTES + 1)
     try:
-        return await asyncio.to_thread(
+        result = await asyncio.to_thread(
             machine_logs.analyze_log, data, file.filename, get_deps(), get_kb(), asset_tag
         )
+        telemetry.event(
+            "alarm_log_read",
+            asset=result.asset_tag,
+            parser=result.parser,
+            errors=len(result.errors),
+            warnings=len(result.warnings),
+        )
+        return result
     except machine_logs.InvalidLogError as err:
         raise HTTPException(status_code=415, detail=str(err)) from err
 
@@ -542,9 +598,11 @@ async def ingest_cmms(
     """Read maintenance history from a CMMS export for review. Nothing is saved yet."""
     data = await file.read(cmms.MAX_BYTES + 1)
     try:
-        return await asyncio.to_thread(
+        result = await asyncio.to_thread(
             cmms.import_export, data, file.filename, get_deps(), industry
         )
+        telemetry.event("cmms_read", rows=result.rows, skipped=len(result.skipped))
+        return result
     except cmms.InvalidExportError as err:
         raise HTTPException(status_code=415, detail=str(err)) from err
 
