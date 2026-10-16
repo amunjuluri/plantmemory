@@ -94,8 +94,10 @@ Firestore vector search and Cloud Run.
   the English must appear in every translation, or the line is flagged. A language
   added after approval with a flagged line is not printed.
 - The manager may approve a guide only when every line cites a source, no value is
-  flagged and every translation kept its numbers and codes; otherwise it goes to QA with
-  the reasons. `QA_APPROVAL=always` makes QA approve every guide.
+  flagged and every translation kept its numbers and codes; otherwise approving sends it
+  to QA with the reasons. The manager can't send a guide to QA or skip QA by choice, and
+  a guide QA sent back goes back to QA. Every closed repair goes to QA for release.
+  `QA_APPROVAL=always` makes QA approve every guide.
 - A machine counts as stopped from its first open guide until QA releases it. A guide
   withdrawn as not needed must give a reason, and one with a printed copy can't be
   withdrawn (the repair is closed instead).

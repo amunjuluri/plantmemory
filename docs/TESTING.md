@@ -229,13 +229,16 @@ off the sheet with the reason and a **Translate again** button.
 ## 9. QA review, when code finds a reason
 
 The manager can approve alone only when every line has a source, no value is flagged and
-every translation kept its numbers. Otherwise the guide must go to QA.
+every translation kept its numbers. Otherwise the guide must go to QA. Code decides this,
+not the manager: there is no button to send a guide to QA, or to skip QA.
 
-1. As the **Manager**, make a guide that needs QA (step 7.6 does this), then click
-   **Send to QA**.
+1. As the **Manager**, make a guide that needs QA (step 7.6 does this). The bar says why
+   QA must check it, and the button reads **Approve for QA**. Click it: the guide goes to
+   QA. (A clean guide shows only **Edit** and **Approve and print**.)
 2. Switch to **QA** with a different name. Open **Guides** → **Waiting for QA**.
 3. Check the reasons shown at the top, then either **Approve for printing**, or
    **Send back** (a reason is required; the manager sees it at the top of the guide).
+   When the manager approves a sent-back guide again, it goes back to QA.
 4. Try approving as QA with the same name that sent it: it is refused.
 
 To make QA approve every guide, set `QA_APPROVAL=always` in `.env`.
@@ -264,6 +267,9 @@ breakdown happens, the guide includes what worked here, and a fix marked "came b
 raises the repeat warning.
 
 ## 11. QA releases the machine
+
+Every closed repair goes to QA; the machine can't be released any other way. The count
+on **Guides** in the top bar includes these, as well as guides waiting for QA's approval.
 
 1. Switch to **QA**, using a name other than the one who closed it.
 2. On the closed guide, click **Release to production**, tick every line-clearance check
@@ -355,7 +361,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 6 | Alarm log | Stopping errors first; one click to a guide |
 | 7 | Change by voice or chat | Changes marked; nothing saved until kept; unclear request gets a question; audit trail records it |
 | 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
-| 9 | QA review | No self-approval; rejection needs a reason |
+| 9 | QA review | Only code sends a guide to QA (no manager button); no self-approval; rejection needs a reason; a sent-back guide returns to QA |
 | 10 | Close | Saved to memory; short answers expanded from the guide; "did what the guide said" ticks the guide's parts |
 | 11 | Release | All checks needed; closer can't release |
 | 12 | Plant status | Counts and durations match the open guides; bar follows draft, close and release; duplicate note on the form; withdraw needs a reason, not allowed once printed |
