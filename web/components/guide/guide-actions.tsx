@@ -700,7 +700,7 @@ export function GuideActions({
     } else {
       hint = ownGuide
         ? `You sent this guide, so someone else must review it. Switch to QA (top bar) with another name.${why}`
-        : `Waiting for QA. Switch to QA in the top bar to review it.${why}`;
+        : `Switch to QA in the top bar to review it.${why}`;
     }
   } else if (s === "approved") {
     hint =
