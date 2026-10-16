@@ -2,13 +2,11 @@
 
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
-import { Tooltip } from "@base-ui/react/tooltip";
 import {
   ChevronDown,
   ClipboardCheck,
   Compass,
   Database,
-  FlaskConical,
   MapPin,
   Moon,
   Route,
@@ -168,32 +166,6 @@ function TourMenu() {
   );
 }
 
-/** Shown only while the demo data is loaded: the label belongs to the data, so a plant
- * running on its own manuals and records never sees it. */
-function SyntheticBadge() {
-  const [synthetic, setSynthetic] = useState(false);
-  useEffect(() => {
-    api.manuals().then((ms) => setSynthetic(ms.some((m) => /synthetic/i.test(m.manual_title))), () => undefined);
-  }, []);
-  if (!synthetic) return null;
-  return (
-    <Tooltip.Root>
-      <Tooltip.Trigger className="hidden h-7 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 text-xs font-medium text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)] lg:inline-flex">
-        <FlaskConical className="size-3.5" />
-        Synthetic data
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={8}>
-          <Tooltip.Popup className="max-w-64 origin-(--transform-origin) rounded-lg bg-fg px-3 py-2 text-xs leading-5 text-bg shadow-raised transition-[scale,opacity] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-instant:duration-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
-            Every incident, manual, part and log here is invented for this demo. No real plant or
-            company data is used.
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  );
-}
-
 function initials(name: string) {
   return (
     name
@@ -287,14 +259,11 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <Tooltip.Provider delay={400}>
-          <div className="ml-auto flex items-center gap-1.5">
-            <SyntheticBadge />
-            <TourMenu />
-            <ThemeToggle />
-            <ActorSwitch />
-          </div>
-        </Tooltip.Provider>
+        <div className="ml-auto flex items-center gap-1.5">
+          <TourMenu />
+          <ThemeToggle />
+          <ActorSwitch />
+        </div>
       </div>
     </header>
   );
