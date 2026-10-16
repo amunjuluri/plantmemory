@@ -125,7 +125,12 @@ English SAP records because search works by meaning, not by matching words.
    reads the report back. Say "yes" to draft the guide.
 
 **You should see** a spoken reply about 2 seconds after you stop talking, in your
-language, and the report filling in on screen as you talk.
+language. Under the orb, **Report so far** lists Machine, Problem, Stopped? and Alarm,
+each filling in with the full answer as you talk. The item it is asking about says
+**Asking now…**, the others say **Needed** or are optional, and a count shows how many
+of the needed answers it has. Details you mention in passing (when it started, the
+batch) appear under **Also noted**. When it has everything it says **Complete, check
+it**.
 
 **Why it matters:** managers are often on the floor or on the phone when a machine
 stops. Talking in their own language is faster than typing in English, and the app makes
@@ -252,7 +257,8 @@ for every rejection, an audit trail) are enforced in code, not left to habit.
 1. On an approved guide, click **Close breakdown**.
 2. Fill in what was done, or click **Speak it instead** and say it (e.g. *"did what the
    guide said, took about an hour and a half"*). While you talk, the voice panel takes
-   the form's place and its chips show what is filled in; the form comes back filled.
+   the form's place and its **Report so far** list shows each answer; the form comes back
+   filled.
 3. Under **Parts used**, the guide's parts are a tick list: untick any that weren't
    replaced, and type any others.
 4. Choose **Is it fixed?** and click **Save and close**.
