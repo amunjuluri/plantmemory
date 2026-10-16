@@ -1,4 +1,4 @@
-.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval benchmark web web-check api-types deploy docker-run
+.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval benchmark web web-check api-types deploy docker-run visits
 
 PORT ?= 8473
 # HOST=0.0.0.0 to open it from a phone on the same Wi-Fi.
@@ -70,6 +70,9 @@ PROJECT_ID ?=
 
 deploy:  ## Deploy to Cloud Run (asks before creating anything). Add SEED=1 to load seed data
 	CLOUDSDK_ACTIVE_CONFIG_NAME=$(GCLOUD_CONFIG) scripts/deploy.sh $(if $(PROJECT_ID),--project $(PROJECT_ID)) $(if $(SEED),--seed)
+
+visits:  ## Who used the deployed app, what they did and what failed (from Cloud Logging). DAYS=7 for more
+	CLOUDSDK_ACTIVE_CONFIG_NAME=$(GCLOUD_CONFIG) uv run python -m scripts.visits --days $(or $(DAYS),3) $(if $(PROJECT_ID),--project $(PROJECT_ID))
 
 docker-run:  ## Build and run the production image locally on :8474 (uses your ADC)
 	docker build -t plantmemory:local .

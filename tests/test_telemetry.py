@@ -136,3 +136,42 @@ def test_an_unexpected_error_gets_a_plain_message(monkeypatch) -> None:
     assert r.status_code == 500
     assert r.json() == {"detail": "Something went wrong on our side. It has been reported."}
 
+
+def test_the_visits_report_reads_the_logged_events(capsys) -> None:
+    from scripts import visits
+
+    def entry(ts, event, **payload):
+        return {"timestamp": ts, "jsonPayload": {"event": event, **payload}}
+
+    web = {"source": "web", "visitor": "abcdef123456", "session": "s1"}
+    visits.report(
+        [
+            entry(
+                "2026-10-17T04:00:00Z",
+                "app_open",
+                **web,
+                props={"device": "phone", "timezone": "Asia/Kolkata"},
+            ),
+            entry("2026-10-17T04:00:01Z", "page_view", **web, path="/"),
+            entry("2026-10-17T04:00:02Z", "tour_started", **web, props={"section": "full"}),
+            entry(
+                "2026-10-17T04:05:00Z",
+                "tour_ended",
+                **web,
+                props={"section": "full", "finished": True},
+            ),
+            entry("2026-10-17T04:01:00Z", "draft_done", **web, props={"seconds": 9.8}),
+            entry("2026-10-17T04:02:00Z", "client_error", **web, message="TypeError: x\n    at f"),
+            entry(
+                "2026-10-17T04:02:00Z",
+                "api_failed",
+                **web,
+                props={"endpoint": "/api/plant", "status": 0},
+            ),
+            entry("2026-10-17T04:01:00Z", "guide_drafted", source="server", seconds=9.1),
+        ]
+    )
+    out = capsys.readouterr().out
+    assert "1 visitor(s), 1 visit(s)" in out and "abcdef12" in out and "17 Oct 09:30" in out
+    assert "full: finished" in out and "TypeError: x" in out and "/api/plant" in out
+    assert "median 9.1 s" in out
