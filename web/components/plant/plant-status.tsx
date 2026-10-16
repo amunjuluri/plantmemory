@@ -4,7 +4,6 @@ import { ArrowRight, ChevronDown, FilePlus2, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 
-import { AutoHeight } from "@/components/ui/auto-height";
 import { Card } from "@/components/ui/card";
 import { Shimmer } from "@/components/ui/states";
 import type { MachineState, MachineStatus, PlantStatus } from "@/lib/api";
@@ -111,11 +110,20 @@ function reportFor(tag: string) {
   box.focus({ preventScroll: true });
 }
 
-function MachineRow({ machine: m, now }: { machine: MachineStatus; now: number }) {
+/** Shown one after another as the panel opens; all at once, quickly, as it closes. */
+const REVEAL =
+  "transition-[opacity,translate,filter] duration-300 ease-out group-data-open/panel:delay-(--reveal) not-group-data-open/panel:translate-y-1 not-group-data-open/panel:opacity-0 not-group-data-open/panel:blur-[2px] not-group-data-open/panel:duration-150";
+
+const revealDelay = (i: number) => ({ "--reveal": `${60 + Math.min(i, 12) * 35}ms` }) as React.CSSProperties;
+
+function MachineRow({ machine: m, now, index }: { machine: MachineStatus; now: number; index: number }) {
   const tone = TONE[m.state];
   const stopped = m.state !== "running";
   return (
-    <li className="flex min-w-0 flex-col gap-1 rounded-xl bg-surface p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
+    <li
+      style={revealDelay(index)}
+      className={cn("flex min-w-0 flex-col gap-1 rounded-xl bg-surface p-3 shadow-[inset_0_0_0_1px_var(--color-line)]", REVEAL)}
+    >
       <div className="flex items-center gap-2">
         <Dot state={m.state} live={m.state === "stopped"} />
         <span className="truncate font-mono text-[0.8125rem] font-semibold">{m.tag}</span>
@@ -175,13 +183,13 @@ function Details({ status, now }: { status: PlantStatus; now: number }) {
     <div className="border-t border-line px-3 pt-3 pb-3 sm:px-4 sm:pb-4">
       {tiles.length > 0 && (
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {tiles.map((m) => (
-            <MachineRow key={m.tag} machine={m} now={now} />
+          {tiles.map((m, i) => (
+            <MachineRow key={m.tag} machine={m} now={now} index={i} />
           ))}
         </ul>
       )}
       {chips.length > 0 && (
-        <div className={cn(tiles.length > 0 && "mt-3")}>
+        <div className={cn(tiles.length > 0 && "mt-3", REVEAL)} style={revealDelay(tiles.length)}>
           <p className="mb-2 text-xs text-fg-subtle">
             {chips.length} running. Tap one to report a breakdown on it.
           </p>
@@ -203,7 +211,10 @@ function Details({ status, now }: { status: PlantStatus; now: number }) {
           </ul>
         </div>
       )}
-      <div className="mt-3 flex flex-col gap-1 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div
+        style={revealDelay(tiles.length + 1)}
+        className={cn("mt-3 flex flex-col gap-1 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-4", REVEAL)}
+      >
         <p className="text-pretty">
           A machine counts as stopped from its first open guide until QA releases it. Withdraw a guide that
           isn’t needed.
@@ -347,11 +358,20 @@ export function PlantStatusBar({ className }: { className?: string }) {
           )}
         </span>
       </button>
-      <AutoHeight>
-        <div id={panel} hidden={!open}>
-          {open && <Details status={status} now={now} />}
+      {/* Opens and closes on its real height (grid rows 0fr to 1fr), so nothing jumps. */}
+      <div
+        id={panel}
+        inert={!open}
+        data-open={open ? "" : undefined}
+        className={cn(
+          "group/panel grid transition-[grid-template-rows] duration-300 ease-(--ease-drawer)",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <Details status={status} now={now} />
         </div>
-      </AutoHeight>
+      </div>
     </Card>
   );
 }

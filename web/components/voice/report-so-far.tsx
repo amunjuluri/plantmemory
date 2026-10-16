@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 
+import { AutoHeight } from "@/components/ui/auto-height";
 import type { IntakeFields, IntakeMode, IntakeTurnResult } from "@/lib/api";
 import { cn, formatMinutes } from "@/lib/utils";
 
@@ -129,49 +130,60 @@ export function ReportSoFar({
           {complete ? "Complete, check it" : `${have} of ${required.length} needed`}
         </span>
       </div>
-      <dl className="flex flex-col">
-        {items.map((item) => {
-          const value = item.show(fields as IntakeFields);
-          const state: State = value
-            ? "done"
-            : item.key === asking
-              ? "asking"
-              : item.needed || missing.has(item.key)
-                ? "needed"
-                : "optional";
-          return (
-            <div key={item.key} className="flex gap-2.5 py-1">
-              <Mark state={state} />
-              <dt className="w-[5.25rem] shrink-0 text-[0.8125rem] leading-5 text-fg-muted">{item.label}</dt>
-              <dd
-                key={value ?? state}
-                title={value ?? undefined}
-                className={cn(
-                  "indic min-w-0 flex-1 text-[0.8125rem] leading-5 transition-[opacity,translate] duration-250 ease-out starting:translate-x-1 starting:opacity-0",
-                  value ? "line-clamp-3 font-medium text-fg" : "truncate",
-                  state === "asking" && "font-medium text-accent-text",
-                  (state === "needed" || state === "optional") && "text-fg-subtle",
-                )}
-              >
-                {value ?? (state === "asking" ? "Asking now…" : state === "needed" ? "Needed" : (item.empty ?? "Optional"))}
-              </dd>
+      {/* A longer answer or a new line grows the list smoothly instead of jumping. */}
+      <AutoHeight>
+        <dl className="flex flex-col">
+          {items.map((item) => {
+            const value = item.show(fields as IntakeFields);
+            const state: State = value
+              ? "done"
+              : item.key === asking
+                ? "asking"
+                : item.needed || missing.has(item.key)
+                  ? "needed"
+                  : "optional";
+            return (
+              <div key={item.key} className="flex gap-2.5 py-1">
+                <Mark state={state} />
+                <dt className="w-[5.25rem] shrink-0 text-[0.8125rem] leading-5 text-fg-muted">{item.label}</dt>
+                <dd
+                  key={value ?? state}
+                  title={value ?? undefined}
+                  className={cn(
+                    "indic min-w-0 flex-1 text-[0.8125rem] leading-5 transition-[opacity,translate] duration-250 ease-out starting:translate-x-1 starting:opacity-0",
+                    value ? "line-clamp-3 font-medium text-fg" : "truncate",
+                    state === "asking" && "font-medium text-accent-text",
+                    (state === "needed" || state === "optional") && "text-fg-subtle",
+                  )}
+                >
+                  {value ?? (state === "asking" ? "Asking now…" : state === "needed" ? "Needed" : (item.empty ?? "Optional"))}
+                </dd>
+              </div>
+            );
+          })}
+          {/* Opens on its height when something is mentioned in passing. */}
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows,opacity] duration-300 ease-(--ease-drawer)",
+              also ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+            )}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div className="flex gap-2.5 py-1">
+                <span aria-hidden className="mt-0.5 size-4 shrink-0" />
+                <dt className="w-[5.25rem] shrink-0 text-[0.8125rem] leading-5 text-fg-muted">Also noted</dt>
+                <dd
+                  key={also}
+                  title={also || undefined}
+                  className="indic line-clamp-2 min-w-0 flex-1 text-[0.8125rem] leading-5 text-fg transition-[opacity,translate] duration-250 ease-out starting:translate-x-1 starting:opacity-0"
+                >
+                  {also}
+                </dd>
+              </div>
             </div>
-          );
-        })}
-        {also && (
-          <div className="flex gap-2.5 py-1">
-            <span aria-hidden className="mt-0.5 size-4 shrink-0" />
-            <dt className="w-[5.25rem] shrink-0 text-[0.8125rem] leading-5 text-fg-muted">Also noted</dt>
-            <dd
-              key={also}
-              title={also}
-              className="indic line-clamp-2 min-w-0 flex-1 text-[0.8125rem] leading-5 text-fg transition-[opacity,translate] duration-250 ease-out starting:translate-x-1 starting:opacity-0"
-            >
-              {also}
-            </dd>
           </div>
-        )}
-      </dl>
+        </dl>
+      </AutoHeight>
     </section>
   );
 }
