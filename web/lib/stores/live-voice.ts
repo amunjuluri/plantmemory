@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import { track } from "@/lib/telemetry";
+
 import { API_BASE, type IntakeMode, type IntakeTurnResult } from "@/lib/api";
 
 /**
@@ -288,4 +290,13 @@ export const useLiveVoice = create<LiveState>((set, get) => {
 
     toggleMute: () => set({ muted: !get().muted }),
   };
+});
+
+// How spoken reports go: started, completed, or why they failed (the app's own messages,
+// e.g. the microphone was blocked; never what was said).
+useLiveVoice.subscribe((now, before) => {
+  if (now.phase === before.phase) return;
+  if (now.phase === "connecting") track("voice_started", { mode: now.mode });
+  else if (now.phase === "confirmed") track("voice_completed", { mode: now.mode, turns: now.messages.length });
+  else if (now.phase === "error") track("voice_failed", { mode: now.mode, reason: now.error });
 });

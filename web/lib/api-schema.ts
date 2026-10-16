@@ -181,6 +181,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/telemetry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Telemetry
+         * @description Page views, actions and errors from the browser, written to the logs (see
+         *     app/telemetry.py). Over the per-client cap they are dropped quietly.
+         */
+        post: operations["telemetry_api_telemetry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assets": {
         parameters: {
             query?: never;
@@ -668,6 +689,11 @@ export interface components {
             qa_approval: string;
             /** Release Checks */
             release_checks: string[];
+            /**
+             * Analytics Measurement Id
+             * @description Google Analytics 4 id; none when it isn't set up.
+             */
+            analytics_measurement_id: string | null;
         };
         /**
          * ApproveRequest
@@ -2332,6 +2358,48 @@ export interface components {
             /** Downtime Minutes */
             downtime_minutes: number | null;
         };
+        /**
+         * TelemetryBatch
+         * @description Events from one browser tab. `visitor` is a random id kept in that browser.
+         */
+        TelemetryBatch: {
+            /** Visitor */
+            visitor: string;
+            /** Session */
+            session: string;
+            /** Events */
+            events: components["schemas"]["TelemetryEvent"][];
+        };
+        /**
+         * TelemetryError
+         * @description An error the browser caught: uncaught, a failed request, or a crashed page.
+         */
+        TelemetryError: {
+            /**
+             * Name
+             * @default Error
+             */
+            name: string;
+            /** Message */
+            message: string;
+            /** Stack */
+            stack?: string | null;
+        };
+        /**
+         * TelemetryEvent
+         * @description Something that happened in the browser: a page opened, a tour step, an error.
+         */
+        TelemetryEvent: {
+            /** Name */
+            name: string;
+            /** Path */
+            path?: string | null;
+            /** Props */
+            props?: {
+                [key: string]: string | number | boolean | null;
+            };
+            error?: components["schemas"]["TelemetryError"] | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2621,6 +2689,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppConfig"];
+                };
+            };
+        };
+    };
+    telemetry_api_telemetry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelemetryBatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -9,6 +9,7 @@ import { LogoMark } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
 import { useBreakdown } from "@/lib/stores/breakdown";
 import { useLiveVoice } from "@/lib/stores/live-voice";
+import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 
 /** Set once the tour is finished or skipped, so it starts on the first visit only. */
@@ -45,6 +46,8 @@ type Step = {
   visit?: { label: string; path: string };
   /** A wider card, for the welcome and the wrap-up. */
   wide?: boolean;
+  /** Opens with a band of colour and the headline fading in: the welcome and wrap-up. */
+  hero?: boolean;
 };
 
 // Every figure is quoted from the source it links to (checked 14 Oct 2026).
@@ -103,6 +106,80 @@ const endVoice = () => voiceButton("End")?.click();
 const closeVoice = () => voiceButton("Close")?.click();
 let volumeShown = false;
 
+const reducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** A figure such as "$1.4T" or "62%" that counts up from zero, once, when it appears. */
+function CountUp({ value, delay = 0, className }: { value: string; delay?: number; className?: string }) {
+  const match = value.match(/^([^\d]*)([\d.]+)(.*)$/);
+  const target = match ? Number(match[2]) : 0;
+  const decimals = match?.[2].split(".")[1]?.length ?? 0;
+  const [shown, setShown] = useState(() => (match && !reducedMotion() ? 0 : target));
+  useEffect(() => {
+    if (!match || reducedMotion()) return;
+    let frame = 0;
+    const begin = performance.now() + delay;
+    const tick = (now: number) => {
+      const t = Math.min(1, Math.max(0, (now - begin) / 1100));
+      setShown(target * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, delay]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!match) return <span className={className}>{value}</span>;
+  return (
+    <span className={className} aria-label={value}>
+      {match[1]}
+      {shown.toFixed(decimals)}
+      {match[3]}
+    </span>
+  );
+}
+
+/** A headline whose words fade into focus one after another. */
+function FadeInWords({ text }: { text: string }) {
+  const words = text.split(" ");
+  return (
+    <>
+      {words.map((word, i) => (
+        <span key={i}>
+          <span
+            style={{ transitionDelay: `${120 + i * 45}ms` }}
+            className="inline-block transition-[opacity,filter,translate] duration-500 ease-out starting:translate-y-1 starting:opacity-0 starting:blur-[6px]"
+          >
+            {word}
+          </span>
+          {i < words.length - 1 && " "}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** The top of the welcome and wrap-up cards: drifting colour, the logo, and (welcome) the
+ * printed sheet the crew gets, peeking out. */
+function HeroBand({ sheet }: { sheet?: boolean }) {
+  return (
+    <div aria-hidden className="welcome-band relative h-24 overflow-hidden rounded-t-2xl sm:h-28">
+      <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,oklch(1_0_0/0.25),transparent_60%)]" />
+      <span className="absolute top-1/2 left-5 grid size-12 -translate-y-1/2 place-items-center rounded-2xl bg-white/90 shadow-[0_8px_24px_-8px_oklch(0.2_0.1_260/0.6)] transition-[scale,opacity] duration-500 ease-out starting:scale-90 starting:opacity-0 sm:left-6">
+        <LogoMark className="size-7" />
+      </span>
+      {sheet && (
+        // eslint-disable-next-line @next/next/no-img-element -- a small static image
+        <img
+          src="/welcome/printed-guide.jpg"
+          alt=""
+          width={288}
+          height={384}
+          className="absolute top-4 right-6 w-32 rotate-[-6deg] rounded-md ring-1 ring-black/5 shadow-[0_18px_40px_-12px_oklch(0.15_0.05_260/0.7)] transition-[translate,rotate,opacity] delay-150 duration-700 ease-(--ease-out) starting:translate-y-8 starting:rotate-0 starting:opacity-0 sm:w-36"
+        />
+      )}
+    </div>
+  );
+}
+
 /** A line to say, in English: the manager may say it in any language. */
 function Say({ children }: { children: ReactNode }) {
   return (
@@ -143,6 +220,7 @@ const STEPS: Step[] = [
     id: "welcome",
     chapter: "Welcome",
     wide: true,
+    hero: true,
     title: "Every hour a line stands still costs money",
     body: (
       <>
@@ -154,7 +232,7 @@ const STEPS: Step[] = [
               style={{ transitionDelay: `${120 + i * 70}ms` }}
               className="flex flex-col rounded-lg bg-surface-2 px-2.5 py-2 shadow-[inset_0_0_0_1px_var(--color-line)] transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0"
             >
-              <span className="tabular text-lg leading-6 font-semibold tracking-tight text-fg">{e.value}</span>
+              <CountUp value={e.value} delay={200 + i * 90} className="tabular text-lg leading-6 font-semibold tracking-tight text-fg" />
               <span className="mt-0.5 text-[0.6875rem] leading-4">{e.label}</span>
               <a
                 href={e.href}
@@ -265,7 +343,7 @@ const STEPS: Step[] = [
     title: "Check it, then confirm",
     body: (
       <>
-        <p>It reads the report back. If the chips are right, say:</p>
+        <p>It reads the report back, and “Report so far” lists every answer. If it’s right, say:</p>
         <Say>Yes, that’s right.</Say>
         <p className="mt-2">Or tap Draft repair guide. Say what’s wrong to change it.</p>
       </>
@@ -585,6 +663,7 @@ const STEPS: Step[] = [
     id: "wrap",
     chapter: "That’s the tour",
     wide: true,
+    hero: true,
     title: "Every closed breakdown makes the next one shorter",
     body: (
       <ul className="mt-1 flex flex-col gap-2">
@@ -673,6 +752,7 @@ export const useTour = create<TourState>((set) => ({
     const { first, last } = SECTIONS[section];
     range = [at(first), at(last)];
     set({ step: range[0], section });
+    track("tour_started", { section });
   },
   go: (step) => set({ step: Math.max(range[0], Math.min(range[1], step)) }),
   end: () => {
@@ -747,6 +827,7 @@ export function Tour() {
   // Placed once: from then on the popup glides between elements instead of jumping.
   const [settled, setSettled] = useState(false);
   const pop = useRef<HTMLDivElement>(null);
+  const stepsSeen = useRef(0);
   const next = useRef<HTMLButtonElement>(null);
   const current = step === null ? null : STEPS[step];
   const last = step !== null && nextStep(step, 1) === null;
@@ -775,6 +856,12 @@ export function Tour() {
   }, [current, router]);
 
   const finish = () => {
+    track("tour_ended", {
+      section: useTour.getState().section,
+      step: current?.id ?? null,
+      finished: last,
+      steps_seen: stepsSeen.current,
+    });
     setLeaving(true);
     setTimeout(() => {
       end();
@@ -818,6 +905,16 @@ export function Tour() {
     forwardRef.current = forward;
     branchRef.current = () => goOrFinish(step === null ? null : branchStep(step));
   });
+
+  // Which steps people reach, to see where the tour loses them.
+  useEffect(() => {
+    if (!current) {
+      stepsSeen.current = 0;
+      return;
+    }
+    stepsSeen.current++;
+    track("tour_step", { step: current.id, section: useTour.getState().section });
+  }, [current]);
 
   useEffect(() => {
     if (current?.id === "voice-volume") volumeShown = true;
@@ -1022,8 +1119,10 @@ export function Tour() {
           />
         )}
 
+        {current.hero && <HeroBand sheet={current.id === "welcome"} />}
+
         {/* How far through the tour: a hairline along the top edge. */}
-        {current.id !== "welcome" && (
+        {!current.hero && (
           <span aria-hidden className="absolute inset-x-4 top-0 h-0.5 overflow-hidden rounded-full bg-line">
             <span
               className="tour-progress absolute inset-0 origin-left rounded-full bg-accent"
@@ -1037,8 +1136,8 @@ export function Tour() {
           className="p-4 transition-[opacity,filter,translate] duration-250 ease-out starting:translate-y-0.5 starting:opacity-0 starting:blur-[2px]"
         >
           <div className="flex items-center gap-2">
-            {step === 0 ? (
-              <LogoMark className="size-6" />
+            {current.hero ? (
+              <span className="text-xs font-medium text-accent-text">{current.chapter}</span>
             ) : (
               <span className="text-xs font-medium text-accent-text">
                 {current.chapter}
@@ -1056,8 +1155,14 @@ export function Tour() {
               <X className="size-3.5" />
             </button>
           </div>
-          <h2 id="tour-title" className="mt-1.5 text-[0.9375rem] font-semibold tracking-tight text-balance">
-            {current.title}
+          <h2
+            id="tour-title"
+            className={cn(
+              "font-semibold tracking-tight text-balance",
+              current.hero ? "mt-1 text-lg leading-6" : "mt-1.5 text-[0.9375rem]",
+            )}
+          >
+            {current.hero ? <FadeInWords text={current.title} /> : current.title}
           </h2>
           <div id="tour-body" className="mt-1 text-[0.8125rem] leading-5 text-fg-muted text-pretty">
             {current.body}

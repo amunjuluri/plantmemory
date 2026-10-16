@@ -21,6 +21,7 @@ import { EXAMPLES, useBreakdown } from "@/lib/stores/breakdown";
 import { useLiveVoice } from "@/lib/stores/live-voice";
 import { stageLabel, useNow, usePlant } from "@/lib/stores/plant";
 import { useActorName } from "@/lib/stores/session";
+import { track } from "@/lib/telemetry";
 import { cn, formatSince } from "@/lib/utils";
 
 /** The machine picked already has an open guide: open it rather than draft the same
@@ -249,6 +250,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
                       onClick={() => {
                         setText(example.text);
                         setAssetTag(example.asset);
+                        track("example_used", { example: example.label });
                       }}
                       className={cn(
                         "h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)]",

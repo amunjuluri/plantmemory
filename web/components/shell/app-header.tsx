@@ -2,13 +2,11 @@
 
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
-import { Tooltip } from "@base-ui/react/tooltip";
 import {
   ChevronDown,
   ClipboardCheck,
   Compass,
   Database,
-  FlaskConical,
   MapPin,
   Moon,
   Route,
@@ -26,6 +24,7 @@ import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { api } from "@/lib/api";
 import { ROLE_LABEL, useSession, type Role } from "@/lib/stores/session";
+import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 
@@ -82,7 +81,11 @@ function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={() => {
+        const next = resolvedTheme === "dark" ? "light" : "dark";
+        setTheme(next);
+        track("theme_changed", { theme: next });
+      }}
       aria-label="Switch light or dark theme"
       className="grid size-9 place-items-center rounded-(--radius-control) text-fg-muted transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-2 hover:text-fg active:scale-[0.97] [&_svg]:size-4"
     >
@@ -168,32 +171,6 @@ function TourMenu() {
   );
 }
 
-/** Shown only while the demo data is loaded: the label belongs to the data, so a plant
- * running on its own manuals and records never sees it. */
-function SyntheticBadge() {
-  const [synthetic, setSynthetic] = useState(false);
-  useEffect(() => {
-    api.manuals().then((ms) => setSynthetic(ms.some((m) => /synthetic/i.test(m.manual_title))), () => undefined);
-  }, []);
-  if (!synthetic) return null;
-  return (
-    <Tooltip.Root>
-      <Tooltip.Trigger className="hidden h-7 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 text-xs font-medium text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)] lg:inline-flex">
-        <FlaskConical className="size-3.5" />
-        Synthetic data
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={8}>
-          <Tooltip.Popup className="max-w-64 origin-(--transform-origin) rounded-lg bg-fg px-3 py-2 text-xs leading-5 text-bg shadow-raised transition-[scale,opacity] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-instant:duration-0 data-starting-style:scale-[0.97] data-starting-style:opacity-0">
-            Every incident, manual, part and log here is invented for this demo. No real plant or
-            company data is used.
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  );
-}
-
 function initials(name: string) {
   return (
     name
@@ -243,7 +220,16 @@ function ActorSwitch() {
               The demo has no sign-in. Switch to QA to review a guide; QA can’t approve a guide they
               sent themselves.
             </Popover.Description>
-            <Segmented label="Role" options={ROLES} value={role} onChange={setRole} className="mt-3 w-full" />
+            <Segmented
+              label="Role"
+              options={ROLES}
+              value={role}
+              onChange={(next) => {
+                setRole(next);
+                track("role_switched", { role: next });
+              }}
+              className="mt-3 w-full"
+            />
             <label className="mt-3 flex flex-col gap-1.5 text-[0.8125rem] font-medium">
               Your name
               <Input
@@ -287,14 +273,11 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <Tooltip.Provider delay={400}>
-          <div className="ml-auto flex items-center gap-1.5">
-            <SyntheticBadge />
-            <TourMenu />
-            <ThemeToggle />
-            <ActorSwitch />
-          </div>
-        </Tooltip.Provider>
+        <div className="ml-auto flex items-center gap-1.5">
+          <TourMenu />
+          <ThemeToggle />
+          <ActorSwitch />
+        </div>
       </div>
     </header>
   );

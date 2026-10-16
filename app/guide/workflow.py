@@ -15,6 +15,7 @@ Rules enforced here, not in the UI:
   withdrawn with a reason, never deleted; once a copy is printed it must be closed instead.
 """
 
+from app import telemetry
 from app.agent.tools import AgentDeps
 from app.approval import new_record_id
 from app.config import get_settings
@@ -62,6 +63,13 @@ def _save(guide: Guide, kb: KnowledgeBase, event: GuideEvent) -> Guide:
     guide.events.append(event)
     guide.updated_at = event.at
     kb.guides.put([guide])
+    telemetry.event(
+        f"guide_{event.action}",
+        guide=guide.id,
+        asset=guide.asset_tag,
+        status=guide.status,
+        version=guide.version,
+    )
     return guide
 
 

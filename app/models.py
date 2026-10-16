@@ -4,7 +4,7 @@ import datetime as dt
 from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Industry = Literal["paper", "pharma", "healthcare", "generic"]
 Outcome = Literal["resolved", "recurred", "unknown"]
@@ -930,3 +930,42 @@ class PlantStatus(Model):
     awaiting_release: int
     unassigned: int = Field(description="Open guides that name no machine.")
     as_of: datetime = Field(default_factory=_now)
+
+
+# --- Telemetry (see app/telemetry.py) ---
+
+TelemetryValue = str | int | float | bool | None
+
+
+class TelemetryError(Model):
+    """An error the browser caught: uncaught, a failed request, or a crashed page."""
+
+    name: str = Field(default="Error", max_length=100)
+    message: str = Field(max_length=2000)
+    stack: str | None = Field(default=None, max_length=8000)
+
+
+class TelemetryEvent(Model):
+    """Something that happened in the browser: a page opened, a tour step, an error."""
+
+    name: str = Field(pattern=r"^[a-z][a-z0-9_]{0,47}$")
+    path: str | None = Field(default=None, max_length=300)
+    props: dict[str, TelemetryValue] = Field(default_factory=dict, max_length=24)
+    error: TelemetryError | None = None
+
+    @field_validator("props")
+    @classmethod
+    def _short(cls, props: dict[str, TelemetryValue]) -> dict[str, TelemetryValue]:
+        return {
+            k[:40]: v[:300] if isinstance(v, str) else v
+            for k, v in props.items()
+            if k and k[0].isalpha()
+        }
+
+
+class TelemetryBatch(Model):
+    """Events from one browser tab. `visitor` is a random id kept in that browser."""
+
+    visitor: str = Field(pattern=r"^[A-Za-z0-9-]{8,64}$")
+    session: str = Field(pattern=r"^[A-Za-z0-9-]{8,64}$")
+    events: list[TelemetryEvent] = Field(min_length=1, max_length=30)

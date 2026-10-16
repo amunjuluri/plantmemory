@@ -401,3 +401,27 @@
 .tour-progress {
   transition: transform 420ms var(--ease-out);
 }
+
+/* The welcome and wrap-up cards of the tour: a soft band of slowly drifting colour. */
+.welcome-band {
+  background:
+    radial-gradient(60% 120% at 15% 20%, oklch(0.72 0.16 255 / 0.9), transparent 70%),
+    radial-gradient(55% 110% at 85% 30%, oklch(0.78 0.12 195 / 0.85), transparent 70%),
+    radial-gradient(70% 140% at 50% 110%, oklch(0.6 0.2 285 / 0.75), transparent 70%),
+    var(--color-accent);
+  background-size: 160% 160%;
+  animation: band-drift 10s var(--ease-in-out) infinite alternate;
+}
+@keyframes band-drift {
+  from {
+    background-position: 0% 30%;
+  }
+  to {
+    background-position: 100% 70%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-band {
+    animation: none;
+  }
+}

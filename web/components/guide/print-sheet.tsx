@@ -15,6 +15,7 @@ import { ErrorState, Shimmer } from "@/components/ui/states";
 import { api, figureUrl, type AppConfig, type Guide, type GuideTranslation } from "@/lib/api";
 import { useActorName } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
+import { track } from "@/lib/telemetry";
 
 /** Fixed headings for the printed sheet, so they never depend on a model. `native` is the
  * language's name in its own script, shown when choosing languages. */
@@ -207,7 +208,6 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   const printed = [...guide.events].reverse().find((e) => e.action === "printed");
   // QA approved it if it was ever sent to QA; otherwise the manager did.
   const byQa = approval && guide.events.some((e) => e.action === "submitted" && e.at <= approval.at);
-  const synthetic = guide.manual_sections.some((m) => m.manual_title.toLowerCase().includes("synthetic"));
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
@@ -405,7 +405,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
 
       <footer className="mt-4 border-t border-neutral-300 pt-2 text-[7.5pt] leading-snug text-neutral-500">
         Sources: {sources.map(sourceLabel).join(", ") || "none"}. Drafted by PlantMemory from plant records and
-        equipment manuals; checked and approved by a person before printing.{synthetic && " Synthetic demo data."}
+        equipment manuals; checked and approved by a person before printing.
       </footer>
     </article>
   );
@@ -453,6 +453,7 @@ function openPrint(copy: number) {
   window.setTimeout(() => {
     window.removeEventListener("beforeprint", mark);
     if (opened) return;
+    track("print_dialog_blocked", { copy });
     toast(`Copy ${copy} is recorded and ready`, {
       id: "print",
       duration: Infinity,
