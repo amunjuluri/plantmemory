@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckCheck, ClipboardCheck, Factory, Lock, Pencil, Printer, Send, Undo2 } from "lucide-react";
+import { Ban, Check, CheckCheck, ClipboardCheck, Factory, Lock, Pencil, Printer, Send, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -69,6 +69,89 @@ function RejectDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => v
           </Button>
           <Button variant="primary" onClick={send} loading={busy} disabled={!comment.trim()}>
             Send back
+          </Button>
+        </div>
+      </Modal>
+    </>
+  );
+}
+
+const WITHDRAW_REASONS = [
+  "The machine restarted on its own",
+  "Reported by mistake",
+  "Same breakdown as another guide",
+];
+
+/** Whether this guide may still be withdrawn: not once a copy is on the floor. */
+export const canWithdraw = (guide: Guide) =>
+  ["draft", "rejected", "in_review", "approved"].includes(guide.status) && guide.copies_printed === 0;
+
+/** Take back a guide that isn't needed, with a reason. It stays in the list, and the
+ * machine no longer counts as stopped because of it. */
+export function WithdrawDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => void }) {
+  const by = useActorName();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try {
+      onDone(await api.withdrawGuide(guide.id, by, reason.trim()));
+      setOpen(false);
+      toast("Guide withdrawn", {
+        description: guide.asset_tag ? `${guide.asset_tag} no longer counts as stopped for it.` : "It stays in the list with your reason.",
+      });
+    } catch (err) {
+      toast.error("Couldn’t withdraw it", { description: errorText(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="-my-1 h-7 px-2 text-fg-subtle hover:text-fg"
+        data-tour="withdraw"
+      >
+        <Ban />
+        Withdraw
+      </Button>
+      <Modal
+        open={open}
+        onOpenChange={setOpen}
+        title="Withdraw this guide?"
+        description="For a guide that isn’t needed. It stays in the list with your reason, and the machine no longer counts as stopped because of it."
+      >
+        <div className="flex flex-wrap gap-1.5">
+          {WITHDRAW_REASONS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              aria-pressed={reason === r}
+              onClick={() => setReason(r)}
+              className="h-8 rounded-full bg-surface-2 px-3 text-[0.8125rem] text-fg-muted shadow-[inset_0_0_0_1px_var(--color-line)] transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-3 hover:text-fg active:scale-[0.97] aria-pressed:bg-accent-soft aria-pressed:text-accent-text aria-pressed:shadow-none"
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <Textarea
+          aria-label="Reason"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Or say why, e.g. the same stop as GDE-… drafted earlier."
+          className="mt-3 min-h-20"
+          maxLength={2000}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={send} loading={busy} disabled={reason.trim().length < 3}>
+            Withdraw guide
           </Button>
         </div>
       </Modal>
@@ -646,6 +729,8 @@ export function GuideActions({
     }
   } else if (s === "released") {
     hint = `Released to production by ${lastBy("released") ?? "QA"}.`;
+  } else if (s === "withdrawn") {
+    hint = "Kept in the list with the reason. Nothing more to do.";
   }
   if (review) {
     const changes = review.count === 1 ? "1 change" : `${review.count} changes`;

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, Factory, Languages, Lock, PackageX, ShieldAlert, ShieldCheck, Undo2 } from "lucide-react";
+import { Ban, CircleCheck, Factory, Languages, Lock, PackageX, ShieldAlert, ShieldCheck, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +14,7 @@ import { refreshPlant } from "@/lib/stores/plant";
 import { useRecords } from "@/lib/stores/records";
 import { useActorName, useSession } from "@/lib/stores/session";
 import { formatDateTime } from "@/lib/utils";
-import { AuditTrail, GuideActions } from "./guide-actions";
+import { AuditTrail, canWithdraw, GuideActions, WithdrawDialog } from "./guide-actions";
 import { GuideEditor } from "./guide-editor";
 import {
   CheckList,
@@ -27,12 +27,24 @@ import {
   StepList,
 } from "./guide-sections";
 import { StatusBadge } from "./meta";
+import { GuideStages } from "./stages";
 import { ReviseComposer } from "./revise-composer";
 import { auditNote, diffGuide, toEdit, type Ask, type Revision } from "./revision";
 import { RevisionSummary } from "./revision-summary";
 
 function StatusBanner({ guide }: { guide: Guide }) {
   const last = (action: string) => [...guide.events].reverse().find((e) => e.action === action);
+  if (guide.status === "withdrawn") {
+    const event = last("withdrawn");
+    return (
+      <Banner tone="neutral" icon={<Ban className="text-fg-muted" />} title={`Withdrawn by ${event?.by ?? "the manager"}`}>
+        <span className="text-fg-muted">
+          {event ? `${formatDateTime(event.at)}. ` : ""}
+          {event?.comment ? `“${event.comment}”` : "Not needed."}
+        </span>
+      </Banner>
+    );
+  }
   if (guide.status === "rejected") {
     const event = last("rejected");
     return (
@@ -180,7 +192,10 @@ export function GuideView({ guide, onChange: setGuide }: { guide: Guide; onChang
               {code}
             </Badge>
           ))}
-          <span className="ml-auto font-mono text-xs text-fg-subtle">{guide.id}</span>
+          <span className="ml-auto flex items-center gap-1">
+            {role === "manager" && canWithdraw(guide) && !revision && <WithdrawDialog guide={guide} onDone={onChange} />}
+            <span className="font-mono text-xs text-fg-subtle">{guide.id}</span>
+          </span>
         </div>
         <h2 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl">
           {shown.title}
@@ -196,6 +211,7 @@ export function GuideView({ guide, onChange: setGuide }: { guide: Guide; onChang
             {guide.equipment_model && <span className="text-fg-subtle"> · {guide.equipment_model}</span>}
           </p>
         )}
+        <GuideStages guide={guide} className="mt-3 max-w-xl" />
       </header>
 
       <StatusBanner guide={guide} />
