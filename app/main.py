@@ -32,6 +32,7 @@ from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
 from app.guide import revise, workflow
 from app.guide.builder import build_guide_events
+from app.guide.plant import plant_status
 from app.guide.translate import LANGUAGE_NAMES, language_name
 from app.ingest import logbook_ocr
 from app.intake import cmms, live, machine_logs, voice
@@ -59,6 +60,7 @@ from app.models import (
     GuideStatus,
     GuideSummary,
     GuideTranslate,
+    GuideWithdraw,
     IncidentPage,
     IncidentPublic,
     Industry,
@@ -72,6 +74,7 @@ from app.models import (
     ManualUploadResult,
     Model,
     Part,
+    PlantStatus,
 )
 from app.ratelimit import client_id, limit_ai_calls, limiter
 
@@ -432,6 +435,19 @@ async def add_guide_language(guide_id: str, body: GuideTranslate) -> Guide:
 async def close_guide(guide_id: str, body: GuideClose) -> Guide:
     """Record what was actually done; it is saved to plant memory."""
     return await asyncio.to_thread(workflow.close, guide_id, body, get_deps(), get_kb())
+
+
+@app.post("/api/guides/{guide_id}/withdraw")
+def withdraw_guide(guide_id: str, body: GuideWithdraw) -> Guide:
+    """Take back a guide that is not needed (the machine restarted, a mistaken or repeated
+    report). It stays in the list with the reason; a printed guide must be closed instead."""
+    return workflow.withdraw(guide_id, body, get_kb())
+
+
+@app.get("/api/plant")
+def plant() -> PlantStatus:
+    """Every machine: running, stopped (with its open guide), or waiting for QA's release."""
+    return plant_status(get_kb())
 
 
 @app.post("/api/guides/{guide_id}/release")

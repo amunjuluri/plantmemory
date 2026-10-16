@@ -10,6 +10,8 @@ Rules enforced here, not in the UI:
 - Closing a guide saves what was actually done as a new incident, so memory grows.
 - QA releases the machine to production after the repair (line clearance); the person who
   closed the guide cannot release it.
+- A guide that is not needed (the machine restarted, a mistaken or repeated report) is
+  withdrawn with a reason, never deleted; once a copy is printed it must be closed instead.
 """
 
 from app.agent.tools import AgentDeps
@@ -31,6 +33,7 @@ from app.models import (
     GuideReview,
     GuideSummary,
     GuideTranslate,
+    GuideWithdraw,
     IncidentRecord,
 )
 
@@ -354,3 +357,15 @@ def release(guide_id: str, body: GuideRelease, kb: KnowledgeBase) -> Guide:
     comment = "; ".join([*RELEASE_CHECKS, *([body.comment.strip()] if body.comment else [])])
     guide.status = "released"
     return _save(guide, kb, GuideEvent(by=body.by, action="released", comment=comment))
+
+
+def withdraw(guide_id: str, body: GuideWithdraw, kb: KnowledgeBase) -> Guide:
+    """Take back a guide that is not needed. It stays in the list, with the reason."""
+    guide = load(guide_id, kb)
+    _require(guide, "draft", "rejected", "in_review", "approved", doing="withdrawn")
+    if guide.copies_printed:
+        raise GuideError(
+            "A printed copy is on the floor. Close the repair instead, saying what was done."
+        )
+    guide.status = "withdrawn"
+    return _save(guide, kb, GuideEvent(by=body.by, action="withdrawn", comment=body.reason.strip()))
