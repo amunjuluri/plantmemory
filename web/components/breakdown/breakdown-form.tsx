@@ -99,7 +99,7 @@ export function BreakdownForm({ onStart }: { onStart?: () => void }) {
       toast.success("Filled in from the photo", {
         id,
         description: rest.length
-          ? `The page has ${rest.length + 1} entries; the first is used. Use Add records to save them all.`
+          ? `The page has ${rest.length + 1} entries; the first is used. Use Memory → Add records to save them all.`
           : "Check the text, then draft the guide.",
       });
     } catch (err) {

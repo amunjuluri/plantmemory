@@ -8,7 +8,6 @@ import {
   ClipboardCheck,
   Compass,
   Database,
-  FilePlus2,
   FlaskConical,
   MapPin,
   Moon,
@@ -34,14 +33,15 @@ const NAV = [
   { href: "/", label: "Breakdown", short: "Breakdown", icon: Wrench },
   { href: "/alarms/", label: "Alarm logs", short: "Alarms", icon: Siren },
   { href: "/guides/", label: "Guides", short: "Guides", icon: ClipboardCheck },
-  { href: "/memory/", label: "Memory", short: "Memory", icon: Database },
-  { href: "/add/", label: "Add records", short: "Add", icon: FilePlus2 },
+  // Adding records is part of Memory: its page is opened from there.
+  { href: "/memory/", label: "Memory", short: "Memory", icon: Database, also: "/add/" },
 ] as const;
 
 function useActive() {
   const pathname = usePathname();
   const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
-  return (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
+  return (href: string, also?: string) =>
+    href === "/" ? path === "/" : path.startsWith(href) || (also ? path.startsWith(also) : false);
 }
 
 /** Guides waiting for QA, refreshed on every navigation. */
@@ -270,12 +270,12 @@ export function AppHeader() {
           <span className="text-[0.9375rem]">PlantMemory</span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          {NAV.map(({ href, label, short }) => (
+          {NAV.map(({ href, label, short, ...rest }) => (
             <Link
               key={href}
               href={href}
               data-tour={`nav-${short.toLowerCase()}`}
-              aria-current={isActive(href) ? "page" : undefined}
+              aria-current={isActive(href, "also" in rest ? rest.also : undefined) ? "page" : undefined}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:text-fg",
                 "aria-[current=page]:bg-surface-2 aria-[current=page]:text-fg",
@@ -308,13 +308,13 @@ export function MobileTabBar() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/85 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-xl backdrop-saturate-150 md:hidden print:hidden"
     >
-      <div className="grid h-16 grid-cols-5">
-        {NAV.map(({ href, short, icon: Icon }) => (
+      <div className="grid h-16 grid-cols-4">
+        {NAV.map(({ href, short, icon: Icon, ...rest }) => (
           <Link
             key={href}
             href={href}
             data-tour={`nav-${short.toLowerCase()}`}
-            aria-current={isActive(href) ? "page" : undefined}
+            aria-current={isActive(href, "also" in rest ? rest.also : undefined) ? "page" : undefined}
             className="relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-fg-subtle transition-[color,scale] duration-150 ease-out active:scale-[0.96] aria-[current=page]:text-accent-text [&_svg]:size-5"
           >
             <Icon strokeWidth={1.75} />

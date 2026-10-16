@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
@@ -24,6 +26,13 @@ export function AddView() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-4">
+        <Link
+          href="/memory/"
+          className="inline-flex items-center gap-1.5 self-start rounded-lg text-sm text-fg-muted transition-[color] duration-150 ease-out hover:text-fg"
+        >
+          <ArrowLeft className="size-4" />
+          Plant memory
+        </Link>
         <div className="max-w-2xl">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Add to plant memory</h1>
           <p className="mt-1.5 text-[0.9375rem] text-fg-muted text-pretty">
