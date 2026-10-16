@@ -44,15 +44,16 @@ function useActive() {
     href === "/" ? path === "/" : path.startsWith(href) || (also ? path.startsWith(also) : false);
 }
 
-/** Guides waiting for QA, refreshed on every navigation. */
+/** Guides waiting for QA: to approve before printing, and repairs closed for QA to
+ * release the machine. Refreshed on every navigation. */
 function useReviewCount() {
   const pathname = usePathname();
   const [count, setCount] = useState(0);
   useEffect(() => {
     let live = true;
     api
-      .guides("in_review")
-      .then((guides) => live && setCount(guides.length))
+      .guides()
+      .then((guides) => live && setCount(guides.filter((g) => g.status === "in_review" || g.status === "closed").length))
       .catch(() => undefined);
     return () => {
       live = false;
