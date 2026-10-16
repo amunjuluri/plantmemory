@@ -9,6 +9,7 @@ import { LogoMark } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
 import { useBreakdown } from "@/lib/stores/breakdown";
 import { useLiveVoice } from "@/lib/stores/live-voice";
+import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 
 /** Set once the tour is finished or skipped, so it starts on the first visit only. */
@@ -673,6 +674,7 @@ export const useTour = create<TourState>((set) => ({
     const { first, last } = SECTIONS[section];
     range = [at(first), at(last)];
     set({ step: range[0], section });
+    track("tour_started", { section });
   },
   go: (step) => set({ step: Math.max(range[0], Math.min(range[1], step)) }),
   end: () => {
@@ -747,6 +749,7 @@ export function Tour() {
   // Placed once: from then on the popup glides between elements instead of jumping.
   const [settled, setSettled] = useState(false);
   const pop = useRef<HTMLDivElement>(null);
+  const stepsSeen = useRef(0);
   const next = useRef<HTMLButtonElement>(null);
   const current = step === null ? null : STEPS[step];
   const last = step !== null && nextStep(step, 1) === null;
@@ -775,6 +778,12 @@ export function Tour() {
   }, [current, router]);
 
   const finish = () => {
+    track("tour_ended", {
+      section: useTour.getState().section,
+      step: current?.id ?? null,
+      finished: last,
+      steps_seen: stepsSeen.current,
+    });
     setLeaving(true);
     setTimeout(() => {
       end();
@@ -818,6 +827,16 @@ export function Tour() {
     forwardRef.current = forward;
     branchRef.current = () => goOrFinish(step === null ? null : branchStep(step));
   });
+
+  // Which steps people reach, to see where the tour loses them.
+  useEffect(() => {
+    if (!current) {
+      stepsSeen.current = 0;
+      return;
+    }
+    stepsSeen.current++;
+    track("tour_step", { step: current.id, section: useTour.getState().section });
+  }, [current]);
 
   useEffect(() => {
     if (current?.id === "voice-volume") volumeShown = true;

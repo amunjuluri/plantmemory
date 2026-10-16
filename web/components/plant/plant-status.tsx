@@ -10,6 +10,7 @@ import { Shimmer } from "@/components/ui/states";
 import type { MachineState, MachineStatus, PlantStatus } from "@/lib/api";
 import { useBreakdown } from "@/lib/stores/breakdown";
 import { stageLabel, useNow, usePlantStatus } from "@/lib/stores/plant";
+import { track } from "@/lib/telemetry";
 import { cn, formatDate, formatDuration, formatSince, plural } from "@/lib/utils";
 
 const OPEN_KEY = "plantmemory-plant-open";
@@ -101,6 +102,7 @@ function Legend({ status }: { status: PlantStatus }) {
 
 /** Pre-fills the breakdown form with this machine and puts the cursor in the report. */
 function reportFor(tag: string) {
+  track("plant_report_clicked", { machine: tag });
   useBreakdown.getState().setAssetTag(tag);
   const box = document.getElementById("breakdown");
   if (!box) return;
@@ -251,6 +253,7 @@ export function PlantStatusBar({ className }: { className?: string }) {
     setOpen((was) => {
       try {
         localStorage.setItem(OPEN_KEY, was ? "0" : "1");
+        if (!was) track("plant_status_opened");
       } catch {
         // Not remembered; harmless.
       }

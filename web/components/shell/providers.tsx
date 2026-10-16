@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Toaster } from "sonner";
 
 import { useSession } from "@/lib/stores/session";
+import { Telemetry } from "./telemetry";
 
 function ThemedToaster() {
   const { resolvedTheme } = useTheme();
@@ -28,6 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       {children}
       <ThemedToaster />
+      <Telemetry />
     </ThemeProvider>
   );
 }

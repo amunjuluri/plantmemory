@@ -11,6 +11,7 @@ import { Card, SectionLabel } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { ApiError, api, type Guide, type GuideRevision } from "@/lib/api";
 import { refreshPlant } from "@/lib/stores/plant";
+import { track } from "@/lib/telemetry";
 import { useRecords } from "@/lib/stores/records";
 import { useActorName, useSession } from "@/lib/stores/session";
 import { formatDateTime } from "@/lib/utils";
@@ -311,7 +312,15 @@ export function GuideView({ guide, onChange: setGuide }: { guide: Guide; onChang
         composer={canRevise ? <ReviseComposer guide={guide} revision={revision} onProposal={propose} /> : undefined}
         review={
           revision && diff
-            ? { count: diff.count, keeping, onKeep: keep, onDiscard: () => setRevision(null) }
+            ? {
+                count: diff.count,
+                keeping,
+                onKeep: keep,
+                onDiscard: () => {
+                  setRevision(null);
+                  track("change_discarded", { guide: guide.id });
+                },
+              }
             : undefined
         }
       />

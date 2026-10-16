@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { api } from "@/lib/api";
 import { ROLE_LABEL, useSession, type Role } from "@/lib/stores/session";
+import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./logo";
 
@@ -80,7 +81,11 @@ function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={() => {
+        const next = resolvedTheme === "dark" ? "light" : "dark";
+        setTheme(next);
+        track("theme_changed", { theme: next });
+      }}
       aria-label="Switch light or dark theme"
       className="grid size-9 place-items-center rounded-(--radius-control) text-fg-muted transition-[background-color,color,scale] duration-150 ease-out hover:bg-surface-2 hover:text-fg active:scale-[0.97] [&_svg]:size-4"
     >
@@ -215,7 +220,16 @@ function ActorSwitch() {
               The demo has no sign-in. Switch to QA to review a guide; QA can’t approve a guide they
               sent themselves.
             </Popover.Description>
-            <Segmented label="Role" options={ROLES} value={role} onChange={setRole} className="mt-3 w-full" />
+            <Segmented
+              label="Role"
+              options={ROLES}
+              value={role}
+              onChange={(next) => {
+                setRole(next);
+                track("role_switched", { role: next });
+              }}
+              className="mt-3 w-full"
+            />
             <label className="mt-3 flex flex-col gap-1.5 text-[0.8125rem] font-medium">
               Your name
               <Input

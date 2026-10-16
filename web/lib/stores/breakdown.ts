@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { ApiError, guideStream, type Guide, type GuideStepId } from "@/lib/api";
+import { track } from "@/lib/telemetry";
 
 export type StepStatus = "pending" | "active" | "done" | "error";
 export type StepState = { status: StepStatus; summary?: string | null; detail?: string | null };
@@ -151,3 +152,22 @@ export const useBreakdown = create<BreakdownState>()(
     },
   ),
 );
+
+// Drafting as the manager sees it, network included: started, done in how long, or failed.
+useBreakdown.subscribe((now, before) => {
+  if (now.status === before.status) return;
+  if (now.status === "running") {
+    track("draft_started", {
+      machine: now.assetTag ?? "auto",
+      // Which script the report is in, not what it says.
+      script: /[\u0900-\u0DFF]/.test(now.text) ? "indian" : "latin",
+      length: now.text.trim().length,
+    });
+  } else if (before.status === "running") {
+    const seconds = now.startedAt && now.finishedAt ? Math.round((now.finishedAt - now.startedAt) / 100) / 10 : null;
+    if (now.status === "done") {
+      track("draft_done", { seconds, machine: now.guide?.asset_tag ?? null, steps: now.guide?.steps.length ?? 0 });
+    } else if (now.status === "error") track("draft_failed", { seconds, reason: now.error });
+    else track("draft_stopped", { seconds: now.startedAt ? Math.round((Date.now() - now.startedAt) / 100) / 10 : null });
+  }
+});

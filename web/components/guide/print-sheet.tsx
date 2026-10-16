@@ -15,6 +15,7 @@ import { ErrorState, Shimmer } from "@/components/ui/states";
 import { api, figureUrl, type AppConfig, type Guide, type GuideTranslation } from "@/lib/api";
 import { useActorName } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
+import { track } from "@/lib/telemetry";
 
 /** Fixed headings for the printed sheet, so they never depend on a model. `native` is the
  * language's name in its own script, shown when choosing languages. */
@@ -452,6 +453,7 @@ function openPrint(copy: number) {
   window.setTimeout(() => {
     window.removeEventListener("beforeprint", mark);
     if (opened) return;
+    track("print_dialog_blocked", { copy });
     toast(`Copy ${copy} is recorded and ready`, {
       id: "print",
       duration: Infinity,
