@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, SectionLabel } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { ApiError, api, type Guide, type GuideRevision } from "@/lib/api";
+import { refreshPlant } from "@/lib/stores/plant";
 import { useRecords } from "@/lib/stores/records";
 import { useActorName, useSession } from "@/lib/stores/session";
 import { formatDateTime } from "@/lib/utils";
@@ -78,7 +79,12 @@ function StatusBanner({ guide }: { guide: Guide }) {
 }
 
 /** A repair guide: evidence, steps, parts, translations, history and the next action. */
-export function GuideView({ guide, onChange }: { guide: Guide; onChange: (g: Guide) => void }) {
+export function GuideView({ guide, onChange: setGuide }: { guide: Guide; onChange: (g: Guide) => void }) {
+  // Every change to a guide may start or end a machine's stop.
+  const onChange = (g: Guide) => {
+    setGuide(g);
+    refreshPlant();
+  };
   const { remember, rememberSections } = useRecords();
   const role = useSession((s) => s.role);
   const by = useActorName();

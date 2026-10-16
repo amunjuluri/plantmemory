@@ -1,9 +1,9 @@
 "use client";
 
-import { BookOpen, Languages, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { GuideView } from "@/components/guide/guide-view";
+import { PlantStatusBar } from "@/components/plant/plant-status";
 import { StepsCard } from "@/components/steps-card";
 import { Card } from "@/components/ui/card";
 import { DraftingLoader } from "@/components/ui/loaders";
@@ -11,24 +11,32 @@ import { ErrorState, Shimmer } from "@/components/ui/states";
 import { api } from "@/lib/api";
 import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { GUIDE_STEPS, useBreakdown } from "@/lib/stores/breakdown";
+import { refreshPlant } from "@/lib/stores/plant";
 import { useActorName } from "@/lib/stores/session";
+import { plural } from "@/lib/utils";
 import { BreakdownForm } from "./breakdown-form";
 
-const POINTS = [
+/** What happens from here, with the measured time of each AI step. */
+const FLOW = [
   {
-    icon: BookOpen,
-    title: "Past fixes and the manual, together",
-    body: "Finds how this was fixed before, even if it was written differently or in another language, and the manual’s procedure for the alarm.",
+    title: "Describe it",
+    time: null,
+    body: "Type it, say it in any Indian language, or start from a logbook photo or the machine’s alarm log.",
   },
   {
-    icon: ShieldCheck,
-    title: "Checked before anyone acts",
-    body: "Every step cites its source. Values not in the manual are flagged. Parts and time come from the store and past downtime.",
+    title: "Get a checked repair guide",
+    time: "about 10 s",
+    body: "Steps from the manual and past fixes, each citing its source. Parts and stock from the store, time from past repairs.",
   },
   {
-    icon: Languages,
-    title: "Approved, printed in their language",
-    body: "You check and approve it (QA steps in when something needs a check), then print a controlled copy in English, Telugu and Hindi with the manual’s figures.",
+    title: "Approve and print for the crew",
+    time: "about 5 s",
+    body: "You approve it; QA checks only when code finds a reason. One A4 sheet in English, Telugu and Hindi.",
+  },
+  {
+    title: "Close it, QA releases the machine",
+    time: null,
+    body: "Say what was done. It’s saved to plant memory, so the next breakdown like it is quicker to fix.",
   },
 ];
 
@@ -40,26 +48,38 @@ function Idle() {
       .catch(() => undefined);
   }, []);
   return (
-    <div className="flex flex-col gap-6 rounded-(--radius-card) border border-dashed border-line-strong p-6 sm:p-8">
+    <div className="flex flex-col gap-5 rounded-(--radius-card) border border-dashed border-line-strong p-5 sm:p-7" data-tour="flow">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">From breakdown to a printed fix</h2>
         <p className="mt-1 text-sm text-fg-muted">
           {counts
-            ? `Searching ${counts.incidents} past incidents and ${counts.manuals} equipment manuals.`
+            ? `Searching ${plural(counts.incidents, "past incident")} and ${plural(counts.manuals, "equipment manual")}.`
             : "Searching your plant’s past incidents and equipment manuals."}
         </p>
       </div>
-      <ul className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-        {POINTS.map(({ icon: Icon, title, body }) => (
-          <li key={title} className="flex flex-col gap-2">
-            <span className="grid size-8 place-items-center rounded-lg bg-accent-soft text-accent-text">
-              <Icon className="size-4" />
+      <ol className="flex flex-col">
+        {FLOW.map((step, i) => (
+          <li
+            key={step.title}
+            style={{ transitionDelay: `${i * 60}ms` }}
+            className="relative flex gap-3.5 pb-5 transition-[opacity,translate] duration-300 ease-out last:pb-0 starting:translate-y-1 starting:opacity-0"
+          >
+            {i < FLOW.length - 1 && (
+              <span aria-hidden className="absolute top-8 bottom-1.5 left-[13.5px] w-px bg-line-strong" />
+            )}
+            <span className="tabular grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-semibold text-accent-text">
+              {i + 1}
             </span>
-            <p className="text-sm font-medium">{title}</p>
-            <p className="text-[0.8125rem] leading-5 text-fg-muted">{body}</p>
+            <div className="min-w-0 pt-0.5">
+              <p className="flex flex-wrap items-baseline gap-x-2 text-sm font-medium">
+                {step.title}
+                {step.time && <span className="tabular text-xs font-normal text-fg-subtle">{step.time}</span>}
+              </p>
+              <p className="mt-0.5 text-[0.8125rem] leading-5 text-fg-muted text-pretty">{step.body}</p>
+            </div>
           </li>
         ))}
-      </ul>
+      </ol>
     </div>
   );
 }
@@ -130,6 +150,10 @@ export function BreakdownView() {
     if (!useBreakdown.persist.hasHydrated()) void useBreakdown.persist.rehydrate();
   }, []);
   const stacked = useMediaQuery("(max-width: 1023px)");
+  // A new guide means a machine has stopped.
+  useEffect(() => {
+    if (status === "done") refreshPlant();
+  }, [status]);
 
   const onStart = () => {
     if (stacked) {
@@ -139,6 +163,7 @@ export function BreakdownView() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PlantStatusBar />
       <header className="max-w-2xl">
         <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-[1.75rem]">A machine has stopped?</h1>
         <p className="mt-1.5 text-[0.9375rem] text-fg-muted text-pretty">

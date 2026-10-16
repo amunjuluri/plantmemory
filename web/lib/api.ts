@@ -40,6 +40,9 @@ export type IntakeMode = IntakeState["mode"];
 export type LogAnalysis = Schemas["LogAnalysis"];
 export type LogCodeSummary = Schemas["LogCodeSummary"];
 export type CmmsImportResult = Schemas["CmmsImportResult"];
+export type PlantStatus = Schemas["PlantStatus"];
+export type MachineStatus = Schemas["MachineStatus"];
+export type MachineState = MachineStatus["state"];
 export type GuideStepId = "understand" | "search_history" | "search_manuals" | "find_parts" | "write_guide";
 
 /** Same origin in production; the FastAPI dev server during `next dev`. */
@@ -222,6 +225,9 @@ export const api = {
     }),
   approveGuide: (id: string, by: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/approve`, json({ by })),
+  /** Take back a guide that is not needed; it stays in the list with the reason. */
+  withdrawGuide: (id: string, by: string, reason: string) =>
+    request<Guide>(`/api/guides/${encodeURIComponent(id)}/withdraw`, json({ by, reason })),
   releaseGuide: (id: string, by: string, checks: string[], comment?: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/release`, json({ by, checks, comment })),
   submitGuide: (id: string, by: string) =>
@@ -243,6 +249,8 @@ export const api = {
       parts_used?: string | null;
     },
   ) => request<Guide>(`/api/guides/${encodeURIComponent(id)}/close`, json(body)),
+
+  plant: () => request<PlantStatus>("/api/plant"),
 
   analyzeLog: (file: File, assetTag: string | null, signal?: AbortSignal) =>
     request<LogAnalysis>("/api/logs/analyze", { ...upload({ file, asset_tag: assetTag }), signal }),

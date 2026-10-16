@@ -705,6 +705,7 @@ const ACTION_LABEL = {
   printed: "Printed",
   closed: "Closed",
   released: "Released to production",
+  withdrawn: "Withdrawn",
 } as const;
 
 export function AuditTrail({ guide }: { guide: Guide }) {
