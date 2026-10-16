@@ -77,11 +77,10 @@ Firestore vector search and Cloud Run.
 
 | Screen | What the manager does |
 |---|---|
-| Breakdown | Type, or talk it through by voice (it asks for what's missing and reads the report back), or read a logbook photo. Get a cited repair guide. |
+| Breakdown | See at a glance which machines are running, stopped (and for how long) or waiting for QA's release. Type, or talk it through by voice (it asks for what's missing and reads the report back), or read a logbook photo. Get a cited repair guide; a machine with an open guide is flagged so one stop isn't drafted twice. |
 | Alarm logs | Upload an HMI alarm export or controller log. Errors that stopped the machine come first with the manual's first actions and time; rising warnings are flagged. One click drafts the guide. |
-| Guides | Every guide from draft to approval, printing, closure and QA release, with an audit trail. Change a draft by voice or typed, in any language; every change is marked and checked before it is kept. QA reviews and releases here. |
-| Memory | Past incidents, equipment manuals by page, spare parts and stock. |
-| Add records | Logbook photos, SAP PM / CMMS exports (CSV or Excel), equipment manual PDFs. |
+| Guides | Every guide from draft to approval, printing, closure and QA release, with a track showing the stage and an audit trail. A guide that isn't needed is withdrawn with a reason, never deleted. Change a draft by voice or typed, in any language; every change is marked and checked before it is kept. QA reviews and releases here. |
+| Memory | Past incidents, equipment manuals by page, spare parts and stock. **Add records** brings in logbook photos, SAP PM / CMMS exports (CSV or Excel) and equipment manual PDFs. |
 
 ## Rules enforced in code, not left to the model
 
@@ -97,6 +96,9 @@ Firestore vector search and Cloud Run.
 - The manager may approve a guide only when every line cites a source, no value is
   flagged and every translation kept its numbers and codes; otherwise it goes to QA with
   the reasons. `QA_APPROVAL=always` makes QA approve every guide.
+- A machine counts as stopped from its first open guide until QA releases it. A guide
+  withdrawn as not needed must give a reason, and one with a printed copy can't be
+  withdrawn (the repair is closed instead).
 - QA can't approve a guide they sent; a rejection needs a reason; only approved guides
   print, and every printed copy is numbered and logged. The person who closed a repair
   can't release the machine; release needs every line-clearance check ticked.
