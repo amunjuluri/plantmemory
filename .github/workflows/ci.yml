@@ -65,4 +65,7 @@ jobs:
           service_account: ${{ vars.GCP_DEPLOY_SA }}
       - uses: google-github-actions/setup-gcloud@v3
       - id: deploy
+        env:
+          # Optional repository variable: turns on Google Analytics in the app.
+          ANALYTICS_MEASUREMENT_ID: ${{ vars.ANALYTICS_MEASUREMENT_ID }}
         run: scripts/deploy.sh --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --deploy-only --yes

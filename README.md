@@ -139,4 +139,6 @@ English is always printed. On the print page the manager can add Assamese, Benga
 Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu or Urdu.
 
 **Test every feature step by step:** [docs/TESTING.md](docs/TESTING.md) (what to do, what
-you should see, and why it matters on the floor). Deploying: [docs/DEPLOY.md](docs/DEPLOY.md).
+you should see, and why it matters on the floor). Deploying, and seeing who used it and
+what broke (`make visits`, Cloud Error Reporting, optional Google Analytics):
+[docs/DEPLOY.md](docs/DEPLOY.md#seeing-who-used-it-and-what-broke).
