@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Check, CheckCheck, ClipboardCheck, Factory, Lock, Pencil, Printer, Send, Undo2 } from "lucide-react";
+import { Ban, Check, CheckCheck, ClipboardCheck, Factory, Lock, Pencil, Printer, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -53,7 +53,7 @@ function RejectDialog({ guide, onDone }: { guide: Guide; onDone: (g: Guide) => v
         <Undo2 />
         Send back
       </Button>
-      <Modal open={open} onOpenChange={setOpen} title="Send back to the manager" description="Say what needs to change. The manager edits the guide and sends it again.">
+      <Modal open={open} onOpenChange={setOpen} title="Send back to the manager" description="Say what needs to change. The manager edits the guide and approves it again; it comes back to QA.">
         <Textarea
           autoFocus
           aria-label="What needs to change"
@@ -547,7 +547,7 @@ export function GuideActions({
   const router = useRouter();
   const role = useSession((s) => s.role);
   const by = useActorName();
-  const [busy, setBusy] = useState<"submit" | "approve" | null>(null);
+  const [busy, setBusy] = useState<"approve" | null>(null);
   const bar = useActionBarSpace(!editing);
   if (editing) return null;
 
@@ -557,33 +557,12 @@ export function GuideActions({
       icon: <TranslatingLoader className="text-fg-muted" />,
     });
 
-  const submit = async () => {
-    setBusy("submit");
-    const id = translating("Then it goes to QA.");
-    try {
-      const sent = await api.submitGuide(guide.id, by);
-      onChange(sent);
-      const flags = sent.translations.reduce((n, t) => n + t.flags.length, 0);
-      toast.success("Sent to QA", {
-        id,
-        icon: undefined,
-        description: flags
-          ? `${flags} translated line${flags > 1 ? "s" : ""} flagged for QA to check.`
-          : "Switch to QA in the top bar to review it.",
-      });
-      router.push(`/guides/view/?id=${encodeURIComponent(sent.id)}`);
-    } catch (err) {
-      toast.error("Couldn’t send to QA", { id, icon: undefined, description: errorText(err) });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  // The manager approves what they checked. Code may still send it to QA (e.g. a translated
-  // line lost a number); then the reasons are shown.
+  // The manager approves what they checked. Whether QA must approve it first is decided in
+  // code, never by the manager: a reason known now, or one found while translating (a
+  // translated line lost a number).
   const approveAsManager = async () => {
     setBusy("approve");
-    const id = translating("Then it’s ready to print.");
+    const id = translating(needsQa ? "Then it goes to QA." : "Then it’s ready to print.");
     try {
       const result = await api.approveGuide(guide.id, by);
       onChange(result);
@@ -591,10 +570,10 @@ export function GuideActions({
         toast.success("Approved. Opening the print view.", { id, icon: undefined });
         router.push(`/guides/print/?id=${encodeURIComponent(result.id)}`);
       } else {
-        toast.warning("QA needs to check this one first", {
+        toast.success("Approved. QA checks it next", {
           id,
           icon: undefined,
-          description: result.qa_reasons[0],
+          description: `${result.qa_reasons[0] ?? ""} Switch to QA in the top bar to review it.`.trim(),
         });
         router.push(`/guides/view/?id=${encodeURIComponent(result.id)}`);
       }
@@ -620,35 +599,23 @@ export function GuideActions({
   const lastBy = (action: string) => [...guide.events].reverse().find((e) => e.action === action)?.by;
   const same = (a?: string) => Boolean(a) && a!.trim().toLowerCase() === by.trim().toLowerCase();
   const ownGuide = same(lastBy("submitted"));
-  const reasons = guide.qa_reasons;
+  const reasons = guide.status === "rejected" ? ["QA sent an earlier version back.", ...guide.qa_reasons] : guide.qa_reasons;
+  const needsQa = reasons.length > 0;
 
   let hint: React.ReactNode = null;
   let actions: React.ReactNode = null;
   const s = guide.status;
   if (s === "draft" || s === "rejected") {
     if (role === "qa") {
-      hint = "The manager approves this, or sends it to QA if it needs a check.";
-    } else if (reasons.length) {
-      hint = (
+      hint = "The manager approves this. It comes to QA only if code finds a reason.";
+    } else {
+      hint = needsQa ? (
         <>
           QA must check it first: {reasons[0]}
-          {reasons.length > 1 && ` (+${reasons.length - 1} more)`} Edit to fix it, or send it to QA.
+          {reasons.length > 1 && ` (+${reasons.length - 1} more)`}{" "}
+          <span className="max-sm:hidden">Fix it with Edit, or approve and it goes to QA.</span>
         </>
-      );
-      actions = (
-        <>
-          <Button onClick={onEdit} aria-label="Edit by hand">
-            <Pencil />
-            Edit
-          </Button>
-          <Button data-primary variant="primary" onClick={submit} loading={busy === "submit"}>
-            <Send />
-            Send to QA
-          </Button>
-        </>
-      );
-    } else {
-      hint = (
+      ) : (
         <>
           <span className="max-sm:hidden">Every line cites the manual or a past fix. </span>Check the steps, then approve
           and print.
@@ -661,25 +628,14 @@ export function GuideActions({
             Edit
           </Button>
           <Button
-            variant="ghost"
-            onClick={submit}
-            loading={busy === "submit"}
-            disabled={busy === "approve"}
-            className={PHONE_SECONDARY}
-          >
-            <span className="max-sm:hidden">Ask QA to check</span>
-            <span className="sm:hidden">Ask QA</span>
-          </Button>
-          <Button
             data-primary
             data-tour="approve-button"
             variant="primary"
             onClick={approveAsManager}
             loading={busy === "approve"}
-            disabled={busy === "submit"}
           >
             <CheckCheck />
-            Approve and print
+            {needsQa ? "Approve for QA" : "Approve and print"}
           </Button>
         </>
       );
@@ -699,7 +655,7 @@ export function GuideActions({
       );
     } else {
       hint = ownGuide
-        ? `You sent this guide, so someone else must review it. Switch to QA (top bar) with another name.${why}`
+        ? `You approved this guide, so QA must be someone else. Switch to QA (top bar) with another name.${why}`
         : `Switch to QA in the top bar to review it.${why}`;
     }
   } else if (s === "approved") {

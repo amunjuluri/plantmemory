@@ -3,8 +3,9 @@ closed -> released to production by QA.
 
 Rules enforced here, not in the UI:
 - Only drafts and rejected guides can be edited; an edit is re-checked like a new draft.
-- The manager reviews the AI draft and may approve it, unless code finds a reason QA must
-  (see `qa_reasons`); then it goes to QA, translated, before it can be printed.
+- The manager reviews the AI draft and approves it. Code decides whether QA must approve
+  it first (see `qa_reasons`); then approving sends it to QA, translated, before it can
+  be printed. Sending a guide to QA is never the manager's choice, nor is skipping QA.
 - QA cannot approve a guide they submitted themselves, and a rejection needs a reason.
 - Only approved guides can be printed; every printed copy is counted in the audit trail.
 - Closing a guide saves what was actually done as a new incident, so memory grows.
@@ -199,23 +200,10 @@ def apply_content(guide: Guide, body: GuideEdit, kb: KnowledgeBase) -> None:
     guide.qa_reasons = qa_reasons(guide)
 
 
-def submit(guide_id: str, body: GuideAction, deps: AgentDeps, kb: KnowledgeBase) -> Guide:
-    """Translate the guide into the shop-floor languages and send it to QA."""
-    guide = load(guide_id, kb)
-    _require(guide, "draft", "rejected", doing="sent to QA")
-    if not guide.steps:
-        raise GuideError("A guide needs at least one step.", status_code=422)
-    if guide.status == "rejected":
-        guide.version += 1
-    guide.translations = translate_guide(guide, deps.settings.guide_languages, deps)
-    guide.qa_reasons = qa_reasons(guide, deps.settings.qa_approval)
-    guide.status = "in_review"
-    return _save(guide, kb, GuideEvent(by=body.by, action="submitted", comment=body.comment))
-
-
 def approve(guide_id: str, body: GuideAction, deps: AgentDeps, kb: KnowledgeBase) -> Guide:
     """The manager approves the guide they checked. It is translated first; if code then
-    finds a reason QA must approve, it goes to QA instead, with the reasons."""
+    finds a reason QA must approve (a sent-back guide always has one), it goes to QA
+    instead, with the reasons."""
     guide = load(guide_id, kb)
     _require(guide, "draft", "rejected", doing="approved")
     if not guide.steps:

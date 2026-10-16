@@ -230,8 +230,6 @@ export const api = {
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/withdraw`, json({ by, reason })),
   releaseGuide: (id: string, by: string, checks: string[], comment?: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/release`, json({ by, checks, comment })),
-  submitGuide: (id: string, by: string) =>
-    request<Guide>(`/api/guides/${encodeURIComponent(id)}/submit`, json({ by })),
   reviewGuide: (id: string, by: string, decision: "approve" | "reject", comment?: string) =>
     request<Guide>(`/api/guides/${encodeURIComponent(id)}/review`, json({ by, decision, comment })),
   printGuide: (id: string, by: string, languages: string[]) =>

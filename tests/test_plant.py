@@ -26,7 +26,7 @@ def machine(kb, tag: str):
 
 def approved(deps, kb):
     _, guide = draft(deps, kb)
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     return guide
 
@@ -59,7 +59,7 @@ def test_a_machine_follows_its_guide_from_stop_to_release(env) -> None:  # noqa:
     assert tp02.equipment_model and tp02.guide_title == guide.title
     assert machine(kb, "TP-01").state == "running"
 
-    workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
     assert machine(kb, "TP-02").stage == "in_review"
     workflow.review(guide.id, GuideReview(by="Sita", decision="approve"), kb)
     workflow.record_print(guide.id, GuidePrint(by="Ravi"), kb)
@@ -82,7 +82,7 @@ def test_a_stop_counts_from_its_first_guide_and_opens_the_furthest_along(env) ->
     _, first = draft(deps, kb)
     _, second = draft(deps, kb)
     backdate(kb, first.id, 3)
-    workflow.submit(second.id, GuideAction(by="Ravi"), deps, kb)
+    workflow.approve(second.id, GuideAction(by="Ravi"), deps, kb)
     tp02 = machine(kb, "TP-02")
     assert tp02.open_guides == 2 and tp02.guide_id == second.id and tp02.stage == "in_review"
     assert tp02.since == kb.guides.get(first.id).created_at
@@ -131,7 +131,7 @@ def test_withdrawing_a_guide_puts_the_machine_back(env) -> None:  # noqa: F811
     with pytest.raises(workflow.GuideError):
         workflow.withdraw(guide.id, GuideWithdraw(by="Ravi", reason="again"), kb)
     with pytest.raises(workflow.GuideError):
-        workflow.submit(guide.id, GuideAction(by="Ravi"), deps, kb)
+        workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
 
 
 def test_a_printed_or_finished_guide_cannot_be_withdrawn(env) -> None:  # noqa: F811

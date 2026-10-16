@@ -49,7 +49,7 @@ function StatusBanner({ guide }: { guide: Guide }) {
     const event = last("rejected");
     return (
       <Banner tone="danger" icon={<Undo2 />} title={`Sent back by ${event?.by ?? "QA"}`}>
-        {event?.comment ?? "QA asked for changes."} Edit the guide, then send it again.
+        {event?.comment ?? "QA asked for changes."} Edit the guide, then approve it; it goes back to QA.
       </Banner>
     );
   }

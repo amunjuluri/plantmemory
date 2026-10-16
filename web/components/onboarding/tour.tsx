@@ -404,7 +404,7 @@ const STEPS: Step[] = [
     target: "guide-actions",
     side: "top",
     title: "Approve and print",
-    body: "When it’s right, approve it. It’s translated for the floor in about 5 seconds, then the print page opens. If code flags something, it goes to QA first.",
+    body: "When it’s right, approve it. It’s translated for the floor in about 5 seconds, then the print page opens. Whether QA checks it first isn’t your call: if code flags something, approving sends it to QA.",
     doIt: "Tap Approve and print to see the sheet, or press Next",
     when: () => has("approve-button"),
     until: () => path().startsWith("/guides/print") && has("print-sheet"),

@@ -400,16 +400,11 @@ async def revise_guide(
         raise HTTPException(status_code=415, detail=str(err)) from err
 
 
-@app.post("/api/guides/{guide_id}/submit", dependencies=[Depends(limit_ai_calls)])
-async def submit_guide(guide_id: str, body: GuideAction) -> Guide:
-    """Translate the guide into the shop-floor languages and send it to QA."""
-    return await asyncio.to_thread(workflow.submit, guide_id, body, get_deps(), get_kb())
-
-
 @app.post("/api/guides/{guide_id}/approve", dependencies=[Depends(limit_ai_calls)])
 async def approve_guide(guide_id: str, body: GuideAction) -> Guide:
     """The manager approves the guide they checked; it goes to QA instead if code finds a
-    reason QA must approve (the reasons are in `qa_reasons`)."""
+    reason QA must approve (the reasons are in `qa_reasons`). There is no other way to
+    send a guide to QA: code decides, not the manager."""
     return await asyncio.to_thread(workflow.approve, guide_id, body, get_deps(), get_kb())
 
 

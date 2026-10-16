@@ -407,26 +407,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/guides/{guide_id}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Guide
-         * @description Translate the guide into the shop-floor languages and send it to QA.
-         */
-        post: operations["submit_guide_api_guides__guide_id__submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/guides/{guide_id}/approve": {
         parameters: {
             query?: never;
@@ -439,7 +419,8 @@ export interface paths {
         /**
          * Approve Guide
          * @description The manager approves the guide they checked; it goes to QA instead if code finds a
-         *     reason QA must approve (the reasons are in `qa_reasons`).
+         *     reason QA must approve (the reasons are in `qa_reasons`). There is no other way to
+         *     send a guide to QA: code decides, not the manager.
          */
         post: operations["approve_guide_api_guides__guide_id__approve_post"];
         delete?: never;
@@ -3026,41 +3007,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuideRevision"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_guide_api_guides__guide_id__submit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                guide_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GuideAction"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Guide"];
                 };
             };
             /** @description Validation Error */
