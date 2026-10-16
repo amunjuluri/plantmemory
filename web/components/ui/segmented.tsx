@@ -5,7 +5,7 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 
 import { cn } from "@/lib/utils";
 
-type Option<T extends string> = { value: T; label: string };
+type Option<T extends string> = { value: T; label: React.ReactNode };
 
 /** Single-choice segmented control. Selecting the active option keeps it selected. */
 export function Segmented<T extends string>({
