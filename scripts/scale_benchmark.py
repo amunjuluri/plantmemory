@@ -25,6 +25,7 @@ collections are named in code, so STORE_BACKEND and FIRESTORE_COLLECTION are not
 
 import argparse
 import json
+import platform
 import random
 import re
 import statistics
@@ -528,7 +529,7 @@ def run(rounds: int, n_extra: int) -> None:
         rtt = []
         for _ in range(20):
             t = time.perf_counter()
-            store.collection.document("__ping__").get()
+            store.collection.document("no-such-record").get()
             rtt.append(time.perf_counter() - t)
         for q in queries[:5]:  # warm the connection and the index
             store.search(qvecs[q], k=5)
@@ -566,7 +567,9 @@ def run(rounds: int, n_extra: int) -> None:
         "k": 5,
         "queries": len(queries),
         "rounds": rounds,
-        "client": "MacBook on a home connection, calling Firestore asia-south1 (Mumbai)",
+        # Where the client ran matters: every search crosses the internet to the database.
+        "client": f"{platform.system()} {platform.machine()} laptop in India over the "
+        "internet, calling Firestore in asia-south1 (Mumbai)",
         "product_codes": {c: label for c, (label, _) in PRODUCT_CODES.items()},
         "sizes": results,
     }
@@ -647,7 +650,8 @@ def chart() -> None:
     data = json.loads((OUT_DIR / f"{RESULT_NAME}.json").read_text())
     rows = sorted(data["sizes"], key=lambda r: r["count"])
     plt = _style()
-    fig, (left, right) = plt.subplots(1, 2, figsize=(10, 3.9), gridspec_kw={"wspace": 0.32})
+    fig, (left, right) = plt.subplots(1, 2, figsize=(10, 4.2))
+    fig.subplots_adjust(left=0.08, right=0.95, bottom=0.16, top=0.88, wspace=0.42)
     x = list(range(len(rows)))
     labels = [f"{r['count']:,}" for r in rows]
 
@@ -668,19 +672,24 @@ def chart() -> None:
     left.set_title("Search time as memory grows")
 
     n = rows[0]["n_cases"]
-    series = (("top1", BLUE, "top 1"), ("top3", AQUA, "top 3"), ("top5", ORANGE, "top 5"))
+    series = (
+        ("top5", ORANGE, "in the 5 results"),
+        ("top3", AQUA, "in the first 3"),
+        ("top1", BLUE, "first"),
+    )
     for key, color, label in series:
-        y = [100 * r[key] / n for r in rows]
+        y = [r[key] for r in rows]
         right.plot(x, y, color=color, lw=2, marker="o", ms=7, label=label, mec=SURFACE, mew=2)
+        right.text(x[-1] + 0.12, y[-1], f"{y[-1]}", va="center", color=INK, fontsize=10)
     right.set_xticks(x, labels)
-    right.set_ylim(0, 105)
-    right.set_yticks([0, 25, 50, 75, 100], ["0%", "25%", "50%", "75%", "100%"])
+    right.set_xlim(-0.3, x[-1] + 0.5)
+    right.set_ylim(0, n + 1)
+    right.set_yticks(range(0, n + 1, 2))
     right.set_xlabel("past repairs in memory")
-    right.set_ylabel(f"test reports finding their record (of {n})")
+    right.set_ylabel(f"test reports (of {n}) whose own record is")
     right.legend(frameon=False, loc="lower left", fontsize=9)
-    right.set_title("Still finding the right repair")
+    right.set_title("Still finding the demo's records")
 
-    fig.tight_layout()
     path = OUT_DIR / "scale.png"
     fig.savefig(path)
     plt.close(fig)
