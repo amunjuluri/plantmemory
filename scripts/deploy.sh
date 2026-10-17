@@ -23,8 +23,10 @@ EMBEDDING_MODEL="${EMBEDDING_MODEL:-gemini-embedding-2}"
 EMBEDDING_DIM="${EMBEDDING_DIM:-768}"
 COLLECTION="${FIRESTORE_COLLECTION:-incidents}"
 MAX_INSTANCES="${MAX_INSTANCES:-3}"
-# Google Analytics 4 id ("G-..."), from a Firebase web app or GA4 property. Optional.
-ANALYTICS_MEASUREMENT_ID="${ANALYTICS_MEASUREMENT_ID:-}"
+# Google Analytics 4 id ("G-..."): the Firebase web app on plantmemory-tqot45. It is public
+# (every page loads it), so it lives here; set ANALYTICS_MEASUREMENT_ID=off to deploy without it.
+ANALYTICS_MEASUREMENT_ID="${ANALYTICS_MEASUREMENT_ID:-G-VZ9E79NNFX}"
+[[ "$ANALYTICS_MEASUREMENT_ID" == off ]] && ANALYTICS_MEASUREMENT_ID=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

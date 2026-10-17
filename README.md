@@ -140,5 +140,5 @@ Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu or Ur
 
 **Test every feature step by step:** [docs/TESTING.md](docs/TESTING.md) (what to do, what
 you should see, and why it matters on the floor). Deploying, and seeing who used it and
-what broke (`make visits`, Cloud Error Reporting, optional Google Analytics):
+what broke (`make visits`, Cloud Error Reporting, Google Analytics):
 [docs/DEPLOY.md](docs/DEPLOY.md#seeing-who-used-it-and-what-broke).
