@@ -891,7 +891,11 @@ def test_the_guide_workflow_reads_and_searches_side_by_side(env) -> None:
 
     deps, kb = env
     run = Run(
-        request=GuideRequest(text=REQUEST, by="Ravi"), deps=deps, kb=kb, assets=[], picked=None,
+        request=GuideRequest(text=REQUEST, by="Ravi"),
+        deps=deps,
+        kb=kb,
+        assets=[],
+        picked=None,
         progress=aio.Queue(),
     )
     graph = build_workflow(run).graph

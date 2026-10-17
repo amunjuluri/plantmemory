@@ -23,9 +23,10 @@ EMBEDDING_MODEL="${EMBEDDING_MODEL:-gemini-embedding-2}"
 EMBEDDING_DIM="${EMBEDDING_DIM:-768}"
 COLLECTION="${FIRESTORE_COLLECTION:-incidents}"
 MAX_INSTANCES="${MAX_INSTANCES:-3}"
-# One instance kept warm, so nobody waits for a cold start (about 1 vCPU and 1 GiB idle).
-# MIN_INSTANCES=0 scales to zero when the app is not being shown.
-MIN_INSTANCES="${MIN_INSTANCES:-1}"
+# Scales to zero by default, so it costs nothing when idle. MIN_INSTANCES=1 keeps one
+# instance warm (about 1 vCPU and 1 GiB billed idle) so nobody waits for a cold start,
+# e.g. during evaluation.
+MIN_INSTANCES="${MIN_INSTANCES:-0}"
 # Google Analytics 4 id ("G-..."): the Firebase web app on plantmemory-tqot45. It is public
 # (every page loads it), so it lives here; set ANALYTICS_MEASUREMENT_ID=off to deploy without it.
 ANALYTICS_MEASUREMENT_ID="${ANALYTICS_MEASUREMENT_ID:-G-VZ9E79NNFX}"

@@ -127,7 +127,7 @@ def draw() -> str:
     text(
         cx + 22,
         cy + 52,
-        "FastAPI + Next.js UI + voice WebSocket in one container · 1 to 3 instances, 1 kept warm",
+        "FastAPI + Next.js UI + voice WebSocket in one container · scales from zero to 3 instances",
         size=13,
         fill=MUTED,
     )

@@ -30,7 +30,7 @@
 <text x="60" y="724" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">controlled copies, tick boxes</text>
 <rect x="330" y="120" width="790" height="640" rx="16" fill="#eaf0fd" stroke="none" stroke-width="1"/>
 <text x="352" y="148" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#1d5bd6" text-anchor="start" letter-spacing="0.8">CLOUD RUN · ASIA-SOUTH1</text>
-<text x="352" y="172" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">FastAPI + Next.js UI + voice WebSocket in one container · 1 to 3 instances, 1 kept warm</text>
+<text x="352" y="172" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">FastAPI + Next.js UI + voice WebSocket in one container · scales from zero to 3 instances</text>
 <text x="352" y="196" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#566070" text-anchor="start" letter-spacing="0.8">INTAKE</text>
 <rect x="352" y="208" width="140" height="74" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
 <rect x="352" y="218" width="3" height="54" rx="1.5" fill="#6b46d9"/>
