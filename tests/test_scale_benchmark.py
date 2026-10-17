@@ -1,13 +1,21 @@
-"""The scale benchmark's pure parts: turning an openFDA report into a past repair, and
-refusing to write anywhere but its own collections."""
+"""The scale benchmark's pure parts: turning an openFDA report into a past repair,
+refusing to write anywhere but its own collections, and scoring with the judgements."""
+
+import json
 
 import pytest
 
+from scripts.eval_retrieval import score_outcomes
 from scripts.scale_benchmark import (
+    CASES_PATH,
+    JUDGEMENTS_PATH,
     MAX_DESCRIPTION,
+    case_hits,
     collection_name,
+    judged_spec,
     maude_to_record,
     scale_store,
+    unjudged,
 )
 
 
@@ -85,3 +93,49 @@ def test_only_scale_collections_can_be_opened():
     for name in ("incidents", "guides", "manual_sections", "scale_incidents", "scaleincidents_1k"):
         with pytest.raises(ValueError):
             scale_store(name)
+
+
+def test_judgements_cover_the_eval_and_never_contradict_themselves():
+    spec = json.loads(CASES_PATH.read_text())
+    judged = json.loads(JUDGEMENTS_PATH.read_text())["judged"]
+    ids = {i["id"] for i in spec["cases"] + spec["negatives"]}
+    assert set(judged) <= ids
+    for q, j in judged.items():
+        assert not set(j["same"]) & set(j["not_same"]), q
+        assert set(j.get("why_not", {})) <= set(j["not_same"]), q
+        assert all(why for why in j["same"].values()), q
+
+
+def test_judged_records_join_the_eval_answers():
+    spec = judged_spec()
+    items = {i["id"]: i for i in spec["cases"] + spec["negatives"]}
+    original = json.loads(CASES_PATH.read_text())
+    q10 = next(c for c in original["cases"] if c["id"] == "Q10")
+    assert set(q10["expected"]) < set(items["Q10"]["expected"])
+    assert "MDR-590744" in items["Q10"]["expected"]  # a real positive-BI report
+    assert "MDR-1148229" in items["N10"]["expected"]  # a real broken cart wheel
+    assert items["N1"]["expected"] == []
+
+
+def test_a_shown_record_nobody_judged_is_reported():
+    spec = judged_spec()
+    shown = {"Q10": ["MDR-2870708", "MDR-590744", "MDR-0"], "N1": ["MDR-134459"]}
+    assert unjudged(spec, shown) == {"Q10": ["MDR-0"]}
+
+
+def test_case_hits_counts_a_judged_record_as_right():
+    hits = case_hits(["A", "B"], ["X", "B", "Y", "Z", "W"])
+    assert hits == {"top1": False, "top3": True, "top5_hit": True, "expected_in_top5": 1}
+    assert case_hits(["A"], [])["top1"] is False
+
+
+def test_showing_a_judged_match_first_for_a_negative_is_not_a_false_alarm():
+    negatives = [
+        {"id": "N1", "kind": "unrelated"},
+        {"id": "N10", "kind": "look-alike", "expected": ["MDR-1148229"]},
+        {"id": "N11", "kind": "look-alike", "expected": ["MDR-1"]},
+    ]
+    shown = [["MDR-9"], ["MDR-1148229", "MDR-9"], ["MDR-9", "MDR-1"]]
+    outcome = score_outcomes([], negatives, shown)
+    assert [n["id"] for n, _ in outcome["alarms"]] == ["N1", "N11"]
+    assert outcome["look_alike_alarms"] == 1

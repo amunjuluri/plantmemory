@@ -17,7 +17,13 @@ Steps, each safe to re-run (finished work is skipped):
   uv run python -m scripts.scale_benchmark indexes  # one vector index per collection (gcloud)
   uv run python -m scripts.scale_benchmark load     # embed, then write the collections
   uv run python -m scripts.scale_benchmark run      # latency and accuracy per size
+  uv run python -m scripts.scale_benchmark decide   # the same with the Gemini check
+  uv run python -m scripts.scale_benchmark rescore  # re-score saved results, no calls
   uv run python -m scripts.scale_benchmark chart    # docs/benchmark/scale.png
+
+A test report's right answers are the eval's own records plus every public report judged
+the same problem in data/eval/scale_judgements.json. A shown record that is in neither
+list is unjudged and counted wrong; each step prints those so they can be judged.
 
 Needs Firestore access and Vertex AI through Application Default Credentials. The
 collections are named in code, so STORE_BACKEND and FIRESTORE_COLLECTION are not used.
@@ -49,6 +55,8 @@ DATA_DIR = ROOT_DIR / "data" / "store" / "scale"
 MAUDE_DIR = DATA_DIR / "maude"
 VECTOR_DIR = DATA_DIR / "vectors"
 CASES_PATH = ROOT_DIR / "data" / "eval" / "retrieval_cases.json"
+# The eval labels only the 17 demo records; these judge the real reports a search showed.
+JUDGEMENTS_PATH = ROOT_DIR / "data" / "eval" / "scale_judgements.json"
 RESULT_NAME = "scale"
 
 OPENFDA_URL = "https://api.fda.gov/device/event.json"
@@ -440,6 +448,42 @@ def latency_queries(n_extra: int) -> list[str]:
     return queries + held_out[:n_extra]
 
 
+def judged_spec() -> dict:
+    """The eval's test reports, with the public reports judged the same problem added to
+    each one's right answers (for a negative too), and every judged id under 'judged'."""
+    spec = json.loads(CASES_PATH.read_text())
+    judged = json.loads(JUDGEMENTS_PATH.read_text())["judged"]
+    demo = {r.id for r in load_seed_records()}
+    for item in spec["cases"] + spec["negatives"]:
+        j = judged.get(item["id"], {"same": {}, "not_same": []})
+        item["expected"] = sorted(set(item.get("expected", [])) | set(j["same"]))
+        item["judged"] = demo | set(j["same"]) | set(j["not_same"])
+    return spec
+
+
+def unjudged(spec: dict, shown: dict[str, list[str]]) -> dict[str, list[str]]:
+    """Shown ids nobody has judged for that report, which are counted wrong."""
+    items = {i["id"]: i for i in spec["cases"] + spec["negatives"]}
+    found = {q: sorted(set(ids) - items[q]["judged"]) for q, ids in shown.items()}
+    return {q: ids for q, ids in found.items() if ids}
+
+
+def _report_unjudged(where: str, spec: dict, shown: dict[str, list[str]]) -> None:
+    for q, ids in unjudged(spec, shown).items():
+        print(f"  {where}: {q} showed unjudged {', '.join(ids)}", flush=True)
+
+
+def case_hits(expected: list[str], ids: list[str]) -> dict:
+    """Whether a search's top 5 found a right answer first, in the first 3 or at all."""
+    right = set(expected)
+    return {
+        "top1": bool(ids) and ids[0] in right,
+        "top3": bool(right & set(ids[:3])),
+        "top5_hit": bool(right & set(ids)),
+        "expected_in_top5": len(right & set(ids)),
+    }
+
+
 def accuracy(store: FirestoreStore, spec: dict, qvecs: dict, threshold: float) -> dict:
     rows, negatives = [], []
     for case in spec["cases"]:
@@ -453,10 +497,7 @@ def accuracy(store: FirestoreStore, spec: dict, qvecs: dict, threshold: float) -
                 "low_keyword": case["low_keyword"],
                 "top5": ids,
                 "scores": [round(h.score, 4) for h in hits],
-                "top1": ids[0] in expected,
-                "top3": bool(expected & set(ids[:3])),
-                "top5_hit": bool(expected & set(ids)),
-                "expected_in_top5": len(expected & set(ids)),
+                **case_hits(case["expected"], ids),
                 "candidates": len(above),
                 "candidates_expected": sum(h.record.id in expected for h in above),
                 "first_wrong": next(
@@ -482,6 +523,7 @@ def accuracy(store: FirestoreStore, spec: dict, qvecs: dict, threshold: float) -
                 "id": neg["id"],
                 "kind": neg.get("kind"),
                 "best": round(hits[0].score, 4) if hits else None,
+                "top5": [h.record.id for h in hits],
                 "candidates": len(above),
                 "best_record": (
                     {
@@ -494,10 +536,12 @@ def accuracy(store: FirestoreStore, spec: dict, qvecs: dict, threshold: float) -
                 ),
             }
         )
+    return {"cases": rows, "negatives": negatives, **_totals(rows, negatives)}
+
+
+def _totals(rows: list[dict], negatives: list[dict]) -> dict:
     n = len(rows)
     return {
-        "cases": rows,
-        "negatives": negatives,
         "top1": sum(r["top1"] for r in rows),
         "top3": sum(r["top3"] for r in rows),
         "top5": sum(r["top5_hit"] for r in rows),
@@ -510,7 +554,7 @@ def accuracy(store: FirestoreStore, spec: dict, qvecs: dict, threshold: float) -
 
 def run(rounds: int, n_extra: int) -> None:
     s = get_settings()
-    spec = json.loads(CASES_PATH.read_text())
+    spec = judged_spec()
     queries = latency_queries(n_extra)
     print(f"embedding {len(queries)} queries", flush=True)
     embedder = GeminiEmbedder(s)
@@ -540,6 +584,7 @@ def run(rounds: int, n_extra: int) -> None:
             store.search(qvecs[q], k=5)
             times.append(time.perf_counter() - t)
         acc = accuracy(store, spec, qvecs, s.match_threshold)
+        _report_unjudged(name, spec, {r["id"]: r["top5"] for r in acc["cases"]})
         row = {
             "size": size,
             "collection": name,
@@ -586,14 +631,15 @@ def decide(sizes: list[int]) -> None:
 
     Same steps as `make eval` part 1 (Gemini structures the report, search k=5, the
     MATCH_THRESHOLD cut, then Gemini checks each candidate), only the store is a scale
-    collection. "Right" is strict: the first record shown must be one the eval lists.
+    collection. "Right" is strict: the first record shown must be one the eval lists or
+    one judged the same problem.
     """
     from app.agent import tools
     from app.llm import GeminiLLM
-    from scripts.eval_retrieval import score_outcomes, shown_matches
+    from scripts.eval_retrieval import shown_matches
 
     s = get_settings()
-    spec = json.loads(CASES_PATH.read_text())
+    spec = judged_spec()
     cases, negatives = spec["cases"], spec["negatives"]
     queries = [c["query"] for c in cases] + [n["query"] for n in negatives]
     results = {}
@@ -604,41 +650,92 @@ def decide(sizes: list[int]) -> None:
         )
         with ThreadPoolExecutor(max_workers=6) as pool:
             shown = list(pool.map(lambda q, d=deps: shown_matches(q, d), queries))
-        before = score_outcomes(cases, negatives, [r[0] for r in shown])
-        after = score_outcomes(cases, negatives, [r[1] for r in shown])
-
-        def brief(outcome: dict) -> dict:
-            return {
-                "right": outcome["right"],
-                "missed": outcome["missed"],
-                "wrong_shown": outcome["wrong_shown"],
-                "false_alarms": len(outcome["alarms"]),
-                "look_alike_alarms": outcome["look_alike_alarms"],
-            }
-
+        ids = [c["id"] for c in cases] + [n["id"] for n in negatives]
         results[name] = {
             "size": size,
-            "score_only": brief(before),
-            "with_check": brief(after),
-            "n_cases": len(cases),
-            "n_negatives": len(negatives),
             "shown": {
                 q_id: {"by_score": r[0], "after_check": r[1], "best": round(r[2], 4)}
-                for q_id, r in zip(
-                    [c["id"] for c in cases] + [n["id"] for n in negatives], shown, strict=True
-                )
+                for q_id, r in zip(ids, shown, strict=True)
             },
         }
-        b, a = results[name]["score_only"], results[name]["with_check"]
-        print(
-            f"{name}: right {b['right']} -> {a['right']}/{len(cases)}, "
-            f"wrong shown {b['wrong_shown']} -> {a['wrong_shown']}, "
-            f"false alarms {b['false_alarms']} -> {a['false_alarms']}/{len(negatives)}",
-            flush=True,
-        )
+        _score_decide(name, results[name], spec)
     path = OUT_DIR / f"{RESULT_NAME}_decide.json"
     path.write_text(json.dumps({"gemini_model": s.gemini_model, "results": results}, indent=1))
     print(f"wrote {path.relative_to(ROOT_DIR)}")
+
+
+def _score_decide(name: str, result: dict, spec: dict) -> None:
+    """Score one size's shown records, by score alone and after the Gemini check."""
+    from scripts.eval_retrieval import score_outcomes
+
+    cases, negatives = spec["cases"], spec["negatives"]
+    shown = [result["shown"][x["id"]] for x in cases + negatives]
+
+    def brief(key: str) -> dict:
+        outcome = score_outcomes(cases, negatives, [r[key] for r in shown])
+        return {
+            "right": outcome["right"],
+            "missed": outcome["missed"],
+            "wrong_shown": outcome["wrong_shown"],
+            "false_alarms": len(outcome["alarms"]),
+            "look_alike_alarms": outcome["look_alike_alarms"],
+        }
+
+    result.update(
+        score_only=brief("by_score"),
+        with_check=brief("after_check"),
+        n_cases=len(cases),
+        n_negatives=len(negatives),
+    )
+    b, a = result["score_only"], result["with_check"]
+    print(
+        f"{name}: right {b['right']} -> {a['right']}/{len(cases)}, "
+        f"wrong shown {b['wrong_shown']} -> {a['wrong_shown']}, "
+        f"false alarms {b['false_alarms']} -> {a['false_alarms']}/{len(negatives)}",
+        flush=True,
+    )
+    _report_unjudged(
+        name, spec, {q: v["by_score"] + v["after_check"] for q, v in result["shown"].items()}
+    )
+
+
+# --- rescore: apply the current judgements to saved results ---
+
+
+def rescore() -> None:
+    """Re-score the saved run and decide results with the current judgements.
+
+    Needs no Firestore or Gemini calls: both steps save the ids each search showed.
+    """
+    spec = judged_spec()
+    cases = {c["id"]: c for c in spec["cases"]}
+    run_path = OUT_DIR / f"{RESULT_NAME}.json"
+    data = json.loads(run_path.read_text())
+    for size in data["sizes"]:
+        for row in size["cases"]:
+            right = set(cases[row["id"]]["expected"])
+            row.update(case_hits(cases[row["id"]]["expected"], row["top5"]))
+            row["candidates_expected"] = sum(
+                i in right and score >= data["match_threshold"]
+                for i, score in zip(row["top5"], row["scores"], strict=True)
+            )
+        size.update(_totals(size["cases"], size["negatives"]))
+        print(
+            f"{size['collection']}: top1 {size['top1']}/{size['n_cases']}, "
+            f"top3 {size['top3']}, top5 {size['top5']}",
+            flush=True,
+        )
+        _report_unjudged(size["collection"], spec, {r["id"]: r["top5"] for r in size["cases"]})
+    run_path.write_text(json.dumps(data, indent=1, default=str))
+    print(f"wrote {run_path.relative_to(ROOT_DIR)}")
+
+    decide_path = OUT_DIR / f"{RESULT_NAME}_decide.json"
+    if decide_path.exists():
+        saved = json.loads(decide_path.read_text())
+        for name, result in saved["results"].items():
+            _score_decide(name, result, spec)
+        decide_path.write_text(json.dumps(saved, indent=1))
+        print(f"wrote {decide_path.relative_to(ROOT_DIR)}")
 
 
 # --- chart ---
@@ -686,9 +783,9 @@ def chart() -> None:
     right.set_ylim(0, n + 1)
     right.set_yticks(range(0, n + 1, 2))
     right.set_xlabel("past repairs in memory")
-    right.set_ylabel(f"test reports (of {n}) whose own record is")
+    right.set_ylabel(f"test reports (of {n}) with a matching repair")
     right.legend(frameon=False, loc="lower left", fontsize=9)
-    right.set_title("Still finding the demo's records")
+    right.set_title("Still finding the right repair")
 
     path = OUT_DIR / "scale.png"
     fig.savefig(path)
@@ -709,6 +806,7 @@ def main() -> None:
     p_run.add_argument("--extra", type=int, default=175, help="held-out real reports as queries")
     p_decide = sub.add_parser("decide", help="the eval with the Gemini check, per size")
     p_decide.add_argument("--sizes", type=int, nargs="+", default=[SIZES[0], SIZES[-1]])
+    sub.add_parser("rescore", help="apply the current judgements to saved results")
     sub.add_parser("chart", help="draw docs/benchmark/scale.png")
     args = parser.parse_args()
 
@@ -722,6 +820,8 @@ def main() -> None:
         run(args.rounds, args.extra)
     elif args.step == "decide":
         decide(args.sizes)
+    elif args.step == "rescore":
+        rescore()
     elif args.step == "chart":
         chart()
 
