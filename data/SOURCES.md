@@ -23,6 +23,25 @@ replacement ... replaced the door seal, tested ... returned the unit to service"
   count as repeats on this plant's machines. Repeat warnings come only from the plant's
   own records (logbooks, SAP imports, closed guides).
 
+## Real: the scale benchmark's 50,000 reports (not in the app)
+
+`make scale-benchmark` downloads about 57,000 more FDA device reports to test search at
+scale. They go only into separate `scale_incidents_*` Firestore collections, never into
+the app's memory, and are not committed (they are cached in `data/store/scale/`).
+
+- Source: the same [openFDA device adverse event API](https://open.fda.gov/apis/device/event/),
+  the newest reports with narrative text for 14 product codes of equipment a service
+  technician repairs: steam sterilizers (FLE), hydrogen peroxide sterilizers (MLR),
+  washer-disinfectors (MEC), endoscope reprocessors (FEB), portable air compressors
+  (BTI), surgical tables (FQO), surgical lights (FSY), powered hospital beds (FNL),
+  anaesthesia machines (BSZ), heart-lung machine consoles (DTQ), ventilators (CBK),
+  angiographic X-ray systems (IZI), automated dispensing cabinets (BRY) and slide
+  stainers (KPA).
+- License: public domain under [CC0 1.0](https://open.fda.gov/license/), as above.
+- Each report is kept as written (upper case, with FDA's redactions), cut to about 700
+  characters each for the event and the manufacturer's narrative, and stored as a
+  `public_record` from another site. Reports with no usable event text are skipped.
+
 We left out FDA drug recalls and warning letters on purpose: they record a regulator's
 verdict, not what fixed the machine, so they don't help get a line running again.
 
