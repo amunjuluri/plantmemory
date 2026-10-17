@@ -425,3 +425,53 @@
     animation: none;
   }
 }
+
+/* Page changes (app/template.tsx): the old page fades out quickly and the new one fades in
+   with a slight lift, so a route change doesn't flash. Seen tens of times a day, so it is
+   short and small. The header and phone tab bar hold still and stay above the pages. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-old(site-header),
+::view-transition-old(tab-bar) {
+  display: none;
+}
+::view-transition-new(root),
+::view-transition-new(site-header),
+::view-transition-new(tab-bar) {
+  animation: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(tab-bar) {
+  animation: none;
+  z-index: 10;
+}
+::view-transition-old(.page-exit) {
+  animation: 100ms var(--ease-out) both page-fade-out;
+}
+::view-transition-new(.page-enter) {
+  /* Starts as the old page is all but gone, so the two never show at once. */
+  animation: 200ms var(--ease-out) 80ms both page-enter;
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(.page-enter) {
+    animation-name: page-fade-in;
+  }
+}
