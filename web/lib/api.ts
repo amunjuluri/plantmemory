@@ -144,7 +144,7 @@ export function analyzeStream(text: string, industry: Industry | null, signal: A
 
 /** Drafts a repair guide and yields each step as it happens, then the saved guide. */
 export function guideStream(
-  body: { text: string; asset_tag?: string | null; by: string },
+  body: { text: string; asset_tag?: string | null; by: string; machine_confirmed?: boolean },
   signal: AbortSignal,
 ) {
   return postEvents<GuideProgress>("/api/guides/stream", body, signal);
@@ -192,6 +192,9 @@ export const api = {
     request<Incident[]>("/api/ingest/confirm", json({ records })),
 
   config: () => request<AppConfig>("/api/config"),
+  /** The languages the crew reads: guides approved from now on are translated into them. */
+  setFloorLanguages: (by: string, languages: string[]) =>
+    request<AppConfig>("/api/settings/floor-languages", put({ by, languages })),
   assets: () => request<Asset[]>("/api/assets"),
   manuals: () => request<ManualSummary[]>("/api/manuals"),
   manualSections: (manualId: string) =>

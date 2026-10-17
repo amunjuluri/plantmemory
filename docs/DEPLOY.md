@@ -69,7 +69,9 @@ embedding model or dimension, create new indexes and re-seed.
 
 For a demo this sits within Google Cloud's free tiers, apart from Gemini calls:
 
-- **Cloud Run** scales to zero, so it costs nothing when idle.
+- **Cloud Run** scales to zero, so it costs nothing when idle; the first visit after an
+  idle spell waits a few seconds for a cold start. `MIN_INSTANCES=1 make deploy` keeps one
+  instance warm instead (about 1 vCPU and 1 GiB billed at the idle rate).
 - **Firestore** uses the free daily quota on the `(default)` database.
 - **Cloud Build** is a few build-minutes per deploy.
 - **Artifact Registry** costs cents per month for stored images.
@@ -102,11 +104,15 @@ Error Reporting read.
   fail or never arrive are logged as `api_failed`.
 - **Logs Explorer.** Query `jsonPayload.event="page_view"`, `jsonPayload.source="server"`
   or `severity>=ERROR` for the raw entries.
-- **Google Analytics (optional).** For dashboards of visitors, countries and realtime
-  use, create a Firebase web app with Analytics (Firebase console → Add app → Web) or a
-  GA4 property, and set its measurement id: `ANALYTICS_MEASUREMENT_ID=G-XXXXXXX` for
-  `make deploy`, or a repository variable of that name for deploys from GitHub. The app
-  then sends the same events to it. Without an id nothing is sent to Google Analytics.
+- **Google Analytics.** For dashboards of visitors, countries and realtime use, the
+  same events go to the Firebase web app's Analytics (measurement id `G-VZ9E79NNFX`):
+  [Firebase console](https://console.firebase.google.com/project/plantmemory-tqot45/analytics)
+  → Analytics, or Realtime in Google Analytics. The id is the default in
+  `scripts/deploy.sh`; to use another, set `ANALYTICS_MEASUREMENT_ID=G-XXXXXXX` for
+  `make deploy` or the production environment variable of that name on GitHub, and
+  `off` turns it off. Only the deployed app sends to it; `make dev` doesn't. To check it,
+  open the app and look for `google-analytics.com/g/collect` requests in the browser's
+  Network tab, or yourself under Realtime.
 
 Browser events are capped at 1,200 batches an hour per address
 (`TELEMETRY_BATCHES_PER_HOUR`); past that they are dropped, so a broken page can't fill

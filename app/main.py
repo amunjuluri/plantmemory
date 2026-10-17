@@ -5,6 +5,7 @@ import base64
 import contextlib
 import time
 from collections.abc import AsyncIterator
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import (
@@ -33,7 +34,7 @@ from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
 from app.guide import revise, workflow
-from app.guide.builder import build_guide_events
+from app.guide.flow import build_guide_events
 from app.guide.plant import plant_status
 from app.guide.translate import LANGUAGE_NAMES, language_name
 from app.ingest import logbook_ocr
@@ -49,6 +50,7 @@ from app.models import (
     CmmsImportResult,
     ConfirmRequest,
     Draft,
+    FloorLanguagesUpdate,
     Guide,
     GuideAction,
     GuideClose,
@@ -237,12 +239,17 @@ class LanguageOption(Model):
 class AppConfig(Model):
     """What the UI needs to know about this deployment."""
 
-    guide_languages: list[LanguageOption] = Field(
-        description="Translated when a guide is approved or sent to QA."
+    floor_languages: list[LanguageOption] = Field(
+        description="The languages the crew reads: every guide is translated into them on approval."
     )
+    floor_languages_set_by: str | None = Field(
+        default=None, description="Who last chose the floor languages; none: the default."
+    )
+    floor_languages_set_at: datetime | None = None
     print_languages: list[LanguageOption] = Field(
         description="Every language a guide can be printed in; others are added on demand."
     )
+    max_sheet_languages: int = Field(description="Most languages on one sheet besides English.")
     store_backend: str
     qa_approval: str
     release_checks: list[str]
@@ -253,19 +260,34 @@ class AppConfig(Model):
 
 @app.get("/api/config")
 def app_config() -> AppConfig:
+    kb = get_kb()
+    saved = kb.settings.get("plant")
+    chosen = saved is not None and bool(saved.floor_languages)
     return AppConfig(
-        guide_languages=[
-            LanguageOption(code=c, name=language_name(c)) for c in settings.guide_languages
+        floor_languages=[
+            LanguageOption(code=c, name=language_name(c))
+            for c in workflow.floor_languages(kb, settings)
         ],
+        floor_languages_set_by=saved.updated_by if chosen else None,
+        floor_languages_set_at=saved.updated_at if chosen else None,
         print_languages=sorted(
             (LanguageOption(code=c, name=n) for c, n in LANGUAGE_NAMES.items() if c != "en"),
             key=lambda o: o.name,
         ),
         store_backend=settings.store_backend,
         qa_approval=settings.qa_approval,
+        max_sheet_languages=settings.max_sheet_languages,
         release_checks=list(RELEASE_CHECKS),
         analytics_measurement_id=settings.analytics_measurement_id or None,
     )
+
+
+@app.put("/api/settings/floor-languages")
+def set_floor_languages(body: FloorLanguagesUpdate) -> AppConfig:
+    """The manager picks the languages the crew reads (up to `max_sheet_languages`).
+    Guides approved from now on are translated into them."""
+    workflow.set_floor_languages(body, get_kb(), settings)
+    return app_config()
 
 
 @app.post("/api/telemetry", status_code=204)

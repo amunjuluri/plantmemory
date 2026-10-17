@@ -279,6 +279,34 @@ Rules you must follow:
   `reply` is null.
 """
 
+REPORT_CHECK_PROMPT = """\
+A maintenance manager in a {plant} is reporting a breakdown, to get a repair guide for it.
+Before anything is searched, read the report. It may be in any Indian language, or mixed
+with English.
+
+REPORT:
+{text}
+
+MACHINE PICKED: {picked}
+
+PLANT MACHINES:
+{machines}
+
+Answer:
+- `equipment`: the machine or equipment the report is about, in a few English words. Null
+  when it names none: "machine", "it" or "the line" alone name nothing.
+- `problem`: what is wrong, in a few English words: a symptom ("stopped", "noise",
+  "leaking"), an alarm or a failed part. Null when the report doesn't say, e.g. a greeting,
+  a test message or only a machine name.
+- `machine_tag`: the tag of the plant machine the report clearly describes, from the list.
+  Null when unsure, or when more than one machine of that kind fits.
+- `fits_picked`: whether the report could be about the machine picked. False only when it
+  clearly is not: it describes a part, a process or a behaviour that machine doesn't have
+  (a steam door on a tablet press). A vague report ("making a noise") fits. True when no
+  machine is picked.
+- `why`: one short sentence for the manager.
+"""
+
 MANUAL_CHECK_PROMPT = """\
 A maintenance manager reported a breakdown but named no machine tag and no alarm code. A
 search of the plant's equipment manuals found the manuals below. Decide which one is the

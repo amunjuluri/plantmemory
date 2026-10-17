@@ -1,29 +1,21 @@
-"""Draft a repair guide for a breakdown from plant memory, equipment manuals and the parts store.
-
-The steps are plain functions run in a fixed order (no agent loop): the order never
-changes, and a fixed pipeline lets the history and manual searches run side by side.
-Each step's progress is streamed to the UI.
+"""The steps of drafting a repair guide, from plant memory, equipment manuals and the parts
+store: plain functions, tested without ADK. app/guide/flow.py runs them as an ADK graph
+Workflow and streams each step's progress to the UI.
 """
 
-import asyncio
 import json
 import logging
 import re
-import time
-from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from app import telemetry
 from app.agent import prompts, tools
-from app.agent.guardrails import _display_date, format_minutes, ordinal
+from app.agent.guardrails import _display_date
 from app.agent.tools import AgentDeps
 from app.approval import new_record_id
 from app.embeddings import incident_text
 from app.guide import guardrails, workflow
 from app.kb import KnowledgeBase, code_key
-from app.kb.loader import list_assets
-from app.llm import BUSY_MESSAGE, is_overloaded
 from app.models import (
     Asset,
     ErrorCode,
@@ -37,6 +29,7 @@ from app.models import (
     ManualSectionPublic,
     Part,
     Recurrence,
+    ReportCheck,
     SimilarIncident,
     SourceRef,
     StructuredIncident,
@@ -76,6 +69,75 @@ def find_asset(texts: list[str], assets: list[Asset], requested: str | None = No
             asset = by_key.get(_tag_key(letters, digits))
             if asset:
                 return asset
+    return None
+
+
+def check_report(
+    request: GuideRequest, picked: Asset | None, assets: list[Asset], deps: AgentDeps
+) -> ReportCheck | None:
+    """Gemini's first read of the report (see ReportCheck). None if it fails: drafting then
+    goes ahead as it would without the check, rather than stopping the manager."""
+    machines = "\n".join(f"{a.tag}: {a.equipment_model}" for a in assets) or "None listed."
+    prompt = prompts.REPORT_CHECK_PROMPT.format(
+        plant=deps.settings.plant_type,
+        text=request.text,
+        picked=f"{picked.tag} ({picked.equipment_model})" if picked else "none",
+        machines=machines,
+    )
+    try:
+        return deps.llm.generate(prompt, ReportCheck, thinking="low", hedge_after_s=5.0)
+    except Exception as err:
+        log.warning("Report check failed, drafting without it: %s", err)
+        return None
+
+
+def clarify(
+    request: GuideRequest,
+    check: ReportCheck | None,
+    named: Asset | None,
+    picked: Asset | None,
+    codes: list[str],
+    assets: list[Asset],
+) -> GuideProgress | None:
+    """One question for the manager, or None to draft. Code decides, from what the report
+    names and Gemini's read of it: a guide for the wrong machine is worse than a question,
+    and a guide from "machine stopped" would be general advice, not a repair."""
+
+    def ask(question: str, machines: list[Asset] | None = None) -> GuideProgress:
+        return GuideProgress(type="clarify", question=question, machines=machines or [])
+
+    machine = picked or named
+    if check and not check.problem and not codes:
+        if machine:
+            return ask(
+                f"What's wrong with {machine.tag}? Say what it's doing, or the alarm on its screen."
+            )
+        return ask(
+            "Which machine stopped, and what's wrong with it? Say what it's doing, or the "
+            "alarm on its screen."
+        )
+    if picked and not request.machine_confirmed:
+        if named and named.tag != picked.tag:
+            return ask(
+                f"The report mentions {named.tag}, but {picked.tag} is picked. "
+                "Which machine is it?",
+                [named, picked],
+            )
+        if check and not check.fits_picked:
+            other = next((a for a in assets if a.tag == check.machine_tag), None)
+            if other and other.tag != picked.tag:
+                return ask(
+                    f"This sounds like {other.tag} ({other.equipment_model}), not {picked.tag} "
+                    f"({picked.equipment_model}). Which machine is it?",
+                    [other, picked],
+                )
+            return ask(
+                f"This doesn't sound like {picked.tag} ({picked.equipment_model}). "
+                f"{check.why} Pick the right machine, or draft for {picked.tag} anyway.",
+                [picked],
+            )
+    if not machine and check and not check.equipment:
+        return ask("Which machine is it?", assets)
     return None
 
 
@@ -290,106 +352,3 @@ def source_refs(
 def _plural(n: int, word: str) -> str:
     many = f"{word}es" if word.endswith(("x", "s", "ch")) else f"{word}s"
     return f"{n} {word if n == 1 else many}"
-
-
-async def build_guide_events(
-    request: GuideRequest, deps: AgentDeps, kb: KnowledgeBase
-) -> AsyncIterator[GuideProgress]:
-    """Draft a guide, yielding progress for each step and finally the saved guide."""
-    began = time.perf_counter()
-
-    def started(step: str) -> GuideProgress:
-        return GuideProgress(type="step", step=step, status="started")
-
-    def done(step: str, summary: str) -> GuideProgress:
-        return GuideProgress(type="step", step=step, status="done", summary=summary)
-
-    try:
-        yield started("understand")
-        incident = await asyncio.to_thread(tools.structure_incident, request.text, deps)
-        assets = await asyncio.to_thread(list_assets, kb)
-        asset = find_asset(
-            [request.text, incident.area_or_equipment], assets, requested=request.asset_tag
-        )
-        codes = find_codes(request.text)
-        ev = Evidence(incident=incident, codes=codes, asset=asset)
-        what = asset.tag if asset else incident.area_or_equipment
-        yield done("understand", f"{what}{', alarm ' + ', '.join(codes) if codes else ''}")
-
-        yield started("search_history")
-        yield started("search_manuals")
-
-        def history():
-            found = tools.search_similar(incident, deps, k=5)
-            same = tools.verify_matches(incident, found, deps)
-            return same, tools.check_recurrence(incident, same, deps)
-
-        hist_task = asyncio.create_task(asyncio.to_thread(history))
-        manual_task = asyncio.create_task(
-            asyncio.to_thread(find_sections, incident, codes, asset, deps, kb)
-        )
-        ev.sections, ev.error_codes = await manual_task
-        if ev.sections:
-            manual = ev.sections[0]
-            yield done(
-                "search_manuals",
-                f"{_plural(len(ev.sections), 'section')} from the {manual.equipment_model} manual",
-            )
-        else:
-            yield done("search_manuals", "No manual section matched")
-        ev.matches, ev.recurrence = await hist_task
-        if not ev.matches:
-            yield done("search_history", "No past fix for this problem in memory")
-        else:
-            line = f"{_plural(len(ev.matches), 'past fix')} found"
-            rec = ev.recurrence
-            if rec and rec.is_repeat:
-                line += f", {ordinal(rec.occurrence)} time in {rec.window_months} months"
-            if rec and rec.recurred:
-                line += f"; {_plural(len(rec.recurred), 'fix')} did not hold"
-            yield done("search_history", line)
-
-        yield started("find_parts")
-        if ev.asset is None and ev.sections:
-            # Only when one machine uses this manual; otherwise parts go by equipment model
-            # rather than naming a machine the manager never mentioned.
-            same = [a for a in assets if a.manual_id == ev.sections[0].manual_id]
-            ev.asset = same[0] if len(same) == 1 else None
-        ev.parts = await asyncio.to_thread(find_parts, ev.asset, ev.sections, kb)
-        figure_ids = list(dict.fromkeys(f for s in ev.sections for f in s.figure_ids))
-        for fid in figure_ids:
-            meta = await asyncio.to_thread(kb.figures.get, fid)
-            if meta:
-                ev.figure_captions[fid] = meta.caption
-        yield done(
-            "find_parts",
-            f"{_plural(len(ev.parts), 'part')} listed for this machine"
-            if ev.parts
-            else "No spare parts listed for this machine",
-        )
-
-        yield started("write_guide")
-        guide = await asyncio.to_thread(write_guide, request, ev, deps)
-        await asyncio.to_thread(kb.guides.put, [guide])
-        line = f"{_plural(len(guide.steps), 'step')}"
-        if guide.downtime.manual_minutes:
-            line += f", about {format_minutes(guide.downtime.manual_minutes)}"
-        yield done("write_guide", line)
-        telemetry.event(
-            "guide_drafted",
-            guide=guide.id,
-            asset=guide.asset_tag,
-            seconds=round(time.perf_counter() - began, 1),
-            steps=len(guide.steps),
-            repeat=bool(guide.recurrence and guide.recurrence.is_repeat),
-            qa_needed=bool(guide.qa_reasons),
-        )
-        yield GuideProgress(type="guide", guide=guide)
-    except Exception as err:
-        if is_overloaded(err):
-            telemetry.event("guide_draft_busy", seconds=round(time.perf_counter() - began, 1))
-            log.warning("Gemini overloaded after retries: %s", err)
-            yield GuideProgress(type="error", detail=BUSY_MESSAGE)
-        else:
-            log.exception("Guide drafting failed")
-            yield GuideProgress(type="error", detail="Something went wrong. Please try again.")

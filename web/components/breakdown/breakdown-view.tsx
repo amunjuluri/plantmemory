@@ -1,10 +1,12 @@
 "use client";
 
+import { MessageCircleQuestion, PenLine } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { GuideView } from "@/components/guide/guide-view";
 import { PlantStatusBar } from "@/components/plant/plant-status";
 import { StepsCard } from "@/components/steps-card";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DraftingLoader } from "@/components/ui/loaders";
 import { ErrorState, Shimmer } from "@/components/ui/states";
@@ -13,7 +15,7 @@ import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { GUIDE_STEPS, useBreakdown } from "@/lib/stores/breakdown";
 import { refreshPlant } from "@/lib/stores/plant";
 import { useActorName } from "@/lib/stores/session";
-import { plural } from "@/lib/utils";
+import { cn, plural } from "@/lib/utils";
 import { BreakdownForm } from "./breakdown-form";
 
 /** What happens from here, with the measured time of each AI step. */
@@ -31,7 +33,7 @@ const FLOW = [
   {
     title: "Approve and print for the crew",
     time: "about 5 s",
-    body: "You approve it; QA checks only when code finds a reason. One A4 sheet in English, Telugu and Hindi.",
+    body: "You approve it; QA checks only when code finds a reason. One A4 sheet in English and your crew’s languages.",
   },
   {
     title: "Close it, QA releases the machine",
@@ -86,14 +88,14 @@ function Idle() {
 
 /** While drafting, the live steps sit beside the form (not under it, below the fold). */
 function Loading() {
-  const { steps, status, startedAt, finishedAt } = useBreakdown();
+  const { steps, startedAt, finishedAt } = useBreakdown();
   return (
     <div className="flex flex-col gap-4 transition-[opacity,translate] duration-300 ease-out starting:translate-y-1 starting:opacity-0">
       <div data-tour="drafting">
         <StepsCard
           steps={GUIDE_STEPS}
           state={steps}
-          status={status}
+          status="running"
           startedAt={startedAt}
           finishedAt={finishedAt}
           title="Drafting the repair guide"
@@ -125,9 +127,86 @@ function Loading() {
   );
 }
 
+/** Edit the report: the cursor goes to the end of what's there. */
+function editReport() {
+  const box = document.getElementById("breakdown") as HTMLTextAreaElement | null;
+  if (!box) return;
+  box.focus({ preventScroll: true });
+  box.setSelectionRange(box.value.length, box.value.length);
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/** One question before drafting, instead of a guide for the wrong machine or a guess. */
+function ClarifyCard() {
+  const { clarify, assetTag, setAssetTag, run } = useBreakdown();
+  const by = useActorName();
+  if (!clarify) return null;
+  const choose = (tag: string) => {
+    setAssetTag(tag);
+    void run(by, true);
+  };
+  const only = clarify.machines.length === 1 ? clarify.machines[0] : null;
+  return (
+    <Card className="flex flex-col gap-4 p-5 transition-[opacity,translate] duration-200 ease-out starting:translate-y-1 starting:opacity-0">
+      <div className="flex items-start gap-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent-text">
+          <MessageCircleQuestion className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="font-medium text-pretty" role="status">
+            {clarify.question}
+          </p>
+          <p className="mt-1 text-sm text-fg-muted text-pretty">
+            {clarify.machines.length > 1
+              ? "Pick one and the guide is drafted for it. A guide for the wrong machine is worse than a question."
+              : only
+                ? "Or change the machine in the form and draft again."
+                : "Add it to the report and draft again. A guide needs to know what failed, not just that something did."}
+          </p>
+        </div>
+      </div>
+      {clarify.machines.length > 1 && (
+        <div role="group" aria-label="Machines" className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          {clarify.machines.map((m) => (
+            <button
+              key={m.tag}
+              type="button"
+              onClick={() => choose(m.tag)}
+              className={cn(
+                "flex min-h-12 flex-col items-start justify-center rounded-lg px-3 py-2 text-left transition-[background-color,scale] duration-150 ease-out active:scale-[0.98]",
+                m.tag === assetTag
+                  ? "bg-surface-2 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-surface-3"
+                  : "bg-surface-2 hover:bg-surface-3",
+              )}
+            >
+              <span className="text-sm font-medium">
+                {m.tag}
+                {m.tag === assetTag && <span className="ml-1.5 text-xs font-normal text-fg-subtle">picked</span>}
+              </span>
+              <span className="text-xs text-fg-muted">{m.equipment_model}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {only && (
+          <Button size="sm" variant="primary" onClick={() => choose(only.tag)}>
+            Draft for {only.tag} anyway
+          </Button>
+        )}
+        <Button size="sm" variant={only || clarify.machines.length ? "ghost" : "secondary"} onClick={editReport}>
+          <PenLine />
+          Edit the report
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 function Results() {
   const { status, guide, error, run, setGuide } = useBreakdown();
   const by = useActorName();
+  if (status === "clarify") return <ClarifyCard />;
   if (status === "idle" && !guide) return <Idle />;
   if (status === "running") return <Loading />;
   if (status === "error" || !guide) {
@@ -174,7 +253,7 @@ export function BreakdownView() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
         <div className="flex flex-col gap-4 lg:sticky lg:top-20">
           <BreakdownForm onStart={onStart} />
-          {status !== "running" && (
+          {status !== "running" && status !== "clarify" && (
             <StepsCard
               steps={GUIDE_STEPS}
               state={steps}

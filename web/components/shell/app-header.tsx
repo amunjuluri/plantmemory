@@ -26,6 +26,7 @@ import { api } from "@/lib/api";
 import { ROLE_LABEL, useSession, type Role } from "@/lib/stores/session";
 import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
+import { FloorLanguages } from "./floor-languages";
 import { LogoMark } from "./logo";
 
 const NAV = [
@@ -123,10 +124,10 @@ function TourMenu() {
     <Menu.Root>
       <Menu.Trigger
         aria-label="Guided tour"
-        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-[0.8125rem] font-medium text-accent-text transition-[background-color,scale] duration-150 ease-out hover:bg-accent-soft/70 active:scale-[0.97] data-popup-open:bg-accent-soft/70 max-[359px]:px-2 [&_svg]:size-4"
+        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-[0.8125rem] font-medium text-accent-text transition-[background-color,scale] duration-150 ease-out hover:bg-accent-soft/70 active:scale-[0.97] data-popup-open:bg-accent-soft/70 max-[419px]:px-2 [&_svg]:size-4"
       >
         <Compass />
-        <span className="max-[359px]:hidden">
+        <span className="max-[419px]:hidden">
           <span className="sm:hidden">Tour</span>
           <span className="max-sm:hidden">Guided tour</span>
         </span>
@@ -250,11 +251,11 @@ export function AppHeader() {
   const isActive = useActive();
   const reviews = useReviewCount();
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg/80 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl backdrop-saturate-150 print:hidden">
+    <header className="sticky top-0 z-30 [view-transition-name:site-header] border-b border-line bg-bg/80 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl backdrop-saturate-150 print:hidden">
       <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-6 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5 rounded-lg font-semibold tracking-tight">
           <LogoMark />
-          <span className="text-[0.9375rem]">PlantMemory</span>
+          <span className="text-[0.9375rem] max-[359px]:sr-only">PlantMemory</span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {NAV.map(({ href, label, short, ...rest }) => (
@@ -275,6 +276,7 @@ export function AppHeader() {
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
           <TourMenu />
+          <FloorLanguages />
           <ThemeToggle />
           <ActorSwitch />
         </div>
@@ -290,7 +292,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/85 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-xl backdrop-saturate-150 md:hidden print:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 [view-transition-name:tab-bar] border-t border-line bg-bg/85 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-xl backdrop-saturate-150 md:hidden print:hidden"
     >
       <div className="grid h-16 grid-cols-4">
         {NAV.map(({ href, short, icon: Icon, ...rest }) => (

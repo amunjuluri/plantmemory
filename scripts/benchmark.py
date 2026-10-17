@@ -48,7 +48,7 @@ from app.agent.tools import AgentDeps
 from app.config import ROOT_DIR, Settings, get_settings
 from app.embeddings import GeminiEmbedder
 from app.guide import guardrails
-from app.guide.builder import build_guide_events
+from app.guide.flow import build_guide_events
 from app.guide.translate import check_translation, source_lists, translate_guide
 from app.kb import KnowledgeBase, build_kb
 from app.kb.loader import list_assets

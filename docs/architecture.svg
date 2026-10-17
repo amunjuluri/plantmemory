@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000"><defs><marker id="head" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a93a0"/></marker></defs>
+<rect x="0" y="0" width="1600" height="1000" rx="0" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="40" y="52" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="700" fill="#14171c" text-anchor="start" letter-spacing="0">PlantMemory architecture</text>
+<text x="40" y="80" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="14.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">One Cloud Run service, managed serverless data, Gemini on Vertex AI. Gemini reads and writes; code checks every line before anyone sees it.</text>
+<rect x="40" y="120" width="250" height="470" rx="14" fill="#f6f7f9" stroke="none" stroke-width="1"/>
+<text x="60" y="148" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#566070" text-anchor="start" letter-spacing="0.8">MANAGER, PHONE OR DESKTOP</text>
+<rect x="56" y="166" width="218" height="56" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="70" y="189" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Typed report</text>
+<text x="70" y="207" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">any language, short forms</text>
+<rect x="56" y="234" width="218" height="56" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="70" y="257" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Voice conversation</text>
+<text x="70" y="275" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">Telugu, Hindi, English, mixed</text>
+<rect x="56" y="302" width="218" height="56" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="70" y="325" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Logbook photo</text>
+<text x="70" y="343" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">handwritten pages</text>
+<rect x="56" y="370" width="218" height="56" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="70" y="393" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Machine alarm log</text>
+<text x="70" y="411" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">HMI or controller export</text>
+<rect x="56" y="438" width="218" height="56" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="70" y="461" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">SAP PM / CMMS export</text>
+<text x="70" y="479" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">CSV or Excel</text>
+<rect x="56" y="506" width="218" height="56" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="70" y="529" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Equipment manual</text>
+<text x="70" y="547" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">PDF</text>
+<rect x="40" y="610" width="250" height="150" rx="14" fill="#e7f5ed" stroke="none" stroke-width="1"/>
+<text x="60" y="638" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#17794a" text-anchor="start" letter-spacing="0.8">WORKERS ON THE FLOOR</text>
+<text x="60" y="666" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Printed A4 repair sheet</text>
+<text x="60" y="688" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">English plus up to 3 of 12</text>
+<text x="60" y="706" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">Indian languages, numbered</text>
+<text x="60" y="724" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">controlled copies, tick boxes</text>
+<rect x="330" y="120" width="790" height="640" rx="16" fill="#eaf0fd" stroke="none" stroke-width="1"/>
+<text x="352" y="148" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#1d5bd6" text-anchor="start" letter-spacing="0.8">CLOUD RUN · ASIA-SOUTH1</text>
+<text x="352" y="172" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">FastAPI + Next.js UI + voice WebSocket in one container · scales from zero to 3 instances</text>
+<text x="352" y="196" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#566070" text-anchor="start" letter-spacing="0.8">INTAKE</text>
+<rect x="352" y="208" width="140" height="74" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="352" y="218" width="3" height="54" rx="1.5" fill="#6b46d9"/>
+<text x="366" y="230" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Live voice</text>
+<text x="366" y="248" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">Gemini Live asks only</text>
+<text x="366" y="263" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">for what&#x27;s missing</text>
+<rect x="503" y="208" width="140" height="74" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="503" y="218" width="3" height="54" rx="1.5" fill="#6b46d9"/>
+<text x="517" y="230" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Logbook OCR</text>
+<text x="517" y="248" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">unreadable words</text>
+<text x="517" y="263" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">flagged, never guessed</text>
+<rect x="654" y="208" width="140" height="74" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="654" y="218" width="3" height="54" rx="1.5" fill="#6b46d9"/>
+<text x="668" y="230" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Alarm log</text>
+<text x="668" y="248" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">stopping codes first,</text>
+<text x="668" y="263" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">one click to a guide</text>
+<rect x="805" y="208" width="140" height="74" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="805" y="218" width="3" height="54" rx="1.5" fill="#6b46d9"/>
+<text x="819" y="230" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">SAP import</text>
+<text x="819" y="248" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">Gemini maps columns,</text>
+<text x="819" y="263" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">code copies every row</text>
+<rect x="956" y="208" width="140" height="74" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="956" y="218" width="3" height="54" rx="1.5" fill="#6b46d9"/>
+<text x="970" y="230" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Manual ingest</text>
+<text x="970" y="248" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">sections, alarm table,</text>
+<text x="970" y="263" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">figures cut out</text>
+<text x="352" y="314" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#1d5bd6" text-anchor="start" letter-spacing="0.8">REPAIR GUIDE · ADK GRAPH WORKFLOW · STREAMED, ABOUT 10 S</text>
+<rect x="352" y="326" width="150" height="92" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="352" y="336" width="3" height="72" rx="1.5" fill="#1d5bd6"/>
+<text x="366" y="348" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Read the report</text>
+<text x="366" y="366" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">structure + check, side</text>
+<text x="366" y="381" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">by side; wrong machine</text>
+<text x="366" y="396" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">or vague → one question</text>
+<rect x="544" y="320" width="170" height="48" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="544" y="330" width="3" height="28" rx="1.5" fill="#b45f06"/>
+<text x="558" y="342" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Past fixes</text>
+<text x="558" y="360" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">vector search, Gemini verifies</text>
+<rect x="544" y="376" width="170" height="48" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="544" y="386" width="3" height="28" rx="1.5" fill="#b45f06"/>
+<text x="558" y="398" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Manual</text>
+<text x="558" y="416" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">alarm section + vector search</text>
+<rect x="756" y="326" width="140" height="92" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="756" y="336" width="3" height="72" rx="1.5" fill="#1d5bd6"/>
+<text x="770" y="348" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Parts and time</text>
+<text x="770" y="366" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">stock and bin from</text>
+<text x="770" y="381" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">the store; downtime</text>
+<text x="770" y="396" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">from past repairs</text>
+<rect x="938" y="326" width="160" height="92" rx="10" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<rect x="938" y="336" width="3" height="72" rx="1.5" fill="#6b46d9"/>
+<text x="952" y="348" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Write the guide</text>
+<text x="952" y="366" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">structured JSON,</text>
+<text x="952" y="381" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">every line cited</text>
+<path d="M 502 372 L 523 372 L 523 344 L 542 344" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 523 372 L 523 400 L 542 400" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 714 344 L 735 344 L 735 372 L 754 372" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 714 400 L 735 400 L 735 372" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 896 372 L 936 372" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<text x="626" y="438" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" fill="#8a93a0" text-anchor="middle" letter-spacing="0">run side by side</text>
+<rect x="352" y="454" width="746" height="104" rx="12" fill="#e7f5ed" stroke="none" stroke-width="1"/>
+<text x="370" y="480" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#17794a" text-anchor="start" letter-spacing="0.8">CODE CHECKS, NOT THE MODEL</text>
+<circle cx="374" cy="502" r="3" fill="#17794a"/>
+<text x="384" y="506" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="400" fill="#14171c" text-anchor="start" letter-spacing="0">A step may cite only the sources it was given</text>
+<circle cx="374" cy="521" r="3" fill="#17794a"/>
+<text x="384" y="525" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="400" fill="#14171c" text-anchor="start" letter-spacing="0">Every torque, temperature or time must appear in its source</text>
+<circle cx="374" cy="540" r="3" fill="#17794a"/>
+<text x="384" y="544" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="400" fill="#14171c" text-anchor="start" letter-spacing="0">Parts must exist in the store; short stock is flagged</text>
+<circle cx="744" cy="502" r="3" fill="#17794a"/>
+<text x="754" y="506" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="400" fill="#14171c" text-anchor="start" letter-spacing="0">Translations must keep every number, code and tag</text>
+<circle cx="744" cy="521" r="3" fill="#17794a"/>
+<text x="754" y="525" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="400" fill="#14171c" text-anchor="start" letter-spacing="0">Anything unchecked goes to QA, with the reason</text>
+<circle cx="744" cy="540" r="3" fill="#17794a"/>
+<text x="754" y="544" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="400" fill="#14171c" text-anchor="start" letter-spacing="0">Wrong machine or vague report: one question, no guess</text>
+<text x="352" y="588" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#566070" text-anchor="start" letter-spacing="0.8">GUIDE WORKFLOW · AUDIT TRAIL ON EVERY STEP</text>
+<rect x="352" y="600" width="112" height="40" rx="20" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="408.0" y="625" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Approve</text>
+<rect x="479" y="600" width="112" height="40" rx="20" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="535.0" y="625" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">QA if needed</text>
+<path d="M 465 620 L 477 620" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="606" y="600" width="112" height="40" rx="20" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="662.0" y="625" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Translate + check</text>
+<path d="M 592 620 L 604 620" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="733" y="600" width="112" height="40" rx="20" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="789.0" y="625" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Print copy</text>
+<path d="M 719 620 L 731 620" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="860" y="600" width="112" height="40" rx="20" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="916.0" y="625" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Close repair</text>
+<path d="M 846 620 L 858 620" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="987" y="600" width="112" height="40" rx="20" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="1043.0" y="625" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">QA release</text>
+<path d="M 973 620 L 985 620" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 290 330 L 326 330" fill="none" stroke="#1d5bd6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 789.0 642 L 789.0 790 L 165 790 L 165 764" fill="none" stroke="#17794a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="1160" y="120" width="400" height="300" rx="16" fill="#f1edfd" stroke="none" stroke-width="1"/>
+<text x="1182" y="148" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#6b46d9" text-anchor="start" letter-spacing="0.8">VERTEX AI · GEMINI</text>
+<rect x="1178" y="172" width="364" height="42" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="190" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">gemini-3.1-flash-lite</text>
+<text x="1192" y="206" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">reads, checks, writes, translates; hedged after a slow reply</text>
+<rect x="1178" y="221" width="364" height="42" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="239" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">gemini-3.5-flash-lite</text>
+<text x="1192" y="255" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">takes over when the first is out of capacity</text>
+<rect x="1178" y="270" width="364" height="42" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="288" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">gemini-embedding-2</text>
+<text x="1192" y="304" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">768-d search by meaning, across languages</text>
+<rect x="1178" y="319" width="364" height="42" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="337" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">gemini-3.8-live</text>
+<text x="1192" y="353" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">voice conversation, native audio, us-central1</text>
+<rect x="1178" y="368" width="364" height="42" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="386" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Agent Development Kit</text>
+<text x="1192" y="402" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">runs the guide graph; analysis agent with 4 tools</text>
+<rect x="1160" y="440" width="400" height="320" rx="16" fill="#fdf4e6" stroke="none" stroke-width="1"/>
+<text x="1182" y="468" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#b45f06" text-anchor="start" letter-spacing="0.8">FIRESTORE · ASIA-SOUTH1</text>
+<text x="1182" y="492" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Native vector search (KNN, cosine)</text>
+<rect x="1178" y="504" width="364" height="40" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="529" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">incidents</text>
+<text x="1350" y="529" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">plant memory: past repairs</text>
+<rect x="1178" y="550" width="364" height="40" rx="9" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1192" y="575" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">manual_sections</text>
+<text x="1350" y="575" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">procedures and alarms</text>
+<text x="1182" y="620" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">Documents</text>
+<rect x="1178" y="634" width="158.0" height="30" rx="15" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1257.0" y="654" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">guides + audit trail</text>
+<rect x="1344.0" y="634" width="122.5" height="30" rx="15" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1405.25" y="654" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">parts and stock</text>
+<rect x="1178" y="672" width="94.1" height="30" rx="15" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1225.05" y="692" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">alarm codes</text>
+<rect x="1280.1" y="672" width="65.69999999999999" height="30" rx="15" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1312.9499999999998" y="692" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">figures</text>
+<rect x="1353.8" y="672" width="115.39999999999999" height="30" rx="15" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="1411.5" y="692" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">plant settings</text>
+<path d="M 1124 270 L 1154 270" fill="none" stroke="#6b46d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 1154 290 L 1124 290" fill="none" stroke="#6b46d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 1124 600 L 1154 600" fill="none" stroke="#b45f06" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 1154 620 L 1124 620" fill="none" stroke="#b45f06" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<path d="M 916.0 642 L 916.0 790 L 1360 790 L 1360 764" fill="none" stroke="#b45f06" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" marker-end="url(#head)"/>
+<text x="1150" y="808" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#b45f06" text-anchor="middle" letter-spacing="0">a closed repair becomes plant memory</text>
+<rect x="40" y="830" width="760" height="130" rx="14" fill="#f6f7f9" stroke="none" stroke-width="1"/>
+<text x="60" y="858" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#566070" text-anchor="start" letter-spacing="0.8">DELIVERY</text>
+<rect x="60" y="876" width="119.60000000000001" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="119.80000000000001" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">GitHub Actions</text>
+<path d="M 183.60000000000002 893 L 197.60000000000002 893" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="201.60000000000002" y="876" width="141.8" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="272.5" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Workload Identity</text>
+<path d="M 347.40000000000003 893 L 361.40000000000003 893" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="365.40000000000003" y="876" width="97.4" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="414.1" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Cloud Build</text>
+<path d="M 466.80000000000007 893 L 480.80000000000007 893" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="484.80000000000007" y="876" width="141.8" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="555.7" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Artifact Registry</text>
+<path d="M 630.6000000000001 893 L 644.6000000000001 893" fill="none" stroke="#8a93a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
+<rect x="648.6000000000001" y="876" width="82.60000000000001" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="689.9000000000001" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Cloud Run</text>
+<text x="60" y="936" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">Every pull request is checked; main deploys itself. No service account keys.</text>
+<rect x="820" y="830" width="740" height="130" rx="14" fill="#f6f7f9" stroke="none" stroke-width="1"/>
+<text x="840" y="858" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="650" fill="#566070" text-anchor="start" letter-spacing="0.8">OPERATIONS</text>
+<rect x="840" y="876" width="112.2" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="896.1" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Cloud Logging</text>
+<rect x="962.2" y="876" width="127.0" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="1025.7" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Error Reporting</text>
+<rect x="1099.2" y="876" width="149.20000000000002" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="1173.8" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">Firebase Analytics</text>
+<rect x="1258.4" y="876" width="193.60000000000002" height="34" rx="17" fill="#fff" stroke="#dfe3e8" stroke-width="1"/>
+<text x="1355.2" y="898" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="middle" letter-spacing="0">per-client AI rate limit</text>
+<text x="840" y="936" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">JSON logs per action; browser errors grouped with stack traces; never what anyone said.</text>
+</svg>

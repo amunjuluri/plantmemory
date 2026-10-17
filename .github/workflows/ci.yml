@@ -66,6 +66,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
       - id: deploy
         env:
-          # Optional repository variable: turns on Google Analytics in the app.
+          # Google Analytics id; unset uses the default in deploy.sh, "off" turns it off.
           ANALYTICS_MEASUREMENT_ID: ${{ vars.ANALYTICS_MEASUREMENT_ID }}
         run: scripts/deploy.sh --project "${{ vars.GCP_PROJECT_ID }}" --region "${{ vars.GCP_REGION }}" --deploy-only --yes

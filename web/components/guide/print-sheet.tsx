@@ -13,15 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorState, Shimmer } from "@/components/ui/states";
 import { api, figureUrl, type AppConfig, type Guide, type GuideTranslation } from "@/lib/api";
+import { NATIVE_NAME, dir } from "@/lib/languages";
 import { useActorName } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
 import { track } from "@/lib/telemetry";
 
-/** Fixed headings for the printed sheet, so they never depend on a model. `native` is the
- * language's name in its own script, shown when choosing languages. */
+/** Fixed headings for the printed sheet, so they never depend on a model. */
 const HEADINGS: Record<string, Record<string, string>> = {
   en: {
-    native: "English",
     safety: "Safety first",
     parts: "Parts to collect",
     steps: "Steps",
@@ -31,7 +30,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "Valid for this breakdown only. Return this sheet to the supervisor when the work is done.",
   },
   te: {
-    native: "తెలుగు",
     safety: "ముందుగా భద్రత",
     parts: "తీసుకోవలసిన విడిభాగాలు",
     steps: "దశలు",
@@ -41,7 +39,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "ఈ బ్రేక్‌డౌన్‌కు మాత్రమే. పని అయ్యాక ఈ కాగితాన్ని సూపర్‌వైజర్‌కు తిరిగి ఇవ్వండి.",
   },
   hi: {
-    native: "हिन्दी",
     safety: "पहले सुरक्षा",
     parts: "लेने वाले पुर्ज़े",
     steps: "चरण",
@@ -51,7 +48,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "सिर्फ़ इस ब्रेकडाउन के लिए। काम पूरा होने पर यह पन्ना सुपरवाइज़र को लौटाएँ।",
   },
   ta: {
-    native: "தமிழ்",
     safety: "முதலில் பாதுகாப்பு",
     parts: "எடுக்க வேண்டிய உதிரிபாகங்கள்",
     steps: "படிகள்",
@@ -61,7 +57,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "இந்தப் பழுதுக்கு மட்டும். வேலை முடிந்ததும் இந்தத் தாளை மேற்பார்வையாளரிடம் திருப்பித் தரவும்.",
   },
   kn: {
-    native: "ಕನ್ನಡ",
     safety: "ಮೊದಲು ಸುರಕ್ಷತೆ",
     parts: "ತೆಗೆದುಕೊಳ್ಳಬೇಕಾದ ಬಿಡಿಭಾಗಗಳು",
     steps: "ಹಂತಗಳು",
@@ -71,7 +66,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "ಈ ಬ್ರೇಕ್‌ಡೌನ್‌ಗೆ ಮಾತ್ರ. ಕೆಲಸ ಮುಗಿದ ನಂತರ ಈ ಹಾಳೆಯನ್ನು ಮೇಲ್ವಿಚಾರಕರಿಗೆ ಹಿಂತಿರುಗಿಸಿ.",
   },
   ml: {
-    native: "മലയാളം",
     safety: "ആദ്യം സുരക്ഷ",
     parts: "എടുക്കേണ്ട സ്പെയർ പാർട്ടുകൾ",
     steps: "ഘട്ടങ്ങൾ",
@@ -81,7 +75,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "ഈ ബ്രേക്ക്ഡൗണിന് മാത്രം. ജോലി കഴിഞ്ഞാൽ ഈ ഷീറ്റ് സൂപ്പർവൈസർക്ക് തിരികെ നൽകുക.",
   },
   mr: {
-    native: "मराठी",
     safety: "आधी सुरक्षा",
     parts: "घ्यायचे सुटे भाग",
     steps: "पायऱ्या",
@@ -91,7 +84,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "फक्त या बिघाडासाठी. काम झाल्यावर हा कागद सुपरवायझरला परत द्या.",
   },
   bn: {
-    native: "বাংলা",
     safety: "আগে নিরাপত্তা",
     parts: "যে যন্ত্রাংশ নিতে হবে",
     steps: "ধাপ",
@@ -101,7 +93,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "শুধু এই ব্রেকডাউনের জন্য। কাজ শেষ হলে এই কাগজটি সুপারভাইজারকে ফেরত দিন।",
   },
   as: {
-    native: "অসমীয়া",
     safety: "প্ৰথমে সুৰক্ষা",
     parts: "ল'বলগীয়া যন্ত্ৰাংশ",
     steps: "পদক্ষেপ",
@@ -111,7 +102,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "কেৱল এই ব্ৰেকডাউনৰ বাবে। কাম শেষ হ'লে এই কাগজখন চুপাৰভাইজাৰক ঘূৰাই দিয়ক।",
   },
   gu: {
-    native: "ગુજરાતી",
     safety: "પહેલાં સલામતી",
     parts: "લેવાના સ્પેર પાર્ટ્સ",
     steps: "પગલાં",
@@ -121,7 +111,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "ફક્ત આ બ્રેકડાઉન માટે. કામ પૂરું થાય પછી આ કાગળ સુપરવાઇઝરને પાછો આપો.",
   },
   pa: {
-    native: "ਪੰਜਾਬੀ",
     safety: "ਪਹਿਲਾਂ ਸੁਰੱਖਿਆ",
     parts: "ਲੈਣ ਵਾਲੇ ਪੁਰਜ਼ੇ",
     steps: "ਕਦਮ",
@@ -131,7 +120,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "ਸਿਰਫ਼ ਇਸ ਬ੍ਰੇਕਡਾਊਨ ਲਈ। ਕੰਮ ਪੂਰਾ ਹੋਣ 'ਤੇ ਇਹ ਕਾਗਜ਼ ਸੁਪਰਵਾਈਜ਼ਰ ਨੂੰ ਵਾਪਸ ਕਰੋ।",
   },
   or: {
-    native: "ଓଡ଼ିଆ",
     safety: "ପ୍ରଥମେ ସୁରକ୍ଷା",
     parts: "ନେବାକୁ ଥିବା ପାର୍ଟସ",
     steps: "ପଦକ୍ଷେପ",
@@ -141,7 +129,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
     valid: "କେବଳ ଏହି ବ୍ରେକଡାଉନ ପାଇଁ। କାମ ସରିବା ପରେ ଏହି କାଗଜ ସୁପରଭାଇଜରଙ୍କୁ ଫେରାଇ ଦିଅନ୍ତୁ।",
   },
   ur: {
-    native: "اردو",
     safety: "پہلے حفاظت",
     parts: "لینے والے پرزے",
     steps: "مراحل",
@@ -153,7 +140,6 @@ const HEADINGS: Record<string, Record<string, string>> = {
 };
 
 /** Urdu is written right to left; every other print language left to right. */
-const dir = (language: string) => (language === "ur" ? "rtl" : undefined);
 
 type Said = { text?: string; language: string };
 
@@ -472,15 +458,20 @@ const blocked = (t: GuideTranslation) => Boolean(t.added_by && t.flags.length);
 const CHIP =
   "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium transition-[background-color,color,scale] duration-150 ease-out active:not-disabled:scale-[0.97] disabled:cursor-not-allowed";
 
-/** Pick one more language for the sheet. Each is translated and checked when picked. */
+/** Pick one more language for the sheet. Each is translated and checked when picked. When
+ * the sheet is full the list stays visible, so it's clear why nothing can be added. */
 function AddLanguage({
   options,
   onPick,
   disabled,
+  full,
+  max,
 }: {
   options: LanguageOption[];
   onPick: (option: LanguageOption) => void;
   disabled: boolean;
+  full: boolean;
+  max: number;
 }) {
   return (
     <Menu.Root>
@@ -502,19 +493,22 @@ function AddLanguage({
               "transition-[opacity,scale] duration-150 ease-out data-ending-style:scale-[0.97] data-ending-style:opacity-0 data-ending-style:duration-100 data-starting-style:scale-[0.97] data-starting-style:opacity-0",
             )}
           >
-            <p className="px-2.5 pt-1.5 pb-1 text-xs text-fg-subtle">
-              Translated and checked in about 5 seconds. Each language adds a line under every step.
+            <p className={cn("px-2.5 pt-1.5 pb-1 text-xs text-pretty", full ? "text-warn-text" : "text-fg-subtle")}>
+              {full
+                ? `The sheet is full: English and ${max} languages. Take one off to add another.`
+                : "Translated and checked in about 5 seconds. Each language adds a line under every step."}
             </p>
             <div className="max-h-[min(20rem,var(--available-height))] overflow-y-auto overscroll-contain">
               {options.map((o) => (
                 <Menu.Item
                   key={o.code}
+                  disabled={full}
                   onClick={() => onPick(o)}
-                  className="flex min-h-9 cursor-default items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-sm outline-none data-highlighted:bg-surface-2"
+                  className="flex min-h-9 cursor-default items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-sm outline-none data-disabled:opacity-45 data-highlighted:bg-surface-2"
                 >
                   <span className="font-medium">{o.name}</span>
                   <span lang={o.code} dir={dir(o.code)} className="indic text-fg-subtle">
-                    {HEADINGS[o.code]?.native}
+                    {NATIVE_NAME[o.code]}
                   </span>
                 </Menu.Item>
               ))}
@@ -535,16 +529,24 @@ export function PrintView() {
   const [printing, setPrinting] = useState(false);
   const [options, setOptions] = useState<LanguageOption[]>([]);
   const [adding, setAdding] = useState<LanguageOption | null>(null);
+  const [max, setMax] = useState(3);
 
   useEffect(() => {
     if (!id) return;
-    api.guide(id).then(setGuide, (err: unknown) => setError(err instanceof Error ? err.message : "Couldn’t load the guide."));
+    Promise.all([api.guide(id), api.config().catch(() => null)]).then(
+      ([loaded, config]) => {
+        const most = config?.max_sheet_languages ?? 3;
+        setMax(most);
+        if (config) setOptions(config.print_languages);
+        // A guide from before the limit may have more: the first ones go on the sheet.
+        setHidden(loaded.translations.filter((t) => !blocked(t)).slice(most).map((t) => t.language));
+        setGuide(loaded);
+      },
+      (err: unknown) => setError(err instanceof Error ? err.message : "Couldn’t load the guide."),
+    );
   }, [id]);
 
   const approved = guide?.status === "approved";
-  useEffect(() => {
-    if (approved) api.config().then((c) => setOptions(c.print_languages), () => undefined);
-  }, [approved]);
 
   if (!id) return <ErrorState title="No guide chosen" message="Open a guide and choose Print." />;
   if (error) return <ErrorState title="Couldn’t load the guide" message={error} />;
@@ -553,16 +555,29 @@ export function PrintView() {
   const languages = guide.translations.filter((t) => !hidden.includes(t.language) && !blocked(t));
   const stuck = guide.translations.filter(blocked);
   const more = options.filter((o) => !guide.translations.some((t) => t.language === o.code));
+  const full = languages.length >= max;
+  const fullToast = () =>
+    toast(`A sheet fits English and up to ${max} languages`, {
+      id: "sheet-full",
+      description: "Take one off this copy to put another on.",
+    });
 
   const add = async (option: LanguageOption) => {
     setAdding(option);
     try {
       const updated = await api.addGuideLanguage(guide.id, by, option.code);
       setGuide(updated);
-      setHidden((h) => h.filter((x) => x !== option.code));
       const added = updated.translations.find((t) => t.language === option.code);
+      // Translating again a language that was stuck: it waits off the sheet if there's no room.
+      const room = languages.filter((t) => t.language !== option.code).length < max;
+      if (room) setHidden((h) => h.filter((x) => x !== option.code));
+      else setHidden((h) => [...h.filter((x) => x !== option.code), option.code]);
       if (added && blocked(added)) {
         toast.warning(`${option.name} can’t be printed yet`, { description: added.flags[0] });
+      } else if (!room) {
+        toast.success(`${option.name} is ready`, {
+          description: `The sheet already has ${max} languages. Take one off to put ${option.name} on.`,
+        });
       } else {
         toast.success(`${option.name} added to the sheet`, { description: "Checked: every number and code came through." });
       }
@@ -616,9 +631,11 @@ export function PrintView() {
                   key={t.language}
                   type="button"
                   aria-pressed={!hidden.includes(t.language)}
-                  onClick={() =>
-                    setHidden((h) => (h.includes(t.language) ? h.filter((x) => x !== t.language) : [...h, t.language]))
-                  }
+                  onClick={() => {
+                    if (!hidden.includes(t.language)) setHidden((h) => [...h, t.language]);
+                    else if (full) fullToast();
+                    else setHidden((h) => h.filter((x) => x !== t.language));
+                  }}
                   className={cn(
                     CHIP,
                     hidden.includes(t.language)
@@ -638,7 +655,7 @@ export function PrintView() {
               </span>
             )}
             {approved && more.length > 0 && (
-              <AddLanguage options={more} onPick={(o) => void add(o)} disabled={Boolean(adding)} />
+              <AddLanguage options={more} onPick={(o) => void add(o)} disabled={Boolean(adding)} full={full} max={max} />
             )}
           </div>
           <Button

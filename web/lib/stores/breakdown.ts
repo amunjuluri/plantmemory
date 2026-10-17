@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { ApiError, guideStream, type Guide, type GuideStepId } from "@/lib/api";
+import { ApiError, guideStream, type Asset, type Guide, type GuideStepId } from "@/lib/api";
 import { track } from "@/lib/telemetry";
 
 export type StepStatus = "pending" | "active" | "done" | "error";
@@ -31,10 +31,14 @@ const freshSteps = (): Record<GuideStepId, StepState> => ({
   write_guide: { status: "pending" },
 });
 
+/** One question before drafting: the report is too vague, or names another machine. */
+export type Clarify = { question: string; machines: Asset[] };
+
 type BreakdownState = {
   text: string;
   assetTag: string | null;
-  status: "idle" | "running" | "done" | "error";
+  status: "idle" | "running" | "done" | "error" | "clarify";
+  clarify: Clarify | null;
   steps: Record<GuideStepId, StepState>;
   startedAt: number | null;
   finishedAt: number | null;
@@ -42,7 +46,8 @@ type BreakdownState = {
   guide: Guide | null;
   setText: (text: string) => void;
   setAssetTag: (tag: string | null) => void;
-  run: (by: string) => Promise<void>;
+  /** `confirmed`: the manager picked this machine when asked, so it isn't questioned again. */
+  run: (by: string, confirmed?: boolean) => Promise<void>;
   cancel: () => void;
   reset: () => void;
   setGuide: (guide: Guide) => void;
@@ -56,6 +61,7 @@ export const useBreakdown = create<BreakdownState>()(
       text: "",
       assetTag: null,
       status: "idle",
+      clarify: null,
       steps: freshSteps(),
       startedAt: null,
       finishedAt: null,
@@ -65,7 +71,7 @@ export const useBreakdown = create<BreakdownState>()(
       setText: (text) => set({ text }),
       setAssetTag: (assetTag) => set({ assetTag }),
 
-      run: async (by) => {
+      run: async (by, confirmed = false) => {
         const { text, assetTag, status } = get();
         if (status === "running" || text.trim().length < 5) return;
         controller?.abort();
@@ -73,6 +79,7 @@ export const useBreakdown = create<BreakdownState>()(
         const signal = controller.signal;
         set({
           status: "running",
+          clarify: null,
           steps: freshSteps(),
           startedAt: Date.now(),
           finishedAt: null,
@@ -83,7 +90,10 @@ export const useBreakdown = create<BreakdownState>()(
           set((s) => ({ steps: { ...s.steps, [id]: state } }));
 
         try {
-          for await (const event of guideStream({ text: text.trim(), asset_tag: assetTag, by }, signal)) {
+          for await (const event of guideStream(
+            { text: text.trim(), asset_tag: assetTag, by, machine_confirmed: confirmed },
+            signal,
+          )) {
             if (event.type === "step" && event.step) {
               const id = event.step as GuideStepId;
               if (event.status === "started") setStep(id, { status: "active" });
@@ -91,6 +101,13 @@ export const useBreakdown = create<BreakdownState>()(
               else setStep(id, { status: "error", detail: event.detail });
             } else if (event.type === "guide" && event.guide) {
               set({ status: "done", guide: event.guide, finishedAt: Date.now() });
+            } else if (event.type === "clarify" && event.question) {
+              set({
+                status: "clarify",
+                clarify: { question: event.question, machines: event.machines },
+                steps: freshSteps(),
+                finishedAt: Date.now(),
+              });
             } else if (event.type === "error") {
               throw new ApiError(event.detail ?? "The guide could not be drafted.", 502);
             }
@@ -116,7 +133,7 @@ export const useBreakdown = create<BreakdownState>()(
 
       cancel: () => {
         controller?.abort();
-        set({ status: "idle", steps: freshSteps(), startedAt: null, finishedAt: null });
+        set({ status: "idle", clarify: null, steps: freshSteps(), startedAt: null, finishedAt: null });
       },
 
       reset: () => {
@@ -125,6 +142,7 @@ export const useBreakdown = create<BreakdownState>()(
           text: "",
           assetTag: null,
           status: "idle",
+          clarify: null,
           steps: freshSteps(),
           startedAt: null,
           finishedAt: null,
@@ -165,7 +183,9 @@ useBreakdown.subscribe((now, before) => {
     });
   } else if (before.status === "running") {
     const seconds = now.startedAt && now.finishedAt ? Math.round((now.finishedAt - now.startedAt) / 100) / 10 : null;
-    if (now.status === "done") {
+    if (now.status === "clarify") {
+      track("draft_clarify", { seconds, machines: now.clarify?.machines.length ?? 0 });
+    } else if (now.status === "done") {
       track("draft_done", { seconds, machine: now.guide?.asset_tag ?? null, steps: now.guide?.steps.length ?? 0 });
     } else if (now.status === "error") track("draft_failed", { seconds, reason: now.error });
     else track("draft_stopped", { seconds: now.startedAt ? Math.round((Date.now() - now.startedAt) / 100) / 10 : null });

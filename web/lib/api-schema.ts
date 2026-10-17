@@ -181,6 +181,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/floor-languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Floor Languages
+         * @description The manager picks the languages the crew reads (up to `max_sheet_languages`).
+         *     Guides approved from now on are translated into them.
+         */
+        put: operations["set_floor_languages_api_settings_floor_languages_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/telemetry": {
         parameters: {
             query?: never;
@@ -191,11 +212,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Telemetry
+         * Browser Events
          * @description Page views, actions and errors from the browser, written to the logs (see
          *     app/telemetry.py). Over the per-client cap they are dropped quietly.
          */
-        post: operations["telemetry_api_telemetry_post"];
+        post: operations["browser_events_api_telemetry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -674,15 +695,27 @@ export interface components {
          */
         AppConfig: {
             /**
-             * Guide Languages
-             * @description Translated when a guide is approved or sent to QA.
+             * Floor Languages
+             * @description The languages the crew reads: every guide is translated into them on approval.
              */
-            guide_languages: components["schemas"]["LanguageOption"][];
+            floor_languages: components["schemas"]["LanguageOption"][];
+            /**
+             * Floor Languages Set By
+             * @description Who last chose the floor languages; none: the default.
+             */
+            floor_languages_set_by: string | null;
+            /** Floor Languages Set At */
+            floor_languages_set_at: string | null;
             /**
              * Print Languages
              * @description Every language a guide can be printed in; others are added on demand.
              */
             print_languages: components["schemas"]["LanguageOption"][];
+            /**
+             * Max Sheet Languages
+             * @description Most languages on one sheet besides English.
+             */
+            max_sheet_languages: number;
             /** Store Backend */
             store_backend: string;
             /** Qa Approval */
@@ -1093,6 +1126,19 @@ export interface components {
             section_id: string | null;
         };
         /**
+         * FloorLanguagesUpdate
+         * @description The languages spoken on the floor. Every guide is translated into them on approval.
+         */
+        FloorLanguagesUpdate: {
+            /**
+             * By
+             * @description Name of the person acting.
+             */
+            by: string;
+            /** Languages */
+            languages: string[];
+        };
+        /**
          * Guide
          * @description A repair guide for one breakdown: drafted by AI, checked and approved by the manager
          *     (or by QA when it needs it), printed for the workers, closed with what was actually
@@ -1400,14 +1446,15 @@ export interface components {
         };
         /**
          * GuideProgress
-         * @description One update while a guide is drafted: a step starting or finishing, then the guide.
+         * @description One update while a guide is drafted: a step starting or finishing, then the guide, or
+         *     one question for the manager when the report is too vague or names the wrong machine.
          */
         GuideProgress: {
             /**
              * Type
              * @enum {string}
              */
-            type: "step" | "guide" | "error";
+            type: "step" | "guide" | "error" | "clarify";
             /** Step */
             step: string | null;
             /** Status */
@@ -1417,6 +1464,13 @@ export interface components {
             /** Detail */
             detail: string | null;
             guide: components["schemas"]["Guide"] | null;
+            /** Question */
+            question: string | null;
+            /**
+             * Machines
+             * @description Machines to choose from when asking which one.
+             */
+            machines: components["schemas"]["Asset"][];
         };
         /**
          * GuideRelease
@@ -1447,6 +1501,12 @@ export interface components {
              * @default Manager
              */
             by: string;
+            /**
+             * Machine Confirmed
+             * @description The manager confirmed `asset_tag` after being asked; don't ask again.
+             * @default false
+             */
+            machine_confirmed: boolean;
         };
         /**
          * GuideReview
@@ -2693,7 +2753,40 @@ export interface operations {
             };
         };
     };
-    telemetry_api_telemetry_post: {
+    set_floor_languages_api_settings_floor_languages_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FloorLanguagesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_events_api_telemetry_post: {
         parameters: {
             query?: never;
             header?: never;

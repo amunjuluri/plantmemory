@@ -1,4 +1,5 @@
-"""The plant's knowledge base beyond incidents: manuals, alarm codes, parts, figures, guides."""
+"""The plant's knowledge base beyond incidents: manuals, alarm codes, parts, figures, guides
+and the plant's settings."""
 
 import re
 from dataclasses import dataclass
@@ -6,7 +7,7 @@ from functools import lru_cache
 
 from app.config import Settings, get_settings
 from app.kb.store import DocStore, FirestoreDocStore, LocalDocStore
-from app.models import ErrorCode, Figure, Guide, ManualSection, Part
+from app.models import ErrorCode, Figure, Guide, ManualSection, Part, PlantSettings
 
 __all__ = ["KnowledgeBase", "code_key", "get_kb", "set_kb"]
 
@@ -25,6 +26,7 @@ class KnowledgeBase:
     parts: DocStore[Part]
     figures: DocStore[Figure]
     guides: DocStore[Guide]
+    settings: DocStore[PlantSettings]
 
 
 def build_kb(settings: Settings) -> KnowledgeBase:
@@ -35,6 +37,7 @@ def build_kb(settings: Settings) -> KnowledgeBase:
         "parts": (Part, "parts", "part_no"),
         "figures": (Figure, "figures", "id"),
         "guides": (Guide, "guides", "id"),
+        "settings": (PlantSettings, "plant_settings", "id"),
     }
     prefix = settings.kb_collection_prefix
     if settings.store_backend == "firestore":

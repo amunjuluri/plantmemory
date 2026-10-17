@@ -10,7 +10,8 @@ from fastapi.testclient import TestClient
 
 from app.agent import tools
 from app.guide import guardrails, revise, workflow
-from app.guide.builder import build_guide_events, find_asset, find_codes
+from app.guide.builder import find_asset, find_codes
+from app.guide.flow import build_guide_events
 from app.guide.translate import missing_tokens
 from app.intake.voice import InvalidAudioError
 from app.kb import set_kb
@@ -18,6 +19,7 @@ from app.main import app
 from app.models import (
     RELEASE_CHECKS,
     Asset,
+    FloorLanguagesUpdate,
     GuideAction,
     GuideClose,
     GuideContent,
@@ -33,6 +35,7 @@ from app.models import (
     GuideStepOut,
     GuideTranslate,
     ManualPick,
+    ReportCheck,
     TranslationOut,
 )
 from tests.fakes import MATCHING, PNG_BYTES, FakeLLM, make_deps, make_kb
@@ -265,6 +268,79 @@ def test_report_for_other_equipment_gets_no_manual(env, pick) -> None:
     assert guide.qa_reasons
 
 
+def last_event(deps, kb, text: str, tag: str | None = None, confirmed: bool = False):
+    request = GuideRequest(text=text, asset_tag=tag, by="Ravi", machine_confirmed=confirmed)
+
+    async def run():
+        return [e async for e in build_guide_events(request, deps, kb)]
+
+    return asyncio.run(run())[-1]
+
+
+def reads(deps, **fields) -> None:
+    """What the fake Gemini makes of the report before drafting."""
+    read = {"equipment": "tablet press", "problem": "punch tight", "machine_tag": None}
+    deps.llm.responses[ReportCheck] = ReportCheck(
+        **(read | {"fits_picked": True, "why": "A tablet press fault."} | fields)
+    )
+
+
+def test_a_report_that_says_nothing_wrong_gets_a_question_not_a_guide(env) -> None:
+    deps, kb = env
+    reads(deps, equipment=None, problem=None)
+    event = last_event(deps, kb, "hello testing 123")
+    assert event.type == "clarify" and event.guide is None
+    assert event.question.startswith("Which machine stopped, and what's wrong")
+    assert kb.guides.all() == []
+    reads(deps, problem=None)
+    assert last_event(deps, kb, "TP-02 please", "TP-02").question.startswith(
+        "What's wrong with TP-02"
+    )
+    # An alarm code says what is wrong, whatever the model made of the words.
+    assert last_event(deps, kb, "TP-02 E-104", "TP-02").type == "guide"
+
+
+def test_a_report_naming_no_machine_asks_which(env) -> None:
+    deps, kb = env
+    reads(deps, equipment=None, problem="stopped")
+    event = last_event(deps, kb, "machine stopped")
+    assert event.question == "Which machine is it?"
+    assert {"TP-01", "TP-02"} <= {m.tag for m in event.machines}
+
+
+def test_text_naming_another_machine_than_the_one_picked_asks_which(env) -> None:
+    deps, kb = env
+    reads(deps)
+    event = last_event(deps, kb, REQUEST, "TP-01")
+    assert event.type == "clarify" and [m.tag for m in event.machines] == ["TP-02", "TP-01"]
+    assert "mentions TP-02, but TP-01 is picked" in event.question
+    confirmed = last_event(deps, kb, REQUEST, "TP-01", confirmed=True)
+    assert confirmed.type == "guide" and confirmed.guide.asset_tag == "TP-01"
+
+
+def test_a_report_that_does_not_fit_the_picked_machine_asks_first(env) -> None:
+    deps, kb = env
+    reads(deps, fits_picked=False, machine_tag="TP-01", why="Steam doors are on autoclaves.")
+    event = last_event(deps, kb, "door seal leaking steam", "TP-02")
+    assert [m.tag for m in event.machines] == ["TP-01", "TP-02"]
+    assert event.question.startswith("This sounds like TP-01")
+    reads(deps, fits_picked=False, machine_tag=None, why="Steam doors are on autoclaves.")
+    event = last_event(deps, kb, "door seal leaking steam", "TP-02")
+    assert [m.tag for m in event.machines] == ["TP-02"]
+    assert "Steam doors are on autoclaves. Pick the right machine" in event.question
+    assert last_event(deps, kb, "door seal leaking steam", "TP-02", confirmed=True).type == "guide"
+
+
+def test_drafting_goes_ahead_when_the_report_check_fails(env) -> None:
+    deps, kb = env
+
+    def broken(prompt):
+        raise RuntimeError("Gemini unavailable")
+
+    deps.llm.responses[ReportCheck] = broken
+    assert last_event(deps, kb, REQUEST, "TP-02").type == "guide"
+
+
 def test_a_named_machine_skips_the_manual_check(env) -> None:
     deps, kb = env
     draft(deps, kb)
@@ -420,6 +496,42 @@ def test_more_languages_are_added_for_printing_and_checked(env) -> None:
             workflow.add_language(guide.id, GuideTranslate(by="Ravi", language=code), deps, kb)
     printed = workflow.record_print(guide.id, GuidePrint(by="Ravi", languages=["te", "ta"]), kb)
     assert printed.events[-1].comment == "Copy 1 in English, Telugu, Tamil"
+
+
+def test_guides_are_translated_into_the_floor_languages_chosen(env) -> None:
+    deps, kb = env
+    assert workflow.floor_languages(kb, deps.settings) == ["te", "hi"]
+    chosen = FloorLanguagesUpdate(by="Ravi", languages=["TA", "or", "ta"])
+    saved = workflow.set_floor_languages(chosen, kb, deps.settings)
+    assert saved.floor_languages == ["ta", "or"] and saved.updated_by == "Ravi"
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    approved = workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    assert [t.language for t in approved.translations] == ["ta", "or"]
+
+    for languages in (["en"], ["xx"], ["te", "hi", "ta", "kn"]):
+        with pytest.raises(workflow.GuideError) as bad:
+            workflow.set_floor_languages(
+                FloorLanguagesUpdate(by="Ravi", languages=languages), kb, deps.settings
+            )
+        assert bad.value.status_code == 422
+    assert workflow.floor_languages(kb, deps.settings) == ["ta", "or"]
+
+
+def test_a_sheet_fits_english_and_three_languages(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    for code in ("ta", "kn"):
+        workflow.add_language(guide.id, GuideTranslate(by="Ravi", language=code), deps, kb)
+    four = GuidePrint(by="Ravi", languages=["te", "hi", "ta", "kn"])
+    with pytest.raises(workflow.GuideError) as full:
+        workflow.record_print(guide.id, four, kb)
+    assert full.value.status_code == 422 and "up to 3" in str(full.value)
+    three = GuidePrint(by="Ravi", languages=["en", "te", "hi", "ta"])
+    printed = workflow.record_print(guide.id, three, kb)
+    assert printed.events[-1].comment == "Copy 1 in English, Telugu, Hindi, Tamil"
 
 
 def test_a_flagged_language_added_after_approval_does_not_print(env) -> None:
@@ -737,10 +849,18 @@ def test_knowledge_base_api(env) -> None:
     assert image.content == PNG_BYTES and image.headers["content-type"] == "image/png"
     assert client.get("/api/figures/NOPE").status_code == 404
     config = client.get("/api/config").json()
-    assert config["guide_languages"] == [
+    assert config["floor_languages"] == [
         {"code": "te", "name": "Telugu"},
         {"code": "hi", "name": "Hindi"},
     ]
+    assert config["max_sheet_languages"] == 3 and config["floor_languages_set_by"] is None
+    url = "/api/settings/floor-languages"
+    assert client.put(url, json={"by": "Ravi", "languages": ["ur"]}).status_code == 200
+    config = client.get("/api/config").json()
+    assert config["floor_languages"] == [{"code": "ur", "name": "Urdu"}]
+    assert config["floor_languages_set_by"] == "Ravi" and config["floor_languages_set_at"]
+    assert client.put(url, json={"by": "Ravi", "languages": []}).status_code == 422
+    assert client.put(url, json={"by": "Ravi", "languages": ["en"]}).status_code == 422
 
 
 def test_print_languages_api(env) -> None:
@@ -760,3 +880,36 @@ def test_print_languages_api(env) -> None:
     assert client.post(url, json={"by": "Ravi", "language": "xx"}).status_code == 422
     bad = client.post(f"/api/guides/{guide.id}/print", json={"by": "Ravi", "languages": ["ta"]})
     assert bad.status_code == 422  # the fake Tamil lost "T-12"
+
+
+def test_the_guide_workflow_reads_and_searches_side_by_side(env) -> None:
+    """The graph ADK runs: both reads in parallel, a decision that can stop with a
+    question, then both searches in parallel before parts and writing."""
+    import asyncio as aio
+
+    from app.guide.flow import Run, build_workflow
+
+    deps, kb = env
+    run = Run(
+        request=GuideRequest(text=REQUEST, by="Ravi"),
+        deps=deps,
+        kb=kb,
+        assets=[],
+        picked=None,
+        progress=aio.Queue(),
+    )
+    graph = build_workflow(run).graph
+    edges = {(e.from_node.name, e.to_node.name, e.route) for e in graph.edges}
+    assert edges == {
+        ("__START__", "structure", None),
+        ("__START__", "check", None),
+        ("structure", "report_read", None),
+        ("check", "report_read", None),
+        ("report_read", "decide", None),
+        ("decide", "history", "draft"),
+        ("decide", "manual", "draft"),
+        ("history", "evidence", None),
+        ("manual", "evidence", None),
+        ("evidence", "parts", None),
+        ("parts", "write", None),
+    }

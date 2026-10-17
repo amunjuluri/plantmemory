@@ -8,6 +8,7 @@ Rules enforced here, not in the UI:
   be printed. Sending a guide to QA is never the manager's choice, nor is skipping QA.
 - QA cannot approve a guide they submitted themselves, and a rejection needs a reason.
 - Only approved guides can be printed; every printed copy is counted in the audit trail.
+  A sheet carries English and at most MAX_SHEET_LANGUAGES others.
 - Closing a guide saves what was actually done as a new incident, so memory grows.
 - QA releases the machine to production after the repair (line clearance); the person who
   closed the guide cannot release it.
@@ -15,16 +16,19 @@ Rules enforced here, not in the UI:
   withdrawn with a reason, never deleted; once a copy is printed it must be closed instead.
 """
 
+from datetime import UTC, datetime
+
 from app import telemetry
 from app.agent.tools import AgentDeps
 from app.approval import new_record_id
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.embeddings import incident_text
 from app.guide import guardrails
 from app.guide.translate import LANGUAGE_NAMES, language_name, translate_guide, translate_one
 from app.kb import KnowledgeBase
 from app.models import (
     RELEASE_CHECKS,
+    FloorLanguagesUpdate,
     Guide,
     GuideAction,
     GuideClose,
@@ -37,6 +41,7 @@ from app.models import (
     GuideTranslate,
     GuideWithdraw,
     IncidentRecord,
+    PlantSettings,
 )
 
 
@@ -219,7 +224,7 @@ def approve(guide_id: str, body: GuideAction, deps: AgentDeps, kb: KnowledgeBase
     if guide.status == "rejected":
         guide.version += 1
     if not guide.translations:
-        guide.translations = translate_guide(guide, deps.settings.guide_languages, deps)
+        guide.translations = translate_guide(guide, floor_languages(kb, deps.settings), deps)
     guide.qa_reasons = qa_reasons(guide, deps.settings.qa_approval)
     if guide.qa_reasons:
         guide.status = "in_review"
@@ -281,6 +286,36 @@ def add_language(guide_id: str, body: GuideTranslate, deps: AgentDeps, kb: Knowl
     return _save(guide, kb, GuideEvent(by=body.by, action="translated", comment=note))
 
 
+def floor_languages(kb: KnowledgeBase, settings: Settings) -> list[str]:
+    """The languages the crew reads: the manager's choice, else GUIDE_LANGUAGES."""
+    saved = kb.settings.get("plant")
+    if saved and saved.floor_languages:
+        return saved.floor_languages
+    return settings.guide_languages[: settings.max_sheet_languages]
+
+
+def set_floor_languages(
+    body: FloorLanguagesUpdate, kb: KnowledgeBase, settings: Settings
+) -> PlantSettings:
+    """Save the floor languages. Guides approved from now on are translated into them;
+    guides already approved keep theirs (more can be added on the print page)."""
+    codes = list(dict.fromkeys(code.strip().lower() for code in body.languages))
+    unknown = [code for code in codes if code == "en" or code not in LANGUAGE_NAMES]
+    if unknown:
+        raise GuideError(f"“{unknown[0]}” is not a language guides can be printed in.", 422)
+    if len(codes) > settings.max_sheet_languages:
+        raise GuideError(
+            f"Pick up to {settings.max_sheet_languages}: each adds a line under every step.", 422
+        )
+    saved = kb.settings.get("plant") or PlantSettings()
+    saved.floor_languages = codes
+    saved.updated_by = body.by.strip()
+    saved.updated_at = datetime.now(UTC)
+    kb.settings.put([saved])
+    telemetry.event("floor_languages_set", languages=codes)
+    return saved
+
+
 def printable(guide: Guide, language: str) -> bool:
     """A language added after approval prints only if code found nothing to check."""
     t = next((t for t in guide.translations if t.language == language), None)
@@ -291,7 +326,12 @@ def record_print(guide_id: str, body: GuidePrint, kb: KnowledgeBase) -> Guide:
     """Count a printed copy and the languages on it. Only approved guides may be printed."""
     guide = load(guide_id, kb)
     _require(guide, "approved", doing="printed")
-    wanted = list(dict.fromkeys(body.languages))
+    wanted = [code for code in dict.fromkeys(body.languages) if code != "en"]
+    most = get_settings().max_sheet_languages
+    if len(wanted) > most:
+        raise GuideError(
+            f"A sheet fits English and up to {most} languages. Take {len(wanted) - most} off.", 422
+        )
     blocked = [language_name(code) for code in wanted if not printable(guide, code)]
     if blocked:
         raise GuideError(f"Can't print in {', '.join(blocked)}: translate it again first.", 422)
