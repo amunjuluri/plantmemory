@@ -50,7 +50,7 @@ type Step = {
   hero?: boolean;
 };
 
-// Every figure is quoted from the source it links to (checked 14 Oct 2026).
+// Every figure is quoted from the source it links to (checked 17 Oct 2026).
 const SIEMENS = "https://assets.new.siemens.com/siemens/assets/api/uuid:1b43afb5-2d07-47f7-9eb7-893fe7d0bc59/TCOD-2024_original.pdf";
 const EVIDENCE = [
   {
@@ -72,10 +72,10 @@ const EVIDENCE = [
     href: "https://new.abb.com/news/detail/107660/abb-survey-reveals-unplanned-downtime-costs-125000-per-hour",
   },
   {
-    value: "62%",
-    label: "of US drug shortages (2013–17) began with manufacturing or quality problems",
-    source: "US FDA, 2019",
-    href: "https://www.fda.gov/drugs/drug-shortages/report-drug-shortages-root-causes-and-potential-solutions",
+    value: "$2.3M",
+    label: "lost in one hour of unplanned downtime at a large automotive plant",
+    source: "Siemens, 2024",
+    href: SIEMENS,
   },
 ];
 
@@ -109,7 +109,7 @@ let volumeShown = false;
 const reducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** A figure such as "$1.4T" or "62%" that counts up from zero, once, when it appears. */
+/** A figure such as "$1.4T" or "27 h" that counts up from zero, once, when it appears. */
 function CountUp({ value, delay = 0, className }: { value: string; delay?: number; className?: string }) {
   const match = value.match(/^([^\d]*)([\d.]+)(.*)$/);
   const target = match ? Number(match[2]) : 0;

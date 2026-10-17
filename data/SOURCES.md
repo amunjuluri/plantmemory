@@ -51,7 +51,7 @@ No plant publishes these, so they are invented for the demo until a plant provid
 
 | Data | File | Why it can't be public |
 |---|---|---|
-| Equipment manuals, alarm codes, figures | `data/kb/manuals/`, `data/kb/figures/` | Real manuals for pharma machines are copyrighted, so we don't publish them. |
+| Equipment manuals, alarm codes, figures | `data/kb/manuals/`, `data/kb/figures/` | Real manuals for these machines are copyrighted, so we don't publish them. |
 | Spare parts, stock, bins, lead times | `data/kb/parts.json` | A plant's store is private. |
 | SAP IW29 export | `data/samples/sap_iw29_export.csv` | A plant's own maintenance history. |
 | HMI alarm log, controller log | `data/samples/alarm_log_tp02.csv`, `cycle_log_ac2.txt` | A plant's own machine logs. |

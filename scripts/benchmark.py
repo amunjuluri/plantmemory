@@ -271,7 +271,7 @@ class PlainGuide(BaseModel):
 
 
 PLAIN_PROMPT = """\
-You are an experienced maintenance engineer in a pharmaceutical plant in India. The
+You are an experienced maintenance engineer in a manufacturing plant in India. The
 maintenance manager reports this breakdown:
 
 {text}
@@ -875,7 +875,7 @@ async def run_remote_async(r: Remote, reps: int, concurrency: list[int], voice: 
         samples = {
             "alarm_log": ("/api/logs/analyze", "alarm_log_tp02.csv", "text/csv", {}),
             "controller_log": ("/api/logs/analyze", "cycle_log_ac2.txt", "text/plain", {}),
-            "logbook_photo": ("/api/ingest/logbook", "logbook_pharma_01.png", "image/png", {}),
+            "logbook_photo": ("/api/ingest/logbook", "logbook_granulation_01.png", "image/png", {}),
             "sap_export": ("/api/ingest/cmms", "sap_iw29_export.csv", "text/csv", {}),
         }
         for name, (path, filename, mime, form) in samples.items():

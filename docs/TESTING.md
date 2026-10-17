@@ -26,8 +26,7 @@ make run                      # open http://localhost:8473
 **The tour.** On your first visit a tour starts on the Breakdown page. The screen dims,
 the real control stays lit, and a small popup beside it says what it does, with **Next**
 and **Skip**. The welcome card opens with what downtime costs, each figure linked to its source
-(Siemens' *True Cost of Downtime 2024*, ABB's 2023 survey of 3,215 plants, and the US
-FDA's 2019 drug shortages report). Next it points at the **plant status bar** (which
+(Siemens' *True Cost of Downtime 2024* and ABB's 2023 survey of 3,215 plants). Next it points at the **plant status bar** (which
 machines are running or stopped) and the four steps of the job, then follows the whole
 job, and you do the steps yourself:
 
@@ -155,7 +154,7 @@ sure the report is complete before it drafts anything.
 ## 5. Read a handwritten logbook page
 
 1. Open **Memory** → **Add records** → **Logbook photo**, and click the sample
-   **Pharma area log (messy)**.
+   **Granulation area log (messy)**.
 2. Check the entries it read.
 
 **You should see** the entries as editable records. The ink smudge comes back as `[?]`
@@ -307,8 +306,8 @@ on **Guides** in the top bar includes these, as well as guides waiting for QA's 
 **You should see** the release refused until every check is ticked, and the person who
 closed the repair unable to release it.
 
-**Why it matters:** in pharma a repaired machine can't restart until QA has checked the
-area. This records who cleared it and when.
+**Why it matters:** in a regulated plant a repaired machine can't restart until QA has
+checked the area. This records who cleared it and when.
 
 ## 12. See which machines are running, and withdraw a guide
 
