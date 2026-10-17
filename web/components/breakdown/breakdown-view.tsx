@@ -31,7 +31,7 @@ const FLOW = [
   {
     title: "Approve and print for the crew",
     time: "about 5 s",
-    body: "You approve it; QA checks only when code finds a reason. One A4 sheet in English, Telugu and Hindi.",
+    body: "You approve it; QA checks only when code finds a reason. One A4 sheet in English and your crew’s languages.",
   },
   {
     title: "Close it, QA releases the machine",

@@ -195,7 +195,7 @@ def make_kb(tmp_path: Path):
     from app.kb import KnowledgeBase
     from app.kb.loader import build_manual
     from app.kb.store import LocalDocStore
-    from app.models import ErrorCode, Figure, Guide, ManualSection, Part
+    from app.models import ErrorCode, Figure, Guide, ManualSection, Part, PlantSettings
 
     kb = KnowledgeBase(
         sections=LocalDocStore(ManualSection, tmp_path / "manual_sections.json"),
@@ -203,6 +203,7 @@ def make_kb(tmp_path: Path):
         parts=LocalDocStore(Part, tmp_path / "parts.json", key="part_no"),
         figures=LocalDocStore(Figure, tmp_path / "figures.json"),
         guides=LocalDocStore(Guide, tmp_path / "guides.json"),
+        settings=LocalDocStore(PlantSettings, tmp_path / "plant_settings.json"),
     )
     sections, codes = build_manual(
         "RTP37",

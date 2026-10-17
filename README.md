@@ -134,8 +134,10 @@ IW29 export, a fluid bed dryer manual PDF and two logbook photos. Each screen ha
 The plant type in the prompts is a setting: `PLANT_TYPE="paper mill"` (default
 "pharmaceutical plant"). Nothing else is industry-specific.
 
-The languages translated on approval are a setting: `GUIDE_LANGUAGES='["te","hi"]'`.
-English is always printed. On the print page the manager can add Assamese, Bengali,
+The manager sets the floor languages (what the crew reads, up to 3) from the header;
+every guide is translated into them on approval. `GUIDE_LANGUAGES='["te","hi"]'` is the
+default until then. English is always printed, with at most 3 languages under it
+(`MAX_SHEET_LANGUAGES`). On the print page the manager can add Assamese, Bengali,
 Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu or Urdu.
 
 **Test every feature step by step:** [docs/TESTING.md](docs/TESTING.md) (what to do, what

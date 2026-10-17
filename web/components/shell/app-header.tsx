@@ -26,6 +26,7 @@ import { api } from "@/lib/api";
 import { ROLE_LABEL, useSession, type Role } from "@/lib/stores/session";
 import { track } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
+import { FloorLanguages } from "./floor-languages";
 import { LogoMark } from "./logo";
 
 const NAV = [
@@ -123,10 +124,10 @@ function TourMenu() {
     <Menu.Root>
       <Menu.Trigger
         aria-label="Guided tour"
-        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-[0.8125rem] font-medium text-accent-text transition-[background-color,scale] duration-150 ease-out hover:bg-accent-soft/70 active:scale-[0.97] data-popup-open:bg-accent-soft/70 max-[359px]:px-2 [&_svg]:size-4"
+        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-[0.8125rem] font-medium text-accent-text transition-[background-color,scale] duration-150 ease-out hover:bg-accent-soft/70 active:scale-[0.97] data-popup-open:bg-accent-soft/70 max-[419px]:px-2 [&_svg]:size-4"
       >
         <Compass />
-        <span className="max-[359px]:hidden">
+        <span className="max-[419px]:hidden">
           <span className="sm:hidden">Tour</span>
           <span className="max-sm:hidden">Guided tour</span>
         </span>
@@ -254,7 +255,7 @@ export function AppHeader() {
       <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-6 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5 rounded-lg font-semibold tracking-tight">
           <LogoMark />
-          <span className="text-[0.9375rem]">PlantMemory</span>
+          <span className="text-[0.9375rem] max-[359px]:sr-only">PlantMemory</span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {NAV.map(({ href, label, short, ...rest }) => (
@@ -275,6 +276,7 @@ export function AppHeader() {
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
           <TourMenu />
+          <FloorLanguages />
           <ThemeToggle />
           <ActorSwitch />
         </div>

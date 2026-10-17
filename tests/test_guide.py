@@ -18,6 +18,7 @@ from app.main import app
 from app.models import (
     RELEASE_CHECKS,
     Asset,
+    FloorLanguagesUpdate,
     GuideAction,
     GuideClose,
     GuideContent,
@@ -422,6 +423,42 @@ def test_more_languages_are_added_for_printing_and_checked(env) -> None:
     assert printed.events[-1].comment == "Copy 1 in English, Telugu, Tamil"
 
 
+def test_guides_are_translated_into_the_floor_languages_chosen(env) -> None:
+    deps, kb = env
+    assert workflow.floor_languages(kb, deps.settings) == ["te", "hi"]
+    chosen = FloorLanguagesUpdate(by="Ravi", languages=["TA", "or", "ta"])
+    saved = workflow.set_floor_languages(chosen, kb, deps.settings)
+    assert saved.floor_languages == ["ta", "or"] and saved.updated_by == "Ravi"
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    approved = workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    assert [t.language for t in approved.translations] == ["ta", "or"]
+
+    for languages in (["en"], ["xx"], ["te", "hi", "ta", "kn"]):
+        with pytest.raises(workflow.GuideError) as bad:
+            workflow.set_floor_languages(
+                FloorLanguagesUpdate(by="Ravi", languages=languages), kb, deps.settings
+            )
+        assert bad.value.status_code == 422
+    assert workflow.floor_languages(kb, deps.settings) == ["ta", "or"]
+
+
+def test_a_sheet_fits_english_and_three_languages(env) -> None:
+    deps, kb = env
+    _, guide = draft(deps, kb)
+    workflow.edit(guide.id, clean_edit(guide, keep_t12=False), kb)
+    workflow.approve(guide.id, GuideAction(by="Ravi"), deps, kb)
+    for code in ("ta", "kn"):
+        workflow.add_language(guide.id, GuideTranslate(by="Ravi", language=code), deps, kb)
+    four = GuidePrint(by="Ravi", languages=["te", "hi", "ta", "kn"])
+    with pytest.raises(workflow.GuideError) as full:
+        workflow.record_print(guide.id, four, kb)
+    assert full.value.status_code == 422 and "up to 3" in str(full.value)
+    three = GuidePrint(by="Ravi", languages=["en", "te", "hi", "ta"])
+    printed = workflow.record_print(guide.id, three, kb)
+    assert printed.events[-1].comment == "Copy 1 in English, Telugu, Hindi, Tamil"
+
+
 def test_a_flagged_language_added_after_approval_does_not_print(env) -> None:
     deps, kb = env
     _, guide = draft(deps, kb)
@@ -737,10 +774,18 @@ def test_knowledge_base_api(env) -> None:
     assert image.content == PNG_BYTES and image.headers["content-type"] == "image/png"
     assert client.get("/api/figures/NOPE").status_code == 404
     config = client.get("/api/config").json()
-    assert config["guide_languages"] == [
+    assert config["floor_languages"] == [
         {"code": "te", "name": "Telugu"},
         {"code": "hi", "name": "Hindi"},
     ]
+    assert config["max_sheet_languages"] == 3 and config["floor_languages_set_by"] is None
+    url = "/api/settings/floor-languages"
+    assert client.put(url, json={"by": "Ravi", "languages": ["ur"]}).status_code == 200
+    config = client.get("/api/config").json()
+    assert config["floor_languages"] == [{"code": "ur", "name": "Urdu"}]
+    assert config["floor_languages_set_by"] == "Ravi" and config["floor_languages_set_at"]
+    assert client.put(url, json={"by": "Ravi", "languages": []}).status_code == 422
+    assert client.put(url, json={"by": "Ravi", "languages": ["en"]}).status_code == 422
 
 
 def test_print_languages_api(env) -> None:

@@ -70,9 +70,12 @@ class Settings(BaseSettings):
     # Manual sections scoring at least this against a breakdown report are offered to
     # the guide writer (see scripts/eval_retrieval.py).
     manual_threshold: float = 0.62
-    # Languages the printed repair guide is translated into, as ISO 639-1 codes. English
-    # is always printed too. Change here (or GUIDE_LANGUAGES='["ta"]') with no code change.
+    # Floor languages until the manager picks them in the app: every guide is translated
+    # into these on approval, as ISO 639-1 codes. English is always printed too.
     guide_languages: list[str] = ["te", "hi"]
+    # Most languages on one printed sheet besides English. Each adds a line under every
+    # step, so more than three makes the A4 sheet hard to follow.
+    max_sheet_languages: int = 3
     # Who approves a repair guide before it is printed. "when_needed": the manager, unless
     # code finds a reason QA must (a flagged value, a step with no source, a translation
     # that may not match, an earlier rejection). "always": QA approves every guide.

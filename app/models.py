@@ -683,6 +683,25 @@ class GuidePrint(GuideAction):
     languages: list[str] = Field(default_factory=list, max_length=20)
 
 
+class PlantSettings(Model):
+    """Chosen by the manager for the whole plant. One document, id "plant"."""
+
+    id: str = "plant"
+    floor_languages: list[str] | None = Field(
+        default=None,
+        description="Languages the crew reads, as ISO 639-1 codes; none: GUIDE_LANGUAGES.",
+    )
+    updated_by: str | None = None
+    updated_at: datetime | None = None
+
+
+class FloorLanguagesUpdate(Model):
+    """The languages spoken on the floor. Every guide is translated into them on approval."""
+
+    by: SignerName
+    languages: list[str] = Field(min_length=1, max_length=20)
+
+
 class GuideTranslate(Model):
     """Add one more shop-floor language to an approved guide."""
 

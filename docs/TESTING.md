@@ -198,14 +198,20 @@ printed sheet.
 
 ## 8. Approve and print in the workers' languages
 
-1. On a clean draft, click **Approve and print**. The guide is translated into Telugu
-   and Hindi (about 5 seconds), then the print view opens.
-2. **Add the language your crew reads.** Click **+ Language** and pick one, e.g.
-   **Tamil**. Each language is listed with its name in its own script. It is translated
-   and checked in about 5 seconds, then appears on the sheet. Try **Urdu** too: it is
-   set right to left.
-3. Click a language chip to take it off this copy, or click it again to put it back.
-4. Click **Print copy 1**. Open the guide's **Audit trail**: it says who added each
+1. **Set the floor languages first.** Click the languages icon in the header (next to
+   the theme switch) and pick what your crew reads, e.g. **Telugu**, **Hindi** and
+   **Tamil**, then **Save**. Up to 3: the other languages grey out once 3 are picked.
+   It says who set them and when; as QA it is read-only.
+2. On a clean draft, click **Approve and print**. The guide is translated into the floor
+   languages (about 5 seconds), then the print view opens.
+3. **Add a language for this copy.** Take one off (click its chip), click
+   **+ Language** and pick one, e.g. **Kannada**. Each language is listed with its name
+   in its own script. It is translated and checked in about 5 seconds, then appears on
+   the sheet. Try **Urdu** too: it is set right to left.
+4. **A sheet fits English and 3 languages.** With 3 on the sheet, **+ Language** says
+   the sheet is full and a 4th chip won't go back on until you take one off. Each
+   language adds a line under every step; more than 3 makes the A4 sheet hard to follow.
+5. Click **Print copy 1**. Open the guide's **Audit trail**: it says who added each
    language, and which languages the copy was printed in (e.g. *Copy 1 in English,
    Telugu, Hindi, Tamil*).
 
@@ -215,8 +221,9 @@ per step, the parts table, and a **Controlled copy** number. Each print is count
 (copy 1, copy 2…).
 
 Supported languages: Assamese, Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi,
-Odia, Punjabi, Tamil, Telugu and Urdu. The ones translated on approval are a setting
-(`GUIDE_LANGUAGES`, default Telugu and Hindi).
+Odia, Punjabi, Tamil, Telugu and Urdu. Until a manager sets the floor languages, guides
+are translated into `GUIDE_LANGUAGES` (default Telugu and Hindi). Guides already approved
+keep their languages when the floor languages change.
 
 **On a phone**, the print button opens the phone's print sheet; pick a printer or
 **Save as PDF**. If the phone doesn't open it straight away (iPhones need the tap
@@ -366,7 +373,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 5 | Logbook photo | Smudge flagged as `[?]`, not guessed |
 | 6 | Alarm log | Stopping errors first; one click to a guide |
 | 7 | Change by voice or chat | Changes marked; nothing saved until kept; unclear request gets a question; audit trail records it |
-| 8 | Print | Any of 12 languages added on demand; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
+| 8 | Print | Floor languages saved from the header (up to 3) and used on the next approval; any of 12 added on demand; never more than 3 under the English; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
 | 9 | QA review | Only code sends a guide to QA (no manager button); no self-approval; rejection needs a reason; a sent-back guide returns to QA |
 | 10 | Close | Saved to memory; short answers expanded from the guide; "did what the guide said" ticks the guide's parts |
 | 11 | Release | All checks needed; closer can't release |
