@@ -1,7 +1,7 @@
 # PlantMemory: notes for coding agents
 
-PlantMemory helps a pharma plant's maintenance manager get a stopped machine running
-again. From a breakdown report it drafts a cited repair guide, the manager checks and
+PlantMemory helps a plant's maintenance manager, in any industry, get a stopped machine
+running again. From a breakdown report it drafts a cited repair guide, the manager checks and
 approves it, and the guide is printed for the workers. See [README.md](README.md) for the
 product and [docs/TESTING.md](docs/TESTING.md) for every feature, step by step.
 
@@ -46,11 +46,11 @@ and cost money. Ask before running them.
   check this in code.
 - **The goal is less downtime.** Records are repair records for faster fixes, not
   recalls or blame.
-- **Workflow rules follow real GMP practice, and are configurable.** Check how plants
+- **Workflow rules follow real plant practice (GMP where it applies), and are configurable.** Check how plants
   actually do it before choosing a rule, and put the rule in settings (`app/config.py`,
   `.env.example`) instead of hard-coding it.
-- **Data must be real and public where possible, and fit a pharma plant.** No military
-  or nuclear sources. Plant-private data (stock, bins, people) is invented and says so.
+- **Data must be real and public where possible, and fit a real plant.** No military
+  or nuclear sources. Never pitch it as a pharma product: it is for any plant's machines. Plant-private data (stock, bins, people) is invented and says so.
 - **OEM manuals:** don't use or commit manuals from LFA, Tuttnauer or Sinda until the
   maker has agreed. Stand-in manuals are written for the demo.
 - **Who uses it:** maintenance managers with only a phone, SAP as the CMMS, and printed

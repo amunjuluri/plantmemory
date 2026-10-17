@@ -155,7 +155,7 @@ sure the report is complete before it drafts anything.
 ## 5. Read a handwritten logbook page
 
 1. Open **Memory** → **Add records** → **Logbook photo**, and click the sample
-   **Pharma area log (messy)**.
+   **Granulation area log (messy)**.
 2. Check the entries it read.
 
 **You should see** the entries as editable records. The ink smudge comes back as `[?]`
@@ -307,8 +307,8 @@ on **Guides** in the top bar includes these, as well as guides waiting for QA's 
 **You should see** the release refused until every check is ticked, and the person who
 closed the repair unable to release it.
 
-**Why it matters:** in pharma a repaired machine can't restart until QA has checked the
-area. This records who cleared it and when.
+**Why it matters:** in a regulated plant a repaired machine can't restart until QA has
+checked the area. This records who cleared it and when.
 
 ## 12. See which machines are running, and withdraw a guide
 

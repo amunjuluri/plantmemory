@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif";
 const SAMPLES = [
   { file: "logbook_paper_01.png", label: "Paper mill shift log" },
-  { file: "logbook_pharma_01.png", label: "Pharma area log (messy)" },
+  { file: "logbook_granulation_01.png", label: "Granulation area log (messy)" },
 ];
 
 export function Dropzone() {

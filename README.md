@@ -1,6 +1,6 @@
 # PlantMemory
 
-In a pharma plant, when a machine stops, the workers wait. They escalate to the
+In a factory, when a machine stops, the workers wait. They escalate to the
 maintenance manager, and the line stays down until the manager decides what to do and
 tells them. Workers usually can't carry phones on the floor, and the knowledge the
 manager needs is scattered across breakdown logbooks, SAP history, equipment manuals and
@@ -134,7 +134,7 @@ diagram with `uv run --with playwright python -m scripts.make_architecture --png
   only fills fields and talks. "Did what the guide said" doesn't count as an answer
   until it is expanded from the guide.
 - A report that names no machine gets a manual only when Gemini confirms the manual is
-  for that equipment; a coating pan never gets the tablet press's steps.
+  for that equipment; a machine with no manual never gets another machine's steps.
 - If Gemini is out of capacity after retries, the call is answered by a fallback model and
   goes through the same checks.
 - Matches from plant memory are checked by Gemini before they count.
@@ -157,8 +157,9 @@ Sample files to try are in `data/samples/`: an HMI alarm log and a controller lo
 IW29 export, a fluid bed dryer manual PDF and two logbook photos. Each screen has
 "try a sample" buttons.
 
-The plant type in the prompts is a setting: `PLANT_TYPE="paper mill"` (default
-"pharmaceutical plant"). Nothing else is industry-specific.
+PlantMemory is about the machines, so it fits any industry that runs them. The plant type
+in the prompts is a setting: `PLANT_TYPE="paper mill"` (default "manufacturing plant").
+Nothing else is industry-specific.
 
 The manager sets the floor languages (what the crew reads, up to 3) from the header;
 every guide is translated into them on approval. `GUIDE_LANGUAGES='["te","hi"]'` is the

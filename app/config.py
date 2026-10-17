@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     # What kind of plant the prompts describe ("a machine in a {plant_type} has broken
     # down"). Nothing else is industry-specific, so PLANT_TYPE="paper mill" or "food plant"
     # needs no code change.
-    plant_type: str = "pharmaceutical plant"
+    plant_type: str = "manufacturing plant"
 
     # Per-client cap on requests that call Gemini (analyze, guides, uploads). 0 disables.
     ai_requests_per_hour: int = 300

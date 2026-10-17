@@ -195,7 +195,7 @@ def apply_mapping(
         records.append(
             IncidentPublic(
                 id=record_id,
-                industry=industry or "pharma",
+                industry=industry or "generic",
                 date=when,
                 area_or_equipment=_join(row, mapping.equipment_columns) or "unspecified",
                 description=description,
