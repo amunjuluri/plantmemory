@@ -1,0 +1,324 @@
+{
+ "description": "Relevance judgements for the scale benchmark. retrieval_cases.json only labels the 17 demo records, but the scale collections hold tens of thousands of real FDA reports, and some describe the same problem as a test report. Every non-demo record that `run` or `decide` showed for a test report (top 5 by score, candidates above the threshold, and what survived Gemini's check, at every size) was read and judged by hand, by the rule the eval uses: the same symptom on the same kind of part, with any failed sterility test (Bowie-Dick, biological or chemical indicator) counting as one problem. Q8 and Q9 name a steam autoclave, so failed tests on other kinds of sterilizer do not count for them; Q10 says only 'sterilizer'. Close calls were judged not the same, and 'why_not' says why. 'same' records count as right answers alongside the eval's 'expected'; for a negative, showing a 'same' record first is not a false alarm. A record shown that is in neither list is unjudged and counted wrong; the benchmark prints any it finds so they can be judged here.",
+ "judged_on": "2026-10-17",
+ "judged": {
+  "Q1": {
+   "same": {
+    "MDR-31457": "door latch failed and the door opened, releasing steam and water",
+    "MDR-9314584": "steam leak, fixed by replacing the seal"
+   },
+   "not_same": []
+  },
+  "Q2": {
+   "same": {
+    "MDR-3515321": "water leaking; the seal in the door lock was replaced"
+   },
+   "not_same": [
+    "MDR-10075507",
+    "MDR-17738631",
+    "MDR-2781302",
+    "MDR-6941220"
+   ],
+   "why_not": {
+    "MDR-10075507": "leak from a check valve letting water into the chamber, not the door",
+    "MDR-6941220": "leak from a misplaced drain funnel, not the door"
+   }
+  },
+  "Q3": {
+   "same": {},
+   "not_same": [
+    "MDR-2750956"
+   ]
+  },
+  "Q4": {
+   "same": {},
+   "not_same": [
+    "MDR-9320747"
+   ]
+  },
+  "Q5": {
+   "same": {},
+   "not_same": [
+    "MDR-31457",
+    "MDR-38047",
+    "MDR-9314584",
+    "MDR-9320761",
+    "MDR-9320762"
+   ]
+  },
+  "Q6": {
+   "same": {
+    "MDR-2438661": "steam generator leaking water and steam onto the floor",
+    "MDR-2594705": "steam generator leaking, then flooding during its flush",
+    "MDR-2623173": "steam generator leaking water and flooding the room",
+    "MDR-2750956": "steam generator leaking; large leak at the bottom element (heater) gasket",
+    "MDR-7891184": "water leak from a cracked steam generator sight glass"
+   },
+   "not_same": []
+  },
+  "Q7": {
+   "same": {
+    "MDR-2796903": "door gasket seal did not retract and the door jammed against it"
+   },
+   "not_same": [
+    "MDR-1007615",
+    "MDR-15073403",
+    "MDR-16993365",
+    "MDR-3608744",
+    "MDR-9075016",
+    "MDR-9574592"
+   ]
+  },
+  "Q8": {
+   "same": {
+    "MDR-105017": "autoclave failed its biological monitoring",
+    "MDR-10535": "steam sterilizer's biological test failed",
+    "MDR-5347402": "steam sterilizer's biological test pack failed four times",
+    "MDR-6948178": "steam sterilizer with intermittent failed biological tests"
+   },
+   "not_same": [
+    "MDR-1406986",
+    "MDR-226906",
+    "MDR-534156",
+    "MDR-571195",
+    "MDR-9314584",
+    "MDR-9320747"
+   ],
+   "why_not": {
+    "MDR-226906": "a test pack burst; no failed result",
+    "MDR-571195": "positive BI on a STERIS System 1 (peracetic acid), not an autoclave",
+    "MDR-9314584": "a vacuum leak test failed, not a Bowie-Dick or biological test"
+   }
+  },
+  "Q9": {
+   "same": {
+    "MDR-10535": "steam sterilizer's biological test failed",
+    "MDR-1356488": "steam chemical integrators changed colour wrongly",
+    "MDR-299008": "steam integrator's bar did not reach the pass area",
+    "MDR-590744": "biological indicator positive after a steam load",
+    "MDR-7925400": "steam batch's bioindicator showed it was not sterile"
+   },
+   "not_same": [
+    "MDR-12631344",
+    "MDR-1457854",
+    "MDR-1489951",
+    "MDR-9652551"
+   ],
+   "why_not": {
+    "MDR-1457854": "wet load, no indicator failure",
+    "MDR-1489951": "wet load; tests passed",
+    "MDR-9652551": "did not reach temperature; no indicator result given"
+   }
+  },
+  "Q10": {
+   "same": {
+    "MDR-10535": "biological test failed",
+    "MDR-2020629": "positive biological indicator and failed chemical indicators",
+    "MDR-460323": "load had a positive biological indicator",
+    "MDR-531005": "biological indicator positive",
+    "MDR-571195": "biological indicator positive",
+    "MDR-590744": "biological indicator positive",
+    "MDR-666694": "biological indicator positive",
+    "MDR-800464": "suspected positive biological indicator"
+   },
+   "not_same": []
+  },
+  "Q11": {
+   "same": {
+    "MDR-3063690": "water-in-drain alarm; the drain would not clear",
+    "MDR-9191120": "chamber does not drain after cleaning",
+    "MDR-9349775": "chamber not draining because the exhaust valve was left shut"
+   },
+   "not_same": [
+    "MDR-10075507",
+    "MDR-276501",
+    "MDR-9309356",
+    "MDR-9320761"
+   ],
+   "why_not": {
+    "MDR-10075507": "an open check valve let water in; the drain worked",
+    "MDR-276501": "torn fast-exhaust valve stopped the vacuum; nothing about water"
+   }
+  },
+  "Q12": {
+   "same": {
+    "MDR-3063690": "water-in-drain alarm; the drain would not clear",
+    "MDR-9349775": "water left on the chamber floor, not draining"
+   },
+   "not_same": [
+    "MDR-1457854"
+   ]
+  },
+  "Q13": {
+   "same": {
+    "MDR-2231188": "door very hard to open by its handwheel"
+   },
+   "not_same": [
+    "MDR-31457",
+    "MDR-367747",
+    "MDR-38047",
+    "MDR-9314584",
+    "MDR-9320761"
+   ],
+   "why_not": {
+    "MDR-367747": "door hinge repair complaint; no stiffness described",
+    "MDR-38047": "door thrust bearing failed; it does not say the door was stiff"
+   }
+  },
+  "Q14": {
+   "same": {
+    "MDR-8915818": "steam leaking from a valve that came off the steam manifold"
+   },
+   "not_same": []
+  },
+  "N1": {
+   "same": {},
+   "not_same": [
+    "MDR-1328618",
+    "MDR-134459",
+    "MDR-192454",
+    "MDR-210094",
+    "MDR-322835",
+    "MDR-4488817",
+    "MDR-563311",
+    "MDR-6743404",
+    "MDR-886628"
+   ]
+  },
+  "N2": {
+   "same": {},
+   "not_same": [
+    "MDR-16277994",
+    "MDR-3171000",
+    "MDR-3171013",
+    "MDR-4438148",
+    "MDR-8597097",
+    "MDR-9320747"
+   ]
+  },
+  "N3": {
+   "same": {},
+   "not_same": [
+    "MDR-10583030",
+    "MDR-11346018",
+    "MDR-1970326",
+    "MDR-24039",
+    "MDR-24282574",
+    "MDR-4789024",
+    "MDR-6735725",
+    "MDR-6743404",
+    "MDR-71162"
+   ]
+  },
+  "N4": {
+   "same": {},
+   "not_same": [
+    "MDR-1328618",
+    "MDR-210227",
+    "MDR-210231",
+    "MDR-236922",
+    "MDR-289592",
+    "MDR-304991",
+    "MDR-322835",
+    "MDR-350644"
+   ]
+  },
+  "N5": {
+   "same": {},
+   "not_same": [
+    "MDR-10331894",
+    "MDR-10510084",
+    "MDR-10511302",
+    "MDR-11444381",
+    "MDR-2862888",
+    "MDR-2929295",
+    "MDR-2990573",
+    "MDR-3180978",
+    "MDR-50865859",
+    "MDR-50867914"
+   ]
+  },
+  "N6": {
+   "same": {},
+   "not_same": [
+    "MDR-1406986",
+    "MDR-276501",
+    "MDR-31457",
+    "MDR-534156",
+    "MDR-9309356",
+    "MDR-9320747",
+    "MDR-9320761"
+   ]
+  },
+  "N7": {
+   "same": {},
+   "not_same": [
+    "MDR-2750956",
+    "MDR-3233244",
+    "MDR-9320747"
+   ],
+   "why_not": {
+    "MDR-3233244": "the plant's incoming steam-line trap stuck open, not a valve on a boiler header"
+   }
+  },
+  "N8": {
+   "same": {},
+   "not_same": [
+    "MDR-226906",
+    "MDR-276501",
+    "MDR-31457",
+    "MDR-38047",
+    "MDR-875578",
+    "MDR-9309356",
+    "MDR-9320747",
+    "MDR-9320762"
+   ]
+  },
+  "N9": {
+   "same": {},
+   "not_same": [
+    "MDR-2250660",
+    "MDR-4352721",
+    "MDR-446891",
+    "MDR-653167",
+    "MDR-7990841",
+    "MDR-8275926",
+    "MDR-9320761"
+   ]
+  },
+  "N10": {
+   "same": {
+    "MDR-1148229": "loading cart lost a wheel while being pushed to the sterilizer",
+    "MDR-5491723": "loading cart's worn swivel wheels tilted and slipped out"
+   },
+   "not_same": [
+    "MDR-1406986",
+    "MDR-276501",
+    "MDR-2894612",
+    "MDR-3313979",
+    "MDR-38047",
+    "MDR-534156",
+    "MDR-9320747"
+   ],
+   "why_not": {
+    "MDR-2894612": "cart lock latch stuck; the wheels were fine",
+    "MDR-3313979": "carriage wheels did not lock; nothing broken"
+   }
+  },
+  "N11": {
+   "same": {},
+   "not_same": [
+    "MDR-10583030",
+    "MDR-11346018",
+    "MDR-2704497",
+    "MDR-6735725",
+    "MDR-6743404",
+    "MDR-6746503",
+    "MDR-7990841"
+   ],
+   "why_not": {
+    "MDR-6743404": "untreated feed water building up in the generator; not a softener running out"
+   }
+  }
+ }
+}

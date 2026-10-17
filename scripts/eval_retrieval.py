@@ -153,7 +153,13 @@ def score_outcomes(cases: list[dict], negatives: list[dict], shown: list[list[st
         extra = [i for i in ids if i not in expected]
         verdict = "missed" if not ids else ("right" if ids[0] in expected else "wrong")
         rows.append((case, ids, verdict, extra))
-    alarms = [(n, ids) for n, ids in zip(negatives, neg, strict=True) if ids]
+    # A negative can list records judged to be the same problem (the scale benchmark's
+    # judgements); showing one of those first is a find, not a false alarm.
+    alarms = [
+        (n, ids)
+        for n, ids in zip(negatives, neg, strict=True)
+        if ids and ids[0] not in n.get("expected", ())
+    ]
     return {
         "rows": rows,
         "right": sum(r[2] == "right" for r in rows),

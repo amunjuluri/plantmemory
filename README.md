@@ -64,6 +64,18 @@ code, Telugu, Hindi, a two-word report, a vague one, and a machine with no manua
 The same breakdowns, the same model: Gemini on its own invents part numbers and
 settings; PlantMemory's parts come from the store and its values from cited sources.
 
+![Search as memory grows](docs/benchmark/scale.png)
+
+A plant group's memory would hold tens of thousands of repairs, not 17. `make
+scale-benchmark` fills separate Firestore collections with up to 50,000 real FDA device
+repair reports plus the 17 demo records, then searches them the way the app does (17 Oct
+2026, from a laptop in India to Firestore in Mumbai). A search takes 75 ms at 17 records,
+224 ms at 10,000 and 770 ms at 50,000 (median). Among 50,000, many FDA reports describe the
+same fault as a test report, so every record a search showed was read and judged
+([`data/eval/scale_judgements.json`](data/eval/scale_judgements.json)). At 50,000 the first
+result is a matching repair for 14 of the 14 test reports. After Gemini's check, the first
+match shown is right for 13 of 14 at every size, with 1 false alarm in 11 at 50,000 (0 at 17).
+
 Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
 Firestore vector search and Cloud Run.
 

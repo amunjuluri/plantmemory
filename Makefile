@@ -1,4 +1,4 @@
-.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval benchmark web web-check api-types deploy docker-run visits
+.PHONY: install run dev test lint fmt check seed seed-kb figures sample-manual eval benchmark scale-benchmark web web-check api-types deploy docker-run visits
 
 PORT ?= 8473
 # HOST=0.0.0.0 to open it from a phone on the same Wi-Fi.
@@ -48,6 +48,13 @@ benchmark:  ## Speed, cost, trust and load benchmarks -> docs/BENCHMARK.md (abou
 	uv run python -m scripts.benchmark guardrails
 	uv run python -m scripts.benchmark remote --url $(URL)
 	uv run python -m scripts.benchmark report
+
+scale-benchmark:  ## Search speed and accuracy with 50,000 FDA repair records in separate scale_* collections (about $3)
+	uv run python -m scripts.scale_benchmark fetch
+	CLOUDSDK_ACTIVE_CONFIG_NAME=$(GCLOUD_CONFIG) uv run python -m scripts.scale_benchmark indexes
+	uv run python -m scripts.scale_benchmark load
+	uv run python -m scripts.scale_benchmark run
+	uv run python -m scripts.scale_benchmark chart
 
 web/out/index.html:
 	cd web && pnpm build
