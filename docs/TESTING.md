@@ -26,8 +26,7 @@ make run                      # open http://localhost:8473
 **The tour.** On your first visit a tour starts on the Breakdown page. The screen dims,
 the real control stays lit, and a small popup beside it says what it does, with **Next**
 and **Skip**. The welcome card opens with what downtime costs, each figure linked to its source
-(Siemens' *True Cost of Downtime 2024*, ABB's 2023 survey of 3,215 plants, and the US
-FDA's 2019 drug shortages report). Next it points at the **plant status bar** (which
+(Siemens' *True Cost of Downtime 2024* and ABB's 2023 survey of 3,215 plants). Next it points at the **plant status bar** (which
 machines are running or stopped) and the four steps of the job, then follows the whole
 job, and you do the steps yourself:
 
