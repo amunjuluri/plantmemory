@@ -1,0 +1,61 @@
+%%{init: {"theme": "base", "flowchart": {"curve": "basis", "nodeSpacing": 12, "rankSpacing": 22, "padding": 14, "subGraphTitleMargin": {"top": 6, "bottom": 10}}, "themeVariables": {"fontFamily": "Google Sans Flex", "fontSize": "14px", "lineColor": "#80868B", "primaryTextColor": "#202124", "clusterBkg": "#F8F9FA", "clusterBorder": "#DADCE0", "edgeLabelBackground": "#FFFFFF"}}}%%
+flowchart LR
+    classDef actor fill:#FFFFFF,stroke:#5F6368,stroke-width:1.2px,color:#202124
+    classDef svc fill:#FFFFFF,stroke:#1A73E8,stroke-width:1.2px,color:#202124
+    classDef step fill:#FFFFFF,stroke:#9AA0A6,stroke-width:1px,color:#202124
+    classDef check fill:#E6F4EA,stroke:#1E8E3E,stroke-width:1.2px,color:#0D652D
+    classDef ai fill:#FFFFFF,stroke:#9334E6,stroke-width:1.2px,color:#202124
+    classDef db fill:#FFFFFF,stroke:#E37400,stroke-width:1.2px,color:#202124
+
+    subgraph USERS["<b>Users</b>"]
+        direction TB
+        MGR("Maintenance manager<br/><small>reports, reviews, approves, prints</small>"):::actor
+        QA("QA<br/><small>reviews flagged guides, releases</small>"):::actor
+        CREW("Crew<br/><small>repairs from the printed A4 sheet</small>"):::actor
+        MGR ~~~ QA ~~~ CREW
+    end
+
+    subgraph CR["<b>Cloud Run · asia-south1</b>"]
+        direction TB
+        WEB("Next.js UI · FastAPI<br/><small>voice WebSocket</small>"):::svc
+        IN("Intake<br/><small>logbook OCR · alarm logs · SAP/CMMS · manuals</small>"):::svc
+        subgraph ADK["<b>Repair guide · ADK graph workflow · ~10 s</b>"]
+            direction LR
+            R1("Read and check<br/>the report"):::step
+            R2("Search past fixes"):::step
+            R3("Search the manual"):::step
+            R4("Parts and time"):::step
+            R5("Write the guide"):::step
+            R1 --> R2 & R3
+            R2 & R3 --> R4 --> R5
+        end
+        subgraph OUT["<b>Before anyone sees it</b>"]
+            direction LR
+            CK("Code checks every line<br/><small>citations · values · parts · translations</small>"):::check
+            WF("Guide workflow<br/><small>approve · QA · print · close · release</small>"):::svc
+            CK --> WF
+        end
+        WEB --> ADK
+        IN --> ADK
+        ADK --> OUT
+    end
+
+    subgraph VX["<b>Vertex AI</b>"]
+        direction TB
+        G1("Gemini 3.1 Flash-Lite<br/><small>fallback: 3.5 Flash-Lite</small>"):::ai
+        G2("Gemini 3.8 Live<br/><small>voice, native audio</small>"):::ai
+        G3("Gemini Embedding 2"):::ai
+        G1 ~~~ G2 ~~~ G3
+    end
+
+    subgraph FS["<b>Firestore · asia-south1</b>"]
+        direction TB
+        V[("Vector search<br/><small>past repairs · manual sections</small>")]:::db
+        D[("Documents<br/><small>guides · audit trail · parts · stock</small>")]:::db
+        V ~~~ D
+    end
+    style OUT fill:#FFFFFF,stroke:#DADCE0
+
+    USERS -- "web · voice" --> CR
+    CR <-- "Gemini calls" --> VX
+    CR <-- "search · read · write" --> FS

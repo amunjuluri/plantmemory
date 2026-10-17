@@ -1,5 +1,6 @@
-"""Draw the architecture diagram: docs/architecture.svg, and docs/architecture.png for the
-deck (rendered in headless Chrome when Playwright is available).
+"""Draw the detailed architecture diagram: docs/architecture-detail.svg, and
+docs/architecture-detail.png for the deck (rendered in headless Chrome when Playwright is
+available).
 
     uv run python -m scripts.make_architecture
     uv run --with playwright python -m scripts.make_architecture --png
@@ -263,6 +264,10 @@ def draw() -> str:
         box(x, y, w, 30, fill="#fff", stroke="none", r=15)
         text(x + w / 2, y + 20, d, size=12, anchor="middle", family=MONO)
         x += w + 8
+    # The scale benchmark's own collections, never the app's.
+    box(rx + 18, 712, rw - 36, 36, fill="none", stroke=AMBER, r=9, dash="4 4")
+    text(rx + 32, 735, "scale_incidents_*", size=12.5, weight=600, family=MONO)
+    text(rx + 190, 735, "scale test: 50,000 repairs", size=12, fill=MUTED)
 
     arrow([(cx + cw + 4, 270), (rx - 6, 270)], color=VIOLET, width=2)
     arrow([(rx - 6, 290), (cx + cw + 4, 290)], color=VIOLET, width=2)
@@ -321,11 +326,13 @@ def draw() -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--png", action="store_true", help="also render docs/architecture.png")
+    parser.add_argument(
+        "--png", action="store_true", help="also render docs/architecture-detail.png"
+    )
     args = parser.parse_args()
     svg = draw()
-    (OUT / "architecture.svg").write_text(svg)
-    print(f"wrote {OUT / 'architecture.svg'}")
+    (OUT / "architecture-detail.svg").write_text(svg)
+    print(f"wrote {OUT / 'architecture-detail.svg'}")
     if args.png:
         from playwright.sync_api import sync_playwright
 
@@ -333,9 +340,9 @@ def main() -> None:
             browser = p.chromium.launch(channel="chrome", headless=True)
             page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=2)
             page.set_content(f"<body style='margin:0'>{svg}</body>")
-            page.screenshot(path=str(OUT / "architecture.png"))
+            page.screenshot(path=str(OUT / "architecture-detail.png"))
             browser.close()
-        print(f"wrote {OUT / 'architecture.png'}")
+        print(f"wrote {OUT / 'architecture-detail.png'}")
 
 
 if __name__ == "__main__":

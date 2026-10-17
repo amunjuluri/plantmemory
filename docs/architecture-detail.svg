@@ -160,6 +160,9 @@
 <text x="1312.9499999999998" y="692" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">figures</text>
 <rect x="1353.8" y="672" width="115.39999999999999" height="30" rx="15" fill="#fff" stroke="none" stroke-width="1"/>
 <text x="1411.5" y="692" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#14171c" text-anchor="middle" letter-spacing="0">plant settings</text>
+<rect x="1178" y="712" width="364" height="36" rx="9" fill="none" stroke="#b45f06" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="1192" y="735" font-family="'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="12.5" font-weight="600" fill="#14171c" text-anchor="start" letter-spacing="0">scale_incidents_*</text>
+<text x="1350" y="735" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="#566070" text-anchor="start" letter-spacing="0">scale test: 50,000 repairs</text>
 <path d="M 1124 270 L 1154 270" fill="none" stroke="#6b46d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
 <path d="M 1154 290 L 1124 290" fill="none" stroke="#6b46d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
 <path d="M 1124 600 L 1154 600" fill="none" stroke="#b45f06" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>

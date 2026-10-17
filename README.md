@@ -90,8 +90,12 @@ about what failed) or routes on, past fixes and the manual are searched side by 
 parts and the guide are written. The order is fixed by the graph rather than chosen by a
 model, so a guide takes about 10 seconds and every run takes the same path; each node has a
 timeout and the searches retry once on a transient error. Every step is a plain function
-tested without ADK, and code checks the written guide before anyone sees it. Redraw the
-diagram with `uv run --with playwright python -m scripts.make_architecture --png`.
+tested without ADK, and code checks the written guide before anyone sees it. The diagram's
+source is [docs/architecture.mmd](docs/architecture.mmd) (Mermaid).
+
+The [detailed diagram](docs/architecture-detail.png) adds every intake, model, check and
+Firestore collection, including the scale test's own collections. Redraw it with
+`uv run --with playwright python -m scripts.make_architecture --png`.
 
 > **Past repairs are real; plant-private data is invented.** Plant memory starts with 17
 > real steam sterilizer repairs from FDA device reports (public domain), each linked to its
