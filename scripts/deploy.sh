@@ -23,6 +23,9 @@ EMBEDDING_MODEL="${EMBEDDING_MODEL:-gemini-embedding-2}"
 EMBEDDING_DIM="${EMBEDDING_DIM:-768}"
 COLLECTION="${FIRESTORE_COLLECTION:-incidents}"
 MAX_INSTANCES="${MAX_INSTANCES:-3}"
+# One instance kept warm, so nobody waits for a cold start (about 1 vCPU and 1 GiB idle).
+# MIN_INSTANCES=0 scales to zero when the app is not being shown.
+MIN_INSTANCES="${MIN_INSTANCES:-1}"
 # Google Analytics 4 id ("G-..."): the Firebase web app on plantmemory-tqot45. It is public
 # (every page loads it), so it lives here; set ANALYTICS_MEASUREMENT_ID=off to deploy without it.
 ANALYTICS_MEASUREMENT_ID="${ANALYTICS_MEASUREMENT_ID:-G-VZ9E79NNFX}"
@@ -154,7 +157,7 @@ gc run deploy "$SERVICE" \
   --service-account "$RUN_SA" \
   --build-service-account "projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
   $($DEPLOY_ONLY || echo --allow-unauthenticated) \
-  --min-instances 0 --max-instances "$MAX_INSTANCES" \
+  --min-instances "$MIN_INSTANCES" --max-instances "$MAX_INSTANCES" \
   --cpu 1 --memory 1Gi --concurrency 20 --timeout 600 --cpu-boost \
   --set-env-vars "^@^GOOGLE_GENAI_USE_ENTERPRISE=True@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@GEMINI_MODEL=${GEMINI_MODEL}@GEMINI_FALLBACK_MODEL=${GEMINI_FALLBACK_MODEL}@LIVE_MODEL=${LIVE_MODEL}@LIVE_LOCATION=${LIVE_LOCATION}@EMBEDDING_MODEL=${EMBEDDING_MODEL}@EMBEDDING_DIM=${EMBEDDING_DIM}@STORE_BACKEND=firestore@FIRESTORE_COLLECTION=${COLLECTION}@MATCH_THRESHOLD=0.70@AI_REQUESTS_PER_HOUR=${AI_REQUESTS_PER_HOUR:-300}@ANALYTICS_MEASUREMENT_ID=${ANALYTICS_MEASUREMENT_ID:-}"
 
