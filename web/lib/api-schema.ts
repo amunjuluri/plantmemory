@@ -1446,14 +1446,15 @@ export interface components {
         };
         /**
          * GuideProgress
-         * @description One update while a guide is drafted: a step starting or finishing, then the guide.
+         * @description One update while a guide is drafted: a step starting or finishing, then the guide, or
+         *     one question for the manager when the report is too vague or names the wrong machine.
          */
         GuideProgress: {
             /**
              * Type
              * @enum {string}
              */
-            type: "step" | "guide" | "error";
+            type: "step" | "guide" | "error" | "clarify";
             /** Step */
             step: string | null;
             /** Status */
@@ -1463,6 +1464,13 @@ export interface components {
             /** Detail */
             detail: string | null;
             guide: components["schemas"]["Guide"] | null;
+            /** Question */
+            question: string | null;
+            /**
+             * Machines
+             * @description Machines to choose from when asking which one.
+             */
+            machines: components["schemas"]["Asset"][];
         };
         /**
          * GuideRelease
@@ -1493,6 +1501,12 @@ export interface components {
              * @default Manager
              */
             by: string;
+            /**
+             * Machine Confirmed
+             * @description The manager confirmed `asset_tag` after being asked; don't ask again.
+             * @default false
+             */
+            machine_confirmed: boolean;
         };
         /**
          * GuideReview

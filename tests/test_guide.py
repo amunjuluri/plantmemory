@@ -34,6 +34,7 @@ from app.models import (
     GuideStepOut,
     GuideTranslate,
     ManualPick,
+    ReportCheck,
     TranslationOut,
 )
 from tests.fakes import MATCHING, PNG_BYTES, FakeLLM, make_deps, make_kb
@@ -264,6 +265,79 @@ def test_report_for_other_equipment_gets_no_manual(env, pick) -> None:
     assert guide.asset_tag is None
     assert any("No manual section" in f for f in guide.flags)
     assert guide.qa_reasons
+
+
+def last_event(deps, kb, text: str, tag: str | None = None, confirmed: bool = False):
+    request = GuideRequest(text=text, asset_tag=tag, by="Ravi", machine_confirmed=confirmed)
+
+    async def run():
+        return [e async for e in build_guide_events(request, deps, kb)]
+
+    return asyncio.run(run())[-1]
+
+
+def reads(deps, **fields) -> None:
+    """What the fake Gemini makes of the report before drafting."""
+    read = {"equipment": "tablet press", "problem": "punch tight", "machine_tag": None}
+    deps.llm.responses[ReportCheck] = ReportCheck(
+        **(read | {"fits_picked": True, "why": "A tablet press fault."} | fields)
+    )
+
+
+def test_a_report_that_says_nothing_wrong_gets_a_question_not_a_guide(env) -> None:
+    deps, kb = env
+    reads(deps, equipment=None, problem=None)
+    event = last_event(deps, kb, "hello testing 123")
+    assert event.type == "clarify" and event.guide is None
+    assert event.question.startswith("Which machine stopped, and what's wrong")
+    assert kb.guides.all() == []
+    reads(deps, problem=None)
+    assert last_event(deps, kb, "TP-02 please", "TP-02").question.startswith(
+        "What's wrong with TP-02"
+    )
+    # An alarm code says what is wrong, whatever the model made of the words.
+    assert last_event(deps, kb, "TP-02 E-104", "TP-02").type == "guide"
+
+
+def test_a_report_naming_no_machine_asks_which(env) -> None:
+    deps, kb = env
+    reads(deps, equipment=None, problem="stopped")
+    event = last_event(deps, kb, "machine stopped")
+    assert event.question == "Which machine is it?"
+    assert {"TP-01", "TP-02"} <= {m.tag for m in event.machines}
+
+
+def test_text_naming_another_machine_than_the_one_picked_asks_which(env) -> None:
+    deps, kb = env
+    reads(deps)
+    event = last_event(deps, kb, REQUEST, "TP-01")
+    assert event.type == "clarify" and [m.tag for m in event.machines] == ["TP-02", "TP-01"]
+    assert "mentions TP-02, but TP-01 is picked" in event.question
+    confirmed = last_event(deps, kb, REQUEST, "TP-01", confirmed=True)
+    assert confirmed.type == "guide" and confirmed.guide.asset_tag == "TP-01"
+
+
+def test_a_report_that_does_not_fit_the_picked_machine_asks_first(env) -> None:
+    deps, kb = env
+    reads(deps, fits_picked=False, machine_tag="TP-01", why="Steam doors are on autoclaves.")
+    event = last_event(deps, kb, "door seal leaking steam", "TP-02")
+    assert [m.tag for m in event.machines] == ["TP-01", "TP-02"]
+    assert event.question.startswith("This sounds like TP-01")
+    reads(deps, fits_picked=False, machine_tag=None, why="Steam doors are on autoclaves.")
+    event = last_event(deps, kb, "door seal leaking steam", "TP-02")
+    assert [m.tag for m in event.machines] == ["TP-02"]
+    assert "Steam doors are on autoclaves. Pick the right machine" in event.question
+    assert last_event(deps, kb, "door seal leaking steam", "TP-02", confirmed=True).type == "guide"
+
+
+def test_drafting_goes_ahead_when_the_report_check_fails(env) -> None:
+    deps, kb = env
+
+    def broken(prompt):
+        raise RuntimeError("Gemini unavailable")
+
+    deps.llm.responses[ReportCheck] = broken
+    assert last_event(deps, kb, REQUEST, "TP-02").type == "guide"
 
 
 def test_a_named_machine_skips_the_manual_check(env) -> None:

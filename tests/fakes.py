@@ -17,6 +17,7 @@ from app.models import (
     LogbookExtraction,
     MatchCheck,
     MatchVerdict,
+    ReportCheck,
     StructuredIncident,
 )
 from app.store.local_store import LocalStore
@@ -56,6 +57,14 @@ class FakeLLM:
             return self.drafts.pop(0)
         if schema is LogbookExtraction:
             return self.extraction
+        if schema is ReportCheck:
+            return ReportCheck(
+                equipment="the machine named",
+                problem="the fault reported",
+                machine_tag=None,
+                fits_picked=True,
+                why="A clear report.",
+            )
         if schema is MatchCheck:
             ids = re.findall(r'"id": "([^"]+)"', contents if isinstance(contents, str) else "")
             return MatchCheck(

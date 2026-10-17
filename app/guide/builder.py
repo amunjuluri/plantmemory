@@ -37,6 +37,7 @@ from app.models import (
     ManualSectionPublic,
     Part,
     Recurrence,
+    ReportCheck,
     SimilarIncident,
     SourceRef,
     StructuredIncident,
@@ -76,6 +77,75 @@ def find_asset(texts: list[str], assets: list[Asset], requested: str | None = No
             asset = by_key.get(_tag_key(letters, digits))
             if asset:
                 return asset
+    return None
+
+
+def check_report(
+    request: GuideRequest, picked: Asset | None, assets: list[Asset], deps: AgentDeps
+) -> ReportCheck | None:
+    """Gemini's first read of the report (see ReportCheck). None if it fails: drafting then
+    goes ahead as it would without the check, rather than stopping the manager."""
+    machines = "\n".join(f"{a.tag}: {a.equipment_model}" for a in assets) or "None listed."
+    prompt = prompts.REPORT_CHECK_PROMPT.format(
+        plant=deps.settings.plant_type,
+        text=request.text,
+        picked=f"{picked.tag} ({picked.equipment_model})" if picked else "none",
+        machines=machines,
+    )
+    try:
+        return deps.llm.generate(prompt, ReportCheck, thinking="low", hedge_after_s=5.0)
+    except Exception as err:
+        log.warning("Report check failed, drafting without it: %s", err)
+        return None
+
+
+def clarify(
+    request: GuideRequest,
+    check: ReportCheck | None,
+    named: Asset | None,
+    picked: Asset | None,
+    codes: list[str],
+    assets: list[Asset],
+) -> GuideProgress | None:
+    """One question for the manager, or None to draft. Code decides, from what the report
+    names and Gemini's read of it: a guide for the wrong machine is worse than a question,
+    and a guide from "machine stopped" would be general advice, not a repair."""
+
+    def ask(question: str, machines: list[Asset] | None = None) -> GuideProgress:
+        return GuideProgress(type="clarify", question=question, machines=machines or [])
+
+    machine = picked or named
+    if check and not check.problem and not codes:
+        if machine:
+            return ask(
+                f"What's wrong with {machine.tag}? Say what it's doing, or the alarm on its screen."
+            )
+        return ask(
+            "Which machine stopped, and what's wrong with it? Say what it's doing, or the "
+            "alarm on its screen."
+        )
+    if picked and not request.machine_confirmed:
+        if named and named.tag != picked.tag:
+            return ask(
+                f"The report mentions {named.tag}, but {picked.tag} is picked. "
+                "Which machine is it?",
+                [named, picked],
+            )
+        if check and not check.fits_picked:
+            other = next((a for a in assets if a.tag == check.machine_tag), None)
+            if other and other.tag != picked.tag:
+                return ask(
+                    f"This sounds like {other.tag} ({other.equipment_model}), not {picked.tag} "
+                    f"({picked.equipment_model}). Which machine is it?",
+                    [other, picked],
+                )
+            return ask(
+                f"This doesn't sound like {picked.tag} ({picked.equipment_model}). "
+                f"{check.why} Pick the right machine, or draft for {picked.tag} anyway.",
+                [picked],
+            )
+    if not machine and check and not check.equipment:
+        return ask("Which machine is it?", assets)
     return None
 
 
@@ -306,12 +376,29 @@ async def build_guide_events(
 
     try:
         yield started("understand")
-        incident = await asyncio.to_thread(tools.structure_incident, request.text, deps)
         assets = await asyncio.to_thread(list_assets, kb)
+        picked = find_asset([], assets, requested=request.asset_tag) if request.asset_tag else None
+        # Both read the report; side by side, the check adds no wait.
+        incident, check = await asyncio.gather(
+            asyncio.to_thread(tools.structure_incident, request.text, deps),
+            asyncio.to_thread(check_report, request, picked, assets, deps),
+        )
+        named = find_asset([request.text], assets)
+        codes = find_codes(request.text)
+        question = clarify(request, check, named, picked, codes, assets)
+        if question:
+            yield done("understand", "One question before drafting")
+            telemetry.event(
+                "guide_clarify",
+                picked=picked.tag if picked else None,
+                named=named.tag if named else None,
+                machines=len(question.machines),
+            )
+            yield question
+            return
         asset = find_asset(
             [request.text, incident.area_or_equipment], assets, requested=request.asset_tag
         )
-        codes = find_codes(request.text)
         ev = Evidence(incident=incident, codes=codes, asset=asset)
         what = asset.tag if asset else incident.area_or_equipment
         yield done("understand", f"{what}{', alarm ' + ', '.join(codes) if codes else ''}")

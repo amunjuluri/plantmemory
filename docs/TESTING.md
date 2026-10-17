@@ -99,6 +99,22 @@ use these records.
 manual. Here the answer arrives in about 10 seconds, and every line shows where it came
 from, so the manager can trust it or check it in one click.
 
+**Try a wrong or vague report (new).** Each gets one question in about 3 seconds instead
+of a guide:
+
+1. Pick **TP-02** as the machine and type *AC-2 door seal leaking steam*. It asks
+   whether it's **AC-2** or **TP-02**. Click **AC-2**: the guide is drafted for the
+   autoclave.
+2. Pick **TP-02** and type *the door seal is leaking steam during the sterilization
+   cycle*. It says this sounds like AC-2, not the tablet press.
+3. Leave the machine on **Auto-detect** and type *machine stopped*. It asks which machine,
+   with the plant's machines to pick from.
+4. Type *hello testing 123*. It asks which machine stopped and what's wrong.
+
+A vague report about the right machine (*TP-02*, *making a weird noise*) is still drafted,
+with questions for the technician. **Why it matters:** a confident guide for the wrong
+machine is worse than none. A question costs the manager three seconds.
+
 ## 3. See a repeat breakdown, reported in Telugu
 
 1. Go back to **Breakdown** and click **Autoclave door seal (Telugu)**. The report is in
@@ -367,7 +383,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | # | Feature | Pass when |
 |---|---|---|
 | 1 | SAP import | Every row saved; visible in Memory |
-| 2 | Typed report | Guide in about 10 s; lines cite sources; parts show stock |
+| 2 | Typed report | Guide in about 10 s; lines cite sources; parts show stock; a wrong machine or a vague report gets one question, not a guide |
 | 3 | Repeat warning | Telugu report finds the English SAP record; repeat count and downtime shown |
 | 4 | Voice report | Reply in your language; asks only for what's missing |
 | 5 | Logbook photo | Smudge flagged as `[?]`, not guessed |

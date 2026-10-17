@@ -144,7 +144,7 @@ export function analyzeStream(text: string, industry: Industry | null, signal: A
 
 /** Drafts a repair guide and yields each step as it happens, then the saved guide. */
 export function guideStream(
-  body: { text: string; asset_tag?: string | null; by: string },
+  body: { text: string; asset_tag?: string | null; by: string; machine_confirmed?: boolean },
   signal: AbortSignal,
 ) {
   return postEvents<GuideProgress>("/api/guides/stream", body, signal);

@@ -327,6 +327,29 @@ class ErrorCode(Model):
     section_id: str | None = Field(default=None, description="Section with the full procedure.")
 
 
+class ReportCheck(Model):
+    """Gemini's first read of a breakdown report, before anything is searched. Code decides
+    what follows: draft the guide, or ask the manager one question first."""
+
+    equipment: str | None = Field(
+        description="The machine or equipment the report is about, in a few words; null if it "
+        "names none."
+    )
+    problem: str | None = Field(
+        description="What is wrong, in a few words: a symptom, an alarm or a failed part; null "
+        "if the report doesn't say."
+    )
+    machine_tag: str | None = Field(
+        description="Tag of the plant machine the report clearly describes; null if unsure or "
+        "if more than one fits."
+    )
+    fits_picked: bool = Field(
+        description="False only if the report clearly describes different equipment from the "
+        "machine picked."
+    )
+    why: str = Field(description="One short sentence a maintenance manager would understand.")
+
+
 class ManualPick(Model):
     """The model's choice of manual for a report that names no machine. Code checks the id."""
 
@@ -611,6 +634,10 @@ class GuideRequest(Model):
     text: str = Field(min_length=5, max_length=8000)
     asset_tag: str | None = Field(default=None, max_length=40)
     by: str = Field(default="Manager", min_length=1, max_length=80)
+    machine_confirmed: bool = Field(
+        default=False,
+        description="The manager confirmed `asset_tag` after being asked; don't ask again.",
+    )
 
 
 SignerName = Annotated[
@@ -745,14 +772,19 @@ class GuideClose(Model):
 
 
 class GuideProgress(Model):
-    """One update while a guide is drafted: a step starting or finishing, then the guide."""
+    """One update while a guide is drafted: a step starting or finishing, then the guide, or
+    one question for the manager when the report is too vague or names the wrong machine."""
 
-    type: Literal["step", "guide", "error"]
+    type: Literal["step", "guide", "error", "clarify"]
     step: str | None = None
     status: Literal["started", "done", "error"] | None = None
     summary: str | None = None
     detail: str | None = None
     guide: Guide | None = None
+    question: str | None = None
+    machines: list[Asset] = Field(
+        default_factory=list, description="Machines to choose from when asking which one."
+    )
 
 
 # --- Voice intake ---
