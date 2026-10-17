@@ -67,6 +67,20 @@ settings; PlantMemory's parts come from the store and its values from cited sour
 Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
 Firestore vector search and Cloud Run.
 
+## Architecture
+
+![PlantMemory architecture](docs/architecture.png)
+
+One Cloud Run service serves the API, the UI and the voice WebSocket. Drafting a guide
+is an **ADK graph Workflow** (`app/guide/flow.py`): the report is read and checked side by
+side, a decision node either asks the manager one question (wrong machine, nothing said
+about what failed) or routes on, past fixes and the manual are searched side by side, then
+parts and the guide are written. The order is fixed by the graph rather than chosen by a
+model, so a guide takes about 10 seconds and every run takes the same path; each node has a
+timeout and the searches retry once on a transient error. Every step is a plain function
+tested without ADK, and code checks the written guide before anyone sees it. Redraw the
+diagram with `uv run --with playwright python -m scripts.make_architecture --png`.
+
 > **Past repairs are real; plant-private data is invented.** Plant memory starts with 17
 > real steam sterilizer repairs from FDA device reports (public domain), each linked to its
 > source and used as "at another site", never as this plant's history. Manuals, parts,
@@ -77,7 +91,7 @@ Firestore vector search and Cloud Run.
 
 | Screen | What the manager does |
 |---|---|
-| Breakdown | See at a glance which machines are running, stopped (and for how long) or waiting for QA's release. Type, or talk it through by voice (it asks for what's missing and reads the report back), or read a logbook photo. Get a cited repair guide; a machine with an open guide is flagged so one stop isn't drafted twice. |
+| Breakdown | See at a glance which machines are running, stopped (and for how long) or waiting for QA's release. Type, or talk it through by voice (it asks for what's missing and reads the report back), or read a logbook photo. Get a cited repair guide; a machine with an open guide is flagged so one stop isn't drafted twice. A report that names another machine than the one picked, or says nothing about what failed, gets one question instead of a guess. |
 | Alarm logs | Upload an HMI alarm export or controller log. Errors that stopped the machine come first with the manual's first actions and time; rising warnings are flagged. One click drafts the guide. |
 | Guides | Every guide from draft to approval, printing, closure and QA release, with a track showing the stage and an audit trail. A guide that isn't needed is withdrawn with a reason, never deleted. Change a draft by voice or typed, in any language; every change is marked and checked before it is kept. QA reviews and releases here. |
 | Memory | Past incidents, equipment manuals by page, spare parts and stock. **Add records** brings in logbook photos, SAP PM / CMMS exports (CSV or Excel) and equipment manual PDFs. |
