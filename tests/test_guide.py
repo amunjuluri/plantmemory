@@ -10,7 +10,8 @@ from fastapi.testclient import TestClient
 
 from app.agent import tools
 from app.guide import guardrails, revise, workflow
-from app.guide.builder import build_guide_events, find_asset, find_codes
+from app.guide.builder import find_asset, find_codes
+from app.guide.flow import build_guide_events
 from app.guide.translate import missing_tokens
 from app.intake.voice import InvalidAudioError
 from app.kb import set_kb
@@ -879,3 +880,32 @@ def test_print_languages_api(env) -> None:
     assert client.post(url, json={"by": "Ravi", "language": "xx"}).status_code == 422
     bad = client.post(f"/api/guides/{guide.id}/print", json={"by": "Ravi", "languages": ["ta"]})
     assert bad.status_code == 422  # the fake Tamil lost "T-12"
+
+
+def test_the_guide_workflow_reads_and_searches_side_by_side(env) -> None:
+    """The graph ADK runs: both reads in parallel, a decision that can stop with a
+    question, then both searches in parallel before parts and writing."""
+    import asyncio as aio
+
+    from app.guide.flow import Run, build_workflow
+
+    deps, kb = env
+    run = Run(
+        request=GuideRequest(text=REQUEST, by="Ravi"), deps=deps, kb=kb, assets=[], picked=None,
+        progress=aio.Queue(),
+    )
+    graph = build_workflow(run).graph
+    edges = {(e.from_node.name, e.to_node.name, e.route) for e in graph.edges}
+    assert edges == {
+        ("__START__", "structure", None),
+        ("__START__", "check", None),
+        ("structure", "report_read", None),
+        ("check", "report_read", None),
+        ("report_read", "decide", None),
+        ("decide", "history", "draft"),
+        ("decide", "manual", "draft"),
+        ("history", "evidence", None),
+        ("manual", "evidence", None),
+        ("evidence", "parts", None),
+        ("parts", "write", None),
+    }

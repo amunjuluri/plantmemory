@@ -34,7 +34,7 @@ from app.agent.tools import get_deps
 from app.approval import UnknownCitationError, approve_draft
 from app.config import ROOT_DIR, get_settings
 from app.guide import revise, workflow
-from app.guide.builder import build_guide_events
+from app.guide.flow import build_guide_events
 from app.guide.plant import plant_status
 from app.guide.translate import LANGUAGE_NAMES, language_name
 from app.ingest import logbook_ocr

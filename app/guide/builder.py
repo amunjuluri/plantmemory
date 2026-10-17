@@ -1,29 +1,21 @@
-"""Draft a repair guide for a breakdown from plant memory, equipment manuals and the parts store.
-
-The steps are plain functions run in a fixed order (no agent loop): the order never
-changes, and a fixed pipeline lets the history and manual searches run side by side.
-Each step's progress is streamed to the UI.
+"""The steps of drafting a repair guide, from plant memory, equipment manuals and the parts
+store: plain functions, tested without ADK. app/guide/flow.py runs them as an ADK graph
+Workflow and streams each step's progress to the UI.
 """
 
-import asyncio
 import json
 import logging
 import re
-import time
-from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from app import telemetry
 from app.agent import prompts, tools
-from app.agent.guardrails import _display_date, format_minutes, ordinal
+from app.agent.guardrails import _display_date
 from app.agent.tools import AgentDeps
 from app.approval import new_record_id
 from app.embeddings import incident_text
 from app.guide import guardrails, workflow
 from app.kb import KnowledgeBase, code_key
-from app.kb.loader import list_assets
-from app.llm import BUSY_MESSAGE, is_overloaded
 from app.models import (
     Asset,
     ErrorCode,
@@ -360,123 +352,3 @@ def source_refs(
 def _plural(n: int, word: str) -> str:
     many = f"{word}es" if word.endswith(("x", "s", "ch")) else f"{word}s"
     return f"{n} {word if n == 1 else many}"
-
-
-async def build_guide_events(
-    request: GuideRequest, deps: AgentDeps, kb: KnowledgeBase
-) -> AsyncIterator[GuideProgress]:
-    """Draft a guide, yielding progress for each step and finally the saved guide."""
-    began = time.perf_counter()
-
-    def started(step: str) -> GuideProgress:
-        return GuideProgress(type="step", step=step, status="started")
-
-    def done(step: str, summary: str) -> GuideProgress:
-        return GuideProgress(type="step", step=step, status="done", summary=summary)
-
-    try:
-        yield started("understand")
-        assets = await asyncio.to_thread(list_assets, kb)
-        picked = find_asset([], assets, requested=request.asset_tag) if request.asset_tag else None
-        # Both read the report; side by side, the check adds no wait.
-        incident, check = await asyncio.gather(
-            asyncio.to_thread(tools.structure_incident, request.text, deps),
-            asyncio.to_thread(check_report, request, picked, assets, deps),
-        )
-        named = find_asset([request.text], assets)
-        codes = find_codes(request.text)
-        question = clarify(request, check, named, picked, codes, assets)
-        if question:
-            yield done("understand", "One question before drafting")
-            telemetry.event(
-                "guide_clarify",
-                picked=picked.tag if picked else None,
-                named=named.tag if named else None,
-                machines=len(question.machines),
-            )
-            yield question
-            return
-        asset = find_asset(
-            [request.text, incident.area_or_equipment], assets, requested=request.asset_tag
-        )
-        ev = Evidence(incident=incident, codes=codes, asset=asset)
-        what = asset.tag if asset else incident.area_or_equipment
-        yield done("understand", f"{what}{', alarm ' + ', '.join(codes) if codes else ''}")
-
-        yield started("search_history")
-        yield started("search_manuals")
-
-        def history():
-            found = tools.search_similar(incident, deps, k=5)
-            same = tools.verify_matches(incident, found, deps)
-            return same, tools.check_recurrence(incident, same, deps)
-
-        hist_task = asyncio.create_task(asyncio.to_thread(history))
-        manual_task = asyncio.create_task(
-            asyncio.to_thread(find_sections, incident, codes, asset, deps, kb)
-        )
-        ev.sections, ev.error_codes = await manual_task
-        if ev.sections:
-            manual = ev.sections[0]
-            yield done(
-                "search_manuals",
-                f"{_plural(len(ev.sections), 'section')} from the {manual.equipment_model} manual",
-            )
-        else:
-            yield done("search_manuals", "No manual section matched")
-        ev.matches, ev.recurrence = await hist_task
-        if not ev.matches:
-            yield done("search_history", "No past fix for this problem in memory")
-        else:
-            line = f"{_plural(len(ev.matches), 'past fix')} found"
-            rec = ev.recurrence
-            if rec and rec.is_repeat:
-                line += f", {ordinal(rec.occurrence)} time in {rec.window_months} months"
-            if rec and rec.recurred:
-                line += f"; {_plural(len(rec.recurred), 'fix')} did not hold"
-            yield done("search_history", line)
-
-        yield started("find_parts")
-        if ev.asset is None and ev.sections:
-            # Only when one machine uses this manual; otherwise parts go by equipment model
-            # rather than naming a machine the manager never mentioned.
-            same = [a for a in assets if a.manual_id == ev.sections[0].manual_id]
-            ev.asset = same[0] if len(same) == 1 else None
-        ev.parts = await asyncio.to_thread(find_parts, ev.asset, ev.sections, kb)
-        figure_ids = list(dict.fromkeys(f for s in ev.sections for f in s.figure_ids))
-        for fid in figure_ids:
-            meta = await asyncio.to_thread(kb.figures.get, fid)
-            if meta:
-                ev.figure_captions[fid] = meta.caption
-        yield done(
-            "find_parts",
-            f"{_plural(len(ev.parts), 'part')} listed for this machine"
-            if ev.parts
-            else "No spare parts listed for this machine",
-        )
-
-        yield started("write_guide")
-        guide = await asyncio.to_thread(write_guide, request, ev, deps)
-        await asyncio.to_thread(kb.guides.put, [guide])
-        line = f"{_plural(len(guide.steps), 'step')}"
-        if guide.downtime.manual_minutes:
-            line += f", about {format_minutes(guide.downtime.manual_minutes)}"
-        yield done("write_guide", line)
-        telemetry.event(
-            "guide_drafted",
-            guide=guide.id,
-            asset=guide.asset_tag,
-            seconds=round(time.perf_counter() - began, 1),
-            steps=len(guide.steps),
-            repeat=bool(guide.recurrence and guide.recurrence.is_repeat),
-            qa_needed=bool(guide.qa_reasons),
-        )
-        yield GuideProgress(type="guide", guide=guide)
-    except Exception as err:
-        if is_overloaded(err):
-            telemetry.event("guide_draft_busy", seconds=round(time.perf_counter() - began, 1))
-            log.warning("Gemini overloaded after retries: %s", err)
-            yield GuideProgress(type="error", detail=BUSY_MESSAGE)
-        else:
-            log.exception("Guide drafting failed")
-            yield GuideProgress(type="error", detail="Something went wrong. Please try again.")
