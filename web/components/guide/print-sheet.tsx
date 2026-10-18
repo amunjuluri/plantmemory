@@ -424,16 +424,18 @@ function FitToWidth({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Phones save the sheet as a PDF instead of opening the print dialog. */
+/** Phones and tablets save the sheet as a PDF instead of opening the print dialog. */
 const isPhone = () => window.matchMedia("(pointer: coarse)").matches;
 
 /**
  * Saves a copy already recorded as a PDF on the phone, ready to print or share. If the
  * PDF can't be made, a toast offers the same copy again, instead of the button quietly
- * moving on to the next copy number.
+ * moving on to the next copy number. The retry uses the sheet as it was when the copy was
+ * recorded, even if languages were changed since.
  */
 async function savePdf(sheet: HTMLElement, guide: Guide) {
   const copy = guide.copies_printed;
+  const recorded = sheet.cloneNode(true) as HTMLElement;
   try {
     const pdf = await sheetPdf(sheet);
     const name = `${guide.id}-copy-${copy}.pdf`;
@@ -451,7 +453,7 @@ async function savePdf(sheet: HTMLElement, guide: Guide) {
       id: "print",
       duration: Infinity,
       description: err instanceof Error ? err.message : undefined,
-      action: { label: "Try again", onClick: () => void savePdf(sheet, guide) },
+      action: { label: "Try again", onClick: () => void savePdf(recorded, guide) },
     });
   }
 }

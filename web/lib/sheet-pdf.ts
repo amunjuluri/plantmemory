@@ -7,9 +7,10 @@ const A4_PT = [595.28, 841.89];
 const TOP_MM = 10;
 const BOTTOM_MM = 12;
 /** 240 dpi: small print stays sharp. Phones refuse canvases much over 16 million pixels,
- * so a long sheet is drawn at a lower resolution. */
+ * and some browsers any side over 16,384, so a long sheet is drawn at a lower resolution. */
 const MAX_SCALE = 2.5;
 const MAX_PIXELS = 16_000_000;
+const MAX_SIDE = 16_384;
 /** How full a page must be before the next block, kept whole, moves to the next page. */
 const FILL = 0.6;
 
@@ -31,7 +32,11 @@ export async function sheetPdf(sheet: HTMLElement): Promise<Blob> {
   try {
     await document.fonts.ready;
     const box = copy.getBoundingClientRect();
-    const scale = Math.min(MAX_SCALE, Math.sqrt(MAX_PIXELS / (box.width * box.height)));
+    const scale = Math.min(
+      MAX_SCALE,
+      Math.sqrt(MAX_PIXELS / (box.width * box.height)),
+      MAX_SIDE / Math.max(box.width, box.height),
+    );
     const canvas = await domToCanvas(copy, { scale, backgroundColor: "#ffffff" });
     const pages = slice(canvas, breaks(copy, box), box.width, box.height);
     canvas.width = canvas.height = 0;

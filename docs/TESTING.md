@@ -240,14 +240,15 @@ Odia, Punjabi, Tamil, Telugu and Urdu. Until a manager sets the floor languages,
 are translated into `GUIDE_LANGUAGES` (default Telugu and Hindi). Guides already approved
 keep their languages when the floor languages change.
 
-**On a phone**, the print button saves the sheet as a PDF straight away, with no print
-sheet to go through: it lands in Downloads on Android, or Files on an iPhone, named after
+**On a phone or tablet** (any touch-first screen), the print button saves the sheet as a
+PDF straight away, with no print sheet to go through: it lands in Downloads on Android, or Files on an iPhone, named after
 the guide and copy (e.g. `GDE-19EF351C-copy-2.pdf`). A message says the copy is saved,
 with **Save again** if you need the file twice. Open the PDF to check it: A4 pages, every
 language in its own script, the figures, and pages that break between steps, not through
 a line. If the PDF can't be made, the message says the copy is recorded and offers
-**Try again** for the same copy, so no copy number is used up. On a computer the button
-opens the print dialog as before.
+**Try again**: it saves that same copy, exactly as it was recorded, even if you change the
+languages in between, and doesn't use another copy number. On a computer with a mouse or
+trackpad, the button opens the print dialog as before.
 
 **Why it matters:** workers usually can't carry phones on the floor, and a crew often
 mixes people from different states. A printed sheet in the languages they read means the
