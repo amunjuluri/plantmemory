@@ -240,10 +240,14 @@ Odia, Punjabi, Tamil, Telugu and Urdu. Until a manager sets the floor languages,
 are translated into `GUIDE_LANGUAGES` (default Telugu and Hindi). Guides already approved
 keep their languages when the floor languages change.
 
-**On a phone**, the print button opens the phone's print sheet; pick a printer or
-**Save as PDF**. If the phone doesn't open it straight away (iPhones need the tap
-itself), a message says the copy is recorded, with a **Print** button that opens the
-same copy, so no copy number is used up.
+**On a phone**, the print button saves the sheet as a PDF straight away, with no print
+sheet to go through: it lands in Downloads on Android, or Files on an iPhone, named after
+the guide and copy (e.g. `GDE-19EF351C-copy-2.pdf`). A message says the copy is saved,
+with **Save again** if you need the file twice. Open the PDF to check it: A4 pages, every
+language in its own script, the figures, and pages that break between steps, not through
+a line. If the PDF can't be made, the message says the copy is recorded and offers
+**Try again** for the same copy, so no copy number is used up. On a computer the button
+opens the print dialog as before.
 
 **Why it matters:** workers usually can't carry phones on the floor, and a crew often
 mixes people from different states. A printed sheet in the languages they read means the
@@ -388,7 +392,7 @@ make benchmark   # speed, cost, trust and load (calls Gemini: about $2)
 | 5 | Logbook photo | Smudge flagged as `[?]`, not guessed |
 | 6 | Alarm log | Stopping errors first; one click to a guide |
 | 7 | Change by voice or chat | Changes marked; nothing saved until kept; unclear request gets a question; audit trail records it |
-| 8 | Print | Floor languages saved from the header (up to 3) and used on the next approval; any of 12 added on demand; never more than 3 under the English; all on one sheet; copies numbered with their languages; on a phone the print sheet opens (or one more tap opens the same copy) |
+| 8 | Print | Floor languages saved from the header (up to 3) and used on the next approval; any of 12 added on demand; never more than 3 under the English; all on one sheet; copies numbered with their languages; on a phone the PDF downloads at once (or **Try again** makes the same copy) |
 | 9 | QA review | Only code sends a guide to QA (no manager button); no self-approval; rejection needs a reason; a sent-back guide returns to QA |
 | 10 | Close | Saved to memory; short answers expanded from the guide; "did what the guide said" ticks the guide's parts |
 | 11 | Release | All checks needed; closer can't release |
