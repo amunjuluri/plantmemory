@@ -674,8 +674,8 @@ def write_report() -> None:
             "",
             f"A plant with {per_day} breakdowns a day: about **${monthly:.2f} a month** "
             f"(₹{monthly * USD_TO_INR:.0f}) in Gemini calls for guides and translations. "
-            "Cloud Run scales to zero and Firestore holds a few MB per plant, both inside or near "
-            "the free tier at this size.",
+            "On top of that, Cloud Run keeps one instance warm, and Firestore holds a few MB per "
+            "plant, inside its free tier at this size.",
             "",
         ]
 
