@@ -14,6 +14,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorState, Shimmer } from "@/components/ui/states";
 import { api, figureUrl, type AppConfig, type Guide, type GuideTranslation } from "@/lib/api";
 import { NATIVE_NAME, dir } from "@/lib/languages";
+import { download, sheetPdf } from "@/lib/sheet-pdf";
 import { useActorName } from "@/lib/stores/session";
 import { cn, formatDateTime } from "@/lib/utils";
 import { track } from "@/lib/telemetry";
@@ -187,7 +188,7 @@ function Lines({ english, translated }: { english: string; translated: Said[] })
 
 const Box = () => <span aria-hidden className="inline-block size-[5mm] shrink-0 rounded-[1mm] border-[1.5px] border-black" />;
 
-function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation[] }) {
+function Sheet({ guide, languages, ref }: { guide: Guide; languages: GuideTranslation[]; ref?: React.Ref<HTMLElement> }) {
   const approved = ["approved", "closed", "released"].includes(guide.status);
   const made = guide.events.find((e) => e.action === "created");
   const approval = [...guide.events].reverse().find((e) => e.action === "approved");
@@ -197,7 +198,7 @@ function Sheet({ guide, languages }: { guide: Guide; languages: GuideTranslation
   const sources = Array.from(new Set([...guide.steps, ...guide.safety, ...guide.restart_checks].flatMap((i) => i.citations)));
 
   return (
-    <article data-tour="print-sheet" className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
+    <article ref={ref} data-tour="print-sheet" className="relative w-[210mm] bg-white p-[10mm] text-black shadow-raised print:w-auto print:p-0 print:shadow-none">
       {!approved && (
         <div
           aria-hidden
@@ -423,11 +424,45 @@ function FitToWidth({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Phones and tablets save the sheet as a PDF instead of opening the print dialog. */
+const isPhone = () => window.matchMedia("(pointer: coarse)").matches;
+
 /**
- * Opens the print dialog for a copy already recorded. Phones open it only from a tap, and
- * by the time the copy is recorded the tap has expired: iOS ignores the call silently. If
- * no dialog opened, a toast offers the same copy behind a fresh tap (and says how to get a
- * PDF), instead of the button quietly moving on to the next copy number.
+ * Saves a copy already recorded as a PDF on the phone, ready to print or share. If the
+ * PDF can't be made, a toast offers the same copy again, instead of the button quietly
+ * moving on to the next copy number. The retry uses the sheet as it was when the copy was
+ * recorded, even if languages were changed since.
+ */
+async function savePdf(sheet: HTMLElement, guide: Guide) {
+  const copy = guide.copies_printed;
+  const recorded = sheet.cloneNode(true) as HTMLElement;
+  try {
+    const pdf = await sheetPdf(sheet);
+    const name = `${guide.id}-copy-${copy}.pdf`;
+    download(pdf, name);
+    track("print_pdf_saved", { copy, kb: Math.round(pdf.size / 1024) });
+    toast.success(`Copy ${copy} saved as a PDF`, {
+      id: "print",
+      duration: 10_000,
+      description: "Open it from Downloads to print or share it.",
+      action: { label: "Save again", onClick: () => download(pdf, name) },
+    });
+  } catch (err) {
+    track("print_pdf_failed", { copy });
+    toast.error(`Copy ${copy} is recorded, but the PDF couldn’t be made`, {
+      id: "print",
+      duration: Infinity,
+      description: err instanceof Error ? err.message : undefined,
+      action: { label: "Try again", onClick: () => void savePdf(recorded, guide) },
+    });
+  }
+}
+
+/**
+ * Opens the print dialog for a copy already recorded. Some browsers open it only from a
+ * tap, and by the time the copy is recorded the tap has expired. If no dialog opened, a
+ * toast offers the same copy behind a fresh tap, instead of the button quietly moving on
+ * to the next copy number.
  */
 function openPrint(copy: number) {
   let opened = false;
@@ -443,7 +478,7 @@ function openPrint(copy: number) {
     toast(`Copy ${copy} is recorded and ready`, {
       id: "print",
       duration: Infinity,
-      description: "Tap Print to open the print sheet, then pick a printer or Save as PDF.",
+      description: "Tap Print to open the print dialog, then pick a printer or Save as PDF.",
       action: { label: "Print", onClick: () => window.print() },
     });
   }, 1000);
@@ -530,6 +565,7 @@ export function PrintView() {
   const [options, setOptions] = useState<LanguageOption[]>([]);
   const [adding, setAdding] = useState<LanguageOption | null>(null);
   const [max, setMax] = useState(3);
+  const sheet = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -592,9 +628,10 @@ export function PrintView() {
     setPrinting(true);
     try {
       const printed = await api.printGuide(guide.id, by, languages.map((t) => t.language));
-      // Render the new copy number before the print dialog snapshots the page.
+      // Render the new copy number before the page is printed or saved.
       flushSync(() => setGuide(printed));
-      openPrint(printed.copies_printed);
+      if (isPhone() && sheet.current) await savePdf(sheet.current, printed);
+      else openPrint(printed.copies_printed);
     } catch (err) {
       toast.error("Couldn’t record the printed copy", { description: err instanceof Error ? err.message : undefined });
     } finally {
@@ -671,7 +708,7 @@ export function PrintView() {
           </Button>
           {approved && (
             <p className="hidden w-full text-center text-xs text-fg-subtle sm:text-right [@media(pointer:coarse)]:block">
-              Opens your phone’s print sheet. Pick a printer, or Save as PDF.
+              Saves the sheet as a PDF on your phone, ready to print or share.
             </p>
           )}
         </div>
@@ -706,7 +743,7 @@ export function PrintView() {
         </p>
       )}
       <FitToWidth>
-        <Sheet guide={guide} languages={languages} />
+        <Sheet ref={sheet} guide={guide} languages={languages} />
       </FitToWidth>
     </div>
   );
