@@ -19,7 +19,7 @@ anything. Default region: `asia-south1` (Mumbai). Override with `REGION=...`.
 | Service account `plantmemory-run` | What the Cloud Run service runs as. Roles: `datastore.user`, `aiplatform.user`. Nothing else |
 | Service account `plantmemory-build` | What Cloud Build runs as. Role: `run.builder` |
 | Artifact Registry repo `cloud-run-source-deploy` | Holds the built image |
-| Cloud Run service `plantmemory` | Public URL, scales to zero, at most 3 instances |
+| Cloud Run service `plantmemory` | Public URL, one instance kept warm, at most 3 instances |
 
 No keys or secrets exist anywhere. The service authenticates as its service account,
 and the image contains no credentials (see `.dockerignore`).
@@ -67,11 +67,13 @@ embedding model or dimension, create new indexes and re-seed.
 
 ## Expected cost
 
-For a demo this sits within Google Cloud's free tiers, apart from Gemini calls:
+For a demo this sits within Google Cloud's free tiers, apart from the warm Cloud Run
+instance and Gemini calls:
 
-- **Cloud Run** scales to zero, so it costs nothing when idle; the first visit after an
-  idle spell waits a few seconds for a cold start. `MIN_INSTANCES=1 make deploy` keeps one
-  instance warm instead (about 1 vCPU and 1 GiB billed at the idle rate).
+- **Cloud Run** keeps one instance warm (about 1 vCPU and 1 GiB billed at the idle rate),
+  so nobody waits for a cold start. `MIN_INSTANCES=0 make deploy` scales to zero instead:
+  it then costs nothing when idle, but the first visit after an idle spell waits a few
+  seconds.
 - **Firestore** uses the free daily quota on the `(default)` database.
 - **Cloud Build** is a few build-minutes per deploy.
 - **Artifact Registry** costs cents per month for stored images.

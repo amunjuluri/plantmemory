@@ -73,8 +73,8 @@ and cost money. Ask before running them.
   Live runs in `us-central1`.
 - Merging to `main` deploys automatically (`.github/workflows/ci.yml`). `make deploy` uses
   the gcloud configuration `plantmemory` and asks before creating anything.
-- Cloud Run scales to zero by default; `MIN_INSTANCES=1 make deploy` keeps one instance
-  warm.
+- Cloud Run keeps one instance warm by default; `MIN_INSTANCES=0 make deploy` scales to
+  zero.
 - Scripts must not write to the app's Firestore collections. The scale benchmark writes
   only to `scale_incidents_*`.
 
