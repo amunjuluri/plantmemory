@@ -1,10 +1,47 @@
-# PlantMemory
+<p align="center">
+  <img src="web/app/icon.svg" alt="PlantMemory logo" width="88">
+</p>
 
-In a factory, when a machine stops, the workers wait. They escalate to the
-maintenance manager, and the line stays down until the manager decides what to do and
-tells them. Workers usually can't carry phones on the floor, and the knowledge the
-manager needs is scattered across breakdown logbooks, SAP history, equipment manuals and
-people's memories.
+<h1 align="center">PlantMemory</h1>
+
+<p align="center">
+  A cited repair guide in about 10 seconds when a machine stops, for any plant.<br>
+  <a href="https://plantmemory-4l5hbd2imq-el.a.run.app/"><b>Try the live app</b></a> ·
+  <a href="https://www.youtube.com/watch?v=yRuIP2r4Lao"><b>Watch the demo</b></a> ·
+  <a href="docs/presentation.pdf"><b>Presentation (PDF)</b></a>
+</p>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=yRuIP2r4Lao">
+    <img src="https://img.youtube.com/vi/yRuIP2r4Lao/maxresdefault.jpg" alt="PlantMemory demo video (3 minutes)" width="720">
+  </a>
+</p>
+
+Built by Team Atlantis for the Google Cloud AI Builder Cup 2026 (Manufacturing:
+Intelligent Operations & Industrial Efficiency), with Gemini, the Agent Development Kit,
+Firestore, Cloud Run and Firebase.
+
+## The problem
+
+When a machine stops, the line stops and the workers wait. Every hour a line stands still
+can cost about $125,000 (ABB, *Value of Reliability* survey of 3,215 industrial
+businesses, 2023). The workers escalate to the maintenance manager, and the line stays
+down until the manager decides what to do and tells them.
+
+Plants already have maintenance software, but it is rarely kept up to date, because every
+breakdown has to be typed in by hand. So the knowledge the manager needs is scattered
+across breakdown logbooks, SAP history, equipment manuals and people's memories, and:
+
+1. **Every fix is typed in by hand**, so it often isn't, and the next breakdown starts
+   from zero.
+2. **The manager gathers everything by hand**: the manual, the last time this happened,
+   who fixed it.
+3. **Workers are guided by word of mouth.** They usually can't carry phones on the floor,
+   and many read Telugu or Hindi better than the English manual.
+4. **There is no estimate of repair time.**
+5. **Nobody knows upfront whether the spare parts are in stock.**
+
+## What PlantMemory does
 
 PlantMemory is built for that manager. Describe the breakdown by typing, by speaking in
 any Indian language, from a logbook photo or straight from the machine's alarm log, and
@@ -23,7 +60,7 @@ first only when code finds a reason (a value not in the manual, a step with no s
 translation that may not match, an earlier rejection). The manager then prints it for the
 workers as an A4 controlled copy in English plus the languages the crew reads (Telugu and
 Hindi by default; any of 12 Indian languages can be added), with the manual's figures and
-tick boxes.
+tick boxes. On a phone the sheet is saved as a PDF to print or share.
 When the repair is done, the manager says what was done (a short "did what the guide
 said" is enough; the app asks only what the guide can't tell it) and it is saved to plant
 memory. QA then does the line clearance and releases the machine to production.
@@ -76,8 +113,18 @@ same fault as a test report, so every record a search showed was read and judged
 result is a matching repair for 14 of the 14 test reports. After Gemini's check, the first
 match shown is right for 13 of 14 at every size, with 1 false alarm in 11 at 50,000 (0 at 17).
 
-Built for the Google Cloud AI Builder Cup (APAC) with Gemini, the Agent Development Kit,
-Firestore vector search and Cloud Run.
+## Built on Google Cloud
+
+| Service | What it does in PlantMemory |
+|---|---|
+| **Gemini 3.1 Flash-Lite** (Vertex AI) | Reads reports, logbook photos and manual PDFs, checks every match from plant memory, writes the guide as structured JSON and translates it. It was accurate enough, fast and cheap (about $0.008 a guide), so a bigger model wasn't needed. |
+| **Gemini 3.5 Flash-Lite** | Fallback only: answers when 3.1 Flash-Lite is out of capacity after its retries, and goes through the same checks. |
+| **Gemini Live** (`gemini-3.8-live`) | The voice conversation in the manager's language, mixed Telugu and English included. |
+| **gemini-embedding-2** | Search by meaning across languages, over past repairs and manual sections. |
+| **Agent Development Kit** | Runs guide drafting as a fixed graph workflow. |
+| **Firestore** | Plant memory, manuals, parts and stock, guides and the audit trail, with native vector search (tested to 50,000 repairs). |
+| **Cloud Run** | One service in Mumbai for the API, the UI and the voice WebSocket; one instance kept warm so no one waits for a cold start. Merging to `main` deploys it through Cloud Build. |
+| **Firebase Analytics** | Who used the app and what they did, next to Cloud Logging and Error Reporting. |
 
 ## Architecture
 
